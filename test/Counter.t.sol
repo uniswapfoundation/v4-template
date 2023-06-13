@@ -24,32 +24,12 @@ contract CounterTest is Test, Deployers, GasSnapshot {
     using PoolId for IPoolManager.PoolKey;
     using CurrencyLibrary for Currency;
 
-    event SubmitOrder(
-        bytes32 indexed poolId,
-        address indexed owner,
-        uint160 expiration,
-        bool zeroForOne,
-        uint256 sellRate,
-        uint256 earningsFactorLast
-    );
-
-    event UpdateOrder(
-        bytes32 indexed poolId,
-        address indexed owner,
-        uint160 expiration,
-        bool zeroForOne,
-        uint256 sellRate,
-        uint256 earningsFactorLast
-    );
-
     Counter counter = Counter(
         address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG))
     );
     PoolManager manager;
     PoolModifyPositionTest modifyPositionRouter;
     PoolSwapTest swapRouter;
-    PoolDonateTest donateRouter;
-    address hookAddress;
     TestERC20 token0;
     TestERC20 token1;
     IPoolManager.PoolKey poolKey;
@@ -61,6 +41,7 @@ contract CounterTest is Test, Deployers, GasSnapshot {
         manager = new PoolManager(500000);
 
         // testing environment requires our contract to override `validateHookAddress`
+        // well do that via the Implementation contract to avoid deploying the override with the production contract
         CounterImplementation impl = new CounterImplementation(manager, counter);
         (, bytes32[] memory writes) = vm.accesses(address(impl));
         vm.etch(address(counter), address(impl).code);
@@ -72,14 +53,16 @@ contract CounterTest is Test, Deployers, GasSnapshot {
             }
         }
 
-        modifyPositionRouter = new PoolModifyPositionTest(IPoolManager(address(manager)));
-        swapRouter = new PoolSwapTest(IPoolManager(address(manager)));
-
+        // Create the pool
         poolKey = IPoolManager.PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(counter));
         poolId = PoolId.toId(poolKey);
         manager.initialize(poolKey, SQRT_RATIO_1_1);
 
-        // Create Liquidity
+        // Helpers for interacting with the pool
+        modifyPositionRouter = new PoolModifyPositionTest(IPoolManager(address(manager)));
+        swapRouter = new PoolSwapTest(IPoolManager(address(manager)));
+
+        // Provide liquidity to the pool
         token0.approve(address(modifyPositionRouter), 100 ether);
         token1.approve(address(modifyPositionRouter), 100 ether);
         token0.mint(address(this), 100 ether);
