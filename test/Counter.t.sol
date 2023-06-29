@@ -23,9 +23,7 @@ contract CounterTest is Test, Deployers, GasSnapshot {
     using PoolId for IPoolManager.PoolKey;
     using CurrencyLibrary for Currency;
 
-    Counter counter = Counter(
-        address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG))
-    );
+    Counter counter = Counter(address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
     PoolManager manager;
     PoolModifyPositionTest modifyPositionRouter;
     PoolSwapTest swapRouter;
@@ -53,7 +51,9 @@ contract CounterTest is Test, Deployers, GasSnapshot {
         }
 
         // Create the pool
-        poolKey = IPoolManager.PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(counter));
+        poolKey = IPoolManager.PoolKey(
+            Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(counter)
+        );
         poolId = PoolId.toId(poolKey);
         manager.initialize(poolKey, SQRT_RATIO_1_1);
 
@@ -80,21 +80,17 @@ contract CounterTest is Test, Deployers, GasSnapshot {
     function testCounterHooks() public {
         assertEq(counter.beforeSwapCount(), 0);
         assertEq(counter.afterSwapCount(), 0);
-        
+
         // Perform a test swap //
         IPoolManager.SwapParams memory params =
             IPoolManager.SwapParams({zeroForOne: true, amountSpecified: 100, sqrtPriceLimitX96: SQRT_RATIO_1_2});
 
         PoolSwapTest.TestSettings memory testSettings =
             PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true});
-        
-        swapRouter.swap(
-            poolKey,
-            params,
-            testSettings
-        );
+
+        swapRouter.swap(poolKey, params, testSettings);
         // ------------------- //
-        
+
         assertEq(counter.beforeSwapCount(), 1);
         assertEq(counter.afterSwapCount(), 1);
     }
