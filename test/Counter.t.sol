@@ -17,7 +17,7 @@ import {PoolDonateTest} from "@uniswap/v4-core/contracts/test/PoolDonateTest.sol
 import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/libraries/CurrencyLibrary.sol";
 import {Counter} from "../src/Counter.sol";
-import {CounterImplementation} from "../src/implementation/CounterImplementation.sol";
+import {CounterImplementation} from "./implementation/CounterImplementation.sol";
 
 contract CounterTest is Test, Deployers, GasSnapshot {
     using PoolId for IPoolManager.PoolKey;
