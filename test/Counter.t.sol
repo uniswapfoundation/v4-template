@@ -8,7 +8,6 @@ import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
 import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
-import {PoolSwapTest} from "@uniswap/v4-core/contracts/test/PoolSwapTest.sol";
 import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/libraries/CurrencyLibrary.sol";
 import {HookTest} from "../src/utils/HookTest.sol";
