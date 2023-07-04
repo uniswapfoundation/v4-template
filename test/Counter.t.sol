@@ -52,13 +52,9 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
         assertEq(counter.afterSwapCount(), 0);
 
         // Perform a test swap //
-        IPoolManager.SwapParams memory params =
-            IPoolManager.SwapParams({zeroForOne: true, amountSpecified: 100, sqrtPriceLimitX96: SQRT_RATIO_1_2});
-
-        PoolSwapTest.TestSettings memory testSettings =
-            PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true});
-
-        swapRouter.swap(poolKey, params, testSettings);
+        int256 amount = 100;
+        bool zeroForOne = true;
+        swap(poolKey, amount, zeroForOne);
         // ------------------- //
 
         assertEq(counter.beforeSwapCount(), 1);
