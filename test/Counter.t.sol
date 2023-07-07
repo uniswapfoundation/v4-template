@@ -10,7 +10,7 @@ import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.s
 import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
 import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/libraries/CurrencyLibrary.sol";
-import {HookTest} from "../src/utils/HookTest.sol";
+import {HookTest} from "./utils/HookTest.sol";
 import {Counter} from "../src/Counter.sol";
 import {CounterImplementation} from "./implementation/CounterImplementation.sol";
 
