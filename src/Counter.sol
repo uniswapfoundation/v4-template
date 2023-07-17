@@ -10,6 +10,7 @@ import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 
 contract Counter is BaseHook {
     using PoolId for IPoolManager.PoolKey;
+
     uint256 public beforeSwapCount;
     uint256 public afterSwapCount;
 

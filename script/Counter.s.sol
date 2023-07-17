@@ -20,14 +20,14 @@ contract CounterScript is Script {
     function run() public {
         vm.broadcast();
         PoolManager manager = new PoolManager(500000);
-        
+
         // uniswap hook addresses must have specific flags encoded in the address
         // (attach 0x1 to avoid collisions with other hooks)
         uint160 targetFlags = uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | 0x1);
 
         // TODO: eventually use bytecode to deploy the hook with create2 to mine proper addresses
         // bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
-        
+
         // TODO: eventually we'll want to use `uint160 salt` in the return create2 deploy the hook
         // (address hook,) = mineSalt(targetFlags, hookBytecode);
         // require(uint160(hook) & targetFlags == targetFlags, "CounterScript: could not find hook address");
@@ -45,7 +45,11 @@ contract CounterScript is Script {
         vm.stopBroadcast();
     }
 
-    function mineSalt(uint160 targetFlags, bytes memory creationCode) internal view returns (address hook, uint256 salt) {
+    function mineSalt(uint160 targetFlags, bytes memory creationCode)
+        internal
+        view
+        returns (address hook, uint256 salt)
+    {
         for (salt; salt < 100; salt++) {
             hook = _getAddress(salt, creationCode);
             if (uint160(hook) & targetFlags == targetFlags) {
