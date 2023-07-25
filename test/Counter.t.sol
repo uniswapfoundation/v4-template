@@ -7,7 +7,7 @@ import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
 import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/libraries/CurrencyLibrary.sol";
 import {HookTest} from "./utils/HookTest.sol";
@@ -15,12 +15,12 @@ import {Counter} from "../src/Counter.sol";
 import {CounterImplementation} from "./implementation/CounterImplementation.sol";
 
 contract CounterTest is HookTest, Deployers, GasSnapshot {
-    using PoolId for IPoolManager.PoolKey;
+    using PoolIdLibrary for IPoolManager.PoolKey;
     using CurrencyLibrary for Currency;
 
     Counter counter = Counter(address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
     IPoolManager.PoolKey poolKey;
-    bytes32 poolId;
+    PoolId poolId;
 
     function setUp() public {
         // creates the pool manager, test tokens, and other utility routers
@@ -35,7 +35,7 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
         poolKey = IPoolManager.PoolKey(
             Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(counter)
         );
-        poolId = PoolId.toId(poolKey);
+        poolId = poolKey.toId();
         manager.initialize(poolKey, SQRT_RATIO_1_1);
 
         // Provide liquidity to the pool
