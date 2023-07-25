@@ -10,7 +10,14 @@
 
 ### Local Development (Anvil)
 
-Because v4 exceeds the bytecode limit of Ethereum and its *business licensed*, we can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/).
+*requires [foundry](https://book.getfoundry.sh)*
+
+```
+forge install
+forge test
+```
+
+Because v4 exceeds the bytecode limit of Ethereum and it's *business licensed*, we can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/).
 
 ```bash
 # start anvil, with a larger code limit
@@ -31,11 +38,3 @@ Additional resources:
 
 [v4-core](https://github.com/uniswap/v4-core)
 
----
-
-*requires [foundry](https://book.getfoundry.sh)*
-
-```
-git clone https://github.com/saucepoint/v4-template
-forge test
-```
