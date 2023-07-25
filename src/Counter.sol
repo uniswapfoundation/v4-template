@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
+import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
 import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 
 contract Counter is BaseHook {
-    using PoolId for IPoolManager.PoolKey;
+    using PoolIdLibrary for IPoolManager.PoolKey;
 
     uint256 public beforeSwapCount;
     uint256 public afterSwapCount;
