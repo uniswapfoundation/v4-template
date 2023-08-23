@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.19;
 
 import "forge-std/Script.sol";
 import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
