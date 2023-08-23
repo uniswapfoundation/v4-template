@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.19;
 
 import "forge-std/Script.sol";
 import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
@@ -66,7 +66,7 @@ contract CounterScript is Script {
 
     function etchHook(address _implementation, address _hook) internal {
         (, bytes32[] memory writes) = vm.accesses(_implementation);
-        
+
         // courtesy of horsefacts
         // https://github.com/farcasterxyz/contracts/blob/de8aa0723a5c83b5682fd6d3a1123ea5fced179e/script/Deploy.s.sol#L54
         string[] memory command = new string[](5);
@@ -76,7 +76,7 @@ contract CounterScript is Script {
         command[3] = vm.toString(_hook);
         command[4] = vm.toString(_implementation.code);
         vm.ffi(command);
-        
+
         // for each storage key that was written during the hook implementation, copy the value over
         unchecked {
             for (uint256 i = 0; i < writes.length; i++) {
