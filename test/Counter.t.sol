@@ -19,7 +19,14 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
-    Counter counter = Counter(address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
+    Counter counter = Counter(
+        address(
+            uint160(
+                Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
+                    | Hooks.AFTER_MODIFY_POSITION_FLAG
+            )
+        )
+    );
     PoolKey poolKey;
     PoolId poolId;
 
@@ -46,6 +53,10 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
     }
 
     function testCounterHooks() public {
+        // positions were created in setup()
+        assertEq(counter.beforeModifyPositionCount(), 3);
+        assertEq(counter.afterModifyPositionCount(), 3);
+
         assertEq(counter.beforeSwapCount(), 0);
         assertEq(counter.afterSwapCount(), 0);
 
