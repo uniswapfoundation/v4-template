@@ -7,19 +7,20 @@ import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
+import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
-import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/libraries/CurrencyLibrary.sol";
+import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {HookTest} from "./utils/HookTest.sol";
 import {Counter} from "../src/Counter.sol";
 import {CounterImplementation} from "./implementation/CounterImplementation.sol";
 
 contract CounterTest is HookTest, Deployers, GasSnapshot {
-    using PoolIdLibrary for IPoolManager.PoolKey;
+    using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
     Counter counter = Counter(address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
-    IPoolManager.PoolKey poolKey;
+    PoolKey poolKey;
     PoolId poolId;
 
     function setUp() public {
@@ -32,11 +33,9 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
         etchHook(address(impl), address(counter));
 
         // Create the pool
-        poolKey = IPoolManager.PoolKey(
-            Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(counter)
-        );
+        poolKey = PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(counter));
         poolId = poolKey.toId();
-        manager.initialize(poolKey, SQRT_RATIO_1_1);
+        manager.initialize(poolKey, SQRT_RATIO_1_1, ZERO_BYTES);
 
         // Provide liquidity to the pool
         modifyPositionRouter.modifyPosition(poolKey, IPoolManager.ModifyPositionParams(-60, 60, 10 ether));
