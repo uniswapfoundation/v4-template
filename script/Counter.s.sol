@@ -23,8 +23,10 @@ contract CounterScript is Script {
 
         // uniswap hook addresses must have specific flags encoded in the address
         // (attach 0x1 to avoid collisions with other hooks)
-        uint160 targetFlags = uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | 0x1);
-
+        uint160 targetFlags = uint160(
+            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
+                | Hooks.AFTER_MODIFY_POSITION_FLAG | 0x1
+        );
         // TODO: eventually use bytecode to deploy the hook with create2 to mine proper addresses
         // bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
 
