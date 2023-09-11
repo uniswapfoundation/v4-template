@@ -13,20 +13,13 @@ import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {HookTest} from "./utils/HookTest.sol";
 import {Counter} from "../src/Counter.sol";
-import {CounterImplementation} from "./implementation/CounterImplementation.sol";
+import {HookDeployer} from "./utils/HookDeployer.sol";
 
 contract CounterTest is HookTest, Deployers, GasSnapshot {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
-    Counter counter = Counter(
-        address(
-            uint160(
-                Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
-                    | Hooks.AFTER_MODIFY_POSITION_FLAG
-            )
-        )
-    );
+    Counter counter;
     PoolKey poolKey;
     PoolId poolId;
 
@@ -34,10 +27,14 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
         // creates the pool manager, test tokens, and other utility routers
         HookTest.initHookTestEnv();
 
-        // testing environment requires our contract to override `validateHookAddress`
-        // well do that via the Implementation contract to avoid deploying the override with the production contract
-        CounterImplementation impl = new CounterImplementation(manager, counter);
-        etchHook(address(impl), address(counter));
+        // Deploy the hook to an address with the correct flags
+        uint160 flags = uint160(
+            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
+                | Hooks.AFTER_MODIFY_POSITION_FLAG
+        );
+        bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
+        address hook = HookDeployer.deploy(flags, hookBytecode);
+        counter = Counter(hook);
 
         // Create the pool
         poolKey = PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(counter));

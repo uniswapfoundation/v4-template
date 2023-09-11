@@ -56,18 +56,6 @@ contract HookTest is Test {
         token1.approve(address(swapRouter), amount);
     }
 
-    function etchHook(address _implementation, address _hook) internal {
-        (, bytes32[] memory writes) = vm.accesses(_implementation);
-        vm.etch(_hook, _implementation.code);
-        // for each storage key that was written during the hook implementation, copy the value over
-        unchecked {
-            for (uint256 i = 0; i < writes.length; i++) {
-                bytes32 slot = writes[i];
-                vm.store(_hook, slot, vm.load(_implementation, slot));
-            }
-        }
-    }
-
     function swap(PoolKey memory key, int256 amountSpecified, bool zeroForOne) internal {
         IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
             zeroForOne: zeroForOne,
