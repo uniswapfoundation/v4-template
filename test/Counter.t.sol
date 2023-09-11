@@ -13,7 +13,6 @@ import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {HookTest} from "./utils/HookTest.sol";
 import {Counter} from "../src/Counter.sol";
-import {CounterImplementation} from "./implementation/CounterImplementation.sol";
 import {HookDeployer} from "./utils/HookDeployer.sol";
 
 contract CounterTest is HookTest, Deployers, GasSnapshot {

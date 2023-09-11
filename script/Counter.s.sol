@@ -9,7 +9,6 @@ import {PoolModifyPositionTest} from "@uniswap/v4-core/contracts/test/PoolModify
 import {PoolSwapTest} from "@uniswap/v4-core/contracts/test/PoolSwapTest.sol";
 import {PoolDonateTest} from "@uniswap/v4-core/contracts/test/PoolDonateTest.sol";
 import {Counter} from "../src/Counter.sol";
-import {CounterImplementation} from "../test/implementation/CounterImplementation.sol";
 import {HookDeployer} from "../test/utils/HookDeployer.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
