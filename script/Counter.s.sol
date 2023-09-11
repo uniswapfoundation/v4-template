@@ -15,32 +15,35 @@ import {CounterImplementation} from "../test/implementation/CounterImplementatio
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
 /// @dev and we also need vm.etch() to deploy the hook to the proper address
 contract CounterScript is Script {
+    // provided in anvil, by default
+    // https://github.com/Arachnid/deterministic-deployment-proxy
+    address constant CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+    uint160 constant UNISWAP_FLAG_MASK = 0xff << 152;
+
     function setUp() public {}
 
     function run() public {
         vm.broadcast();
         PoolManager manager = new PoolManager(500000);
 
-        // uniswap hook addresses must have specific flags encoded in the address
-        // (attach 0x1 to avoid collisions with other hooks)
+        // hook contracts must have specific flags encoded in the address
         uint160 targetFlags = uint160(
             Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
-                | Hooks.AFTER_MODIFY_POSITION_FLAG | 0x1
+                | Hooks.AFTER_MODIFY_POSITION_FLAG
         );
-        // TODO: eventually use bytecode to deploy the hook with create2 to mine proper addresses
-        // bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
 
-        // TODO: eventually we'll want to use `uint160 salt` in the return create2 deploy the hook
-        // (address hook,) = mineSalt(targetFlags, hookBytecode);
-        // require(uint160(hook) & targetFlags == targetFlags, "CounterScript: could not find hook address");
+        // Mine a salt that will produce a hook address with the correct flags
+        bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
+        (address hook, uint256 salt) = mineSalt(targetFlags, hookBytecode);
+        require(uint160(hook) & UNISWAP_FLAG_MASK == targetFlags, "CounterScript: could not find hook address");
 
+        // Deploy the hook using the CREATE2 Deployer Proxy (provided by anvil)
         vm.broadcast();
-        // until i figure out create2 deploys on an anvil RPC, we'll use the etch cheatcode
-        CounterImplementation impl = new CounterImplementation(manager, Counter(address(targetFlags)));
-        etchHook(address(impl), address(targetFlags));
+        (bool success,) = address(CREATE2_DEPLOYER).call(abi.encodePacked(salt, hookBytecode));
+        require(success, "CounterScript: could not deploy hook");
 
+        // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        // Helpers for interacting with the pool
         new PoolModifyPositionTest(IPoolManager(address(manager)));
         new PoolSwapTest(IPoolManager(address(manager)));
         new PoolDonateTest(IPoolManager(address(manager)));
@@ -49,42 +52,26 @@ contract CounterScript is Script {
 
     function mineSalt(uint160 targetFlags, bytes memory creationCode)
         internal
-        view
+        pure
         returns (address hook, uint256 salt)
     {
-        for (salt; salt < 100; salt++) {
+        for (salt; salt < 1000;) {
             hook = _getAddress(salt, creationCode);
-            if (uint160(hook) & targetFlags == targetFlags) {
+            uint160 prefix = uint160(hook) & UNISWAP_FLAG_MASK;
+            if (prefix == targetFlags) {
                 break;
             }
-        }
-    }
 
-    function _getAddress(uint256 salt, bytes memory creationCode) internal view returns (address) {
-        return address(
-            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(creationCode)))))
-        );
-    }
-
-    function etchHook(address _implementation, address _hook) internal {
-        (, bytes32[] memory writes) = vm.accesses(_implementation);
-
-        // courtesy of horsefacts
-        // https://github.com/farcasterxyz/contracts/blob/de8aa0723a5c83b5682fd6d3a1123ea5fced179e/script/Deploy.s.sol#L54
-        string[] memory command = new string[](5);
-        command[0] = "cast";
-        command[1] = "rpc";
-        command[2] = "anvil_setCode";
-        command[3] = vm.toString(_hook);
-        command[4] = vm.toString(_implementation.code);
-        vm.ffi(command);
-
-        // for each storage key that was written during the hook implementation, copy the value over
-        unchecked {
-            for (uint256 i = 0; i < writes.length; i++) {
-                bytes32 slot = writes[i];
-                vm.store(_hook, slot, vm.load(_implementation, slot));
+            unchecked {
+                ++salt;
             }
         }
+    }
+
+    /// @notice Precompute a contract address that is deployed with the CREATE2Deployer
+    function _getAddress(uint256 salt, bytes memory creationCode) internal pure returns (address) {
+        return address(
+            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), CREATE2_DEPLOYER, salt, keccak256(creationCode)))))
+        );
     }
 }
