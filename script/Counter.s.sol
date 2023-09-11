@@ -10,6 +10,7 @@ import {PoolSwapTest} from "@uniswap/v4-core/contracts/test/PoolSwapTest.sol";
 import {PoolDonateTest} from "@uniswap/v4-core/contracts/test/PoolDonateTest.sol";
 import {Counter} from "../src/Counter.sol";
 import {CounterImplementation} from "../test/implementation/CounterImplementation.sol";
+import {HookDeployer} from "../test/utils/HookDeployer.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
@@ -27,20 +28,18 @@ contract CounterScript is Script {
         PoolManager manager = new PoolManager(500000);
 
         // hook contracts must have specific flags encoded in the address
-        uint160 targetFlags = uint160(
+        uint160 flags = uint160(
             Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
                 | Hooks.AFTER_MODIFY_POSITION_FLAG
         );
 
         // Mine a salt that will produce a hook address with the correct flags
         bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
-        (address hook, uint256 salt) = mineSalt(targetFlags, hookBytecode);
-        require(uint160(hook) & UNISWAP_FLAG_MASK == targetFlags, "CounterScript: could not find hook address");
+        (, uint256 salt) = HookDeployer.mineSalt(flags, hookBytecode);
 
         // Deploy the hook using the CREATE2 Deployer Proxy (provided by anvil)
         vm.broadcast();
-        (bool success,) = address(CREATE2_DEPLOYER).call(abi.encodePacked(salt, hookBytecode));
-        require(success, "CounterScript: could not deploy hook");
+        HookDeployer.deployWithSalt(hookBytecode, salt);
 
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
@@ -48,30 +47,5 @@ contract CounterScript is Script {
         new PoolSwapTest(IPoolManager(address(manager)));
         new PoolDonateTest(IPoolManager(address(manager)));
         vm.stopBroadcast();
-    }
-
-    function mineSalt(uint160 targetFlags, bytes memory creationCode)
-        internal
-        pure
-        returns (address hook, uint256 salt)
-    {
-        for (salt; salt < 1000;) {
-            hook = _getAddress(salt, creationCode);
-            uint160 prefix = uint160(hook) & UNISWAP_FLAG_MASK;
-            if (prefix == targetFlags) {
-                break;
-            }
-
-            unchecked {
-                ++salt;
-            }
-        }
-    }
-
-    /// @notice Precompute a contract address that is deployed with the CREATE2Deployer
-    function _getAddress(uint256 salt, bytes memory creationCode) internal pure returns (address) {
-        return address(
-            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), CREATE2_DEPLOYER, salt, keccak256(creationCode)))))
-        );
     }
 }
