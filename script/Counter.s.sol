@@ -13,13 +13,7 @@ import {HookDeployer} from "../test/utils/HookDeployer.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
-/// @dev and we also need vm.etch() to deploy the hook to the proper address
 contract CounterScript is Script {
-    // provided in anvil, by default
-    // https://github.com/Arachnid/deterministic-deployment-proxy
-    address constant CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
-    uint160 constant UNISWAP_FLAG_MASK = 0xff << 152;
-
     function setUp() public {}
 
     function run() public {
