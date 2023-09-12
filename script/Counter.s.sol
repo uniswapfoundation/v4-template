@@ -14,6 +14,8 @@ import {HookDeployer} from "../test/utils/HookDeployer.sol";
 /// @notice Forge script for deploying v4 & hooks to **anvil**
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
 contract CounterScript is Script {
+    address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
+
     function setUp() public {}
 
     function run() public {
@@ -26,13 +28,15 @@ contract CounterScript is Script {
                 | Hooks.AFTER_MODIFY_POSITION_FLAG
         );
 
-        // Mine a salt that will produce a hook address with the correct flags
         bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
-        (, uint256 salt) = HookDeployer.mineSalt(flags, hookBytecode);
 
-        // Deploy the hook using the CREATE2 Deployer Proxy (provided by anvil)
+        // Mine a salt that will produce a hook address with the correct flags
+        (address hookAddress, uint256 salt) = HookDeployer.mineSalt(CREATE2_DEPLOYER, flags, hookBytecode);
+
+        // Deploy the hook using CREATE2
         vm.broadcast();
-        HookDeployer.deployWithSalt(hookBytecode, salt);
+        Counter counter = new Counter{salt: bytes32(salt)}(IPoolManager(address(manager)));
+        require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
 
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
