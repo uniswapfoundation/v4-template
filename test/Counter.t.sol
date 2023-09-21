@@ -13,7 +13,7 @@ import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {HookTest} from "./utils/HookTest.sol";
 import {Counter} from "../src/Counter.sol";
-import {HookDeployer} from "./utils/HookDeployer.sol";
+import {HookMiner} from "./utils/HookMiner.sol";
 
 contract CounterTest is HookTest, Deployers, GasSnapshot {
     using PoolIdLibrary for PoolKey;
@@ -33,7 +33,7 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
                 | Hooks.AFTER_MODIFY_POSITION_FLAG
         );
         bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
-        (address hookAddress, uint256 salt) = HookDeployer.mineSalt(address(this), flags, hookBytecode);
+        (address hookAddress, uint256 salt) = HookMiner.mineSalt(address(this), flags, hookBytecode);
         counter = new Counter{salt: bytes32(salt)}(IPoolManager(address(manager)));
         require(address(counter) == hookAddress, "CounterTest: hook address mismatch");
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-/// @title HookDeployer - a library for deploying Uni V4 hooks with target flags
-library HookDeployer {
+/// @title HookMiner - a library for deploying Uni V4 hooks with target flags
+library HookMiner {
     uint160 constant UNISWAP_FLAG_MASK = 0xff << 152;
 
     function mineSalt(address deployer, uint160 targetFlags, bytes memory creationCode)
@@ -22,7 +22,7 @@ library HookDeployer {
                 ++salt;
             }
         }
-        require(uint160(hook) & UNISWAP_FLAG_MASK == targetFlags, "HookDeployer: could not find hook address");
+        require(uint160(hook) & UNISWAP_FLAG_MASK == targetFlags, "HookMiner: could not find hook address");
     }
 
     /// @notice Precompute a contract address deployed via CREATE2

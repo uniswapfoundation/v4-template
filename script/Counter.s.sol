@@ -9,7 +9,7 @@ import {PoolModifyPositionTest} from "@uniswap/v4-core/contracts/test/PoolModify
 import {PoolSwapTest} from "@uniswap/v4-core/contracts/test/PoolSwapTest.sol";
 import {PoolDonateTest} from "@uniswap/v4-core/contracts/test/PoolDonateTest.sol";
 import {Counter} from "../src/Counter.sol";
-import {HookDeployer} from "../test/utils/HookDeployer.sol";
+import {HookMiner} from "../test/utils/HookMiner.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
@@ -31,7 +31,7 @@ contract CounterScript is Script {
         bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
 
         // Mine a salt that will produce a hook address with the correct flags
-        (address hookAddress, uint256 salt) = HookDeployer.mineSalt(CREATE2_DEPLOYER, flags, hookBytecode);
+        (address hookAddress, uint256 salt) = HookMiner.mineSalt(CREATE2_DEPLOYER, flags, hookBytecode);
 
         // Deploy the hook using CREATE2
         vm.broadcast();
