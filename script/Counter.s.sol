@@ -28,14 +28,12 @@ contract CounterScript is Script {
                 | Hooks.AFTER_MODIFY_POSITION_FLAG
         );
 
-        bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
-
         // Mine a salt that will produce a hook address with the correct flags
-        (address hookAddress, uint256 salt) = HookMiner.mineSalt(CREATE2_DEPLOYER, flags, hookBytecode);
+        (address hookAddress, bytes32 salt) = HookMiner.find(CREATE2_DEPLOYER, flags, 1000, type(Counter).creationCode, abi.encode(address(manager)));
 
         // Deploy the hook using CREATE2
         vm.broadcast();
-        Counter counter = new Counter{salt: bytes32(salt)}(IPoolManager(address(manager)));
+        Counter counter = new Counter{salt: salt}(IPoolManager(address(manager)));
         require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
 
         // Additional helpers for interacting with the pool

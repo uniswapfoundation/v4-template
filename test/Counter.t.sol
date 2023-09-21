@@ -32,9 +32,8 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
             Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
                 | Hooks.AFTER_MODIFY_POSITION_FLAG
         );
-        bytes memory hookBytecode = abi.encodePacked(type(Counter).creationCode, abi.encode(address(manager)));
-        (address hookAddress, uint256 salt) = HookMiner.mineSalt(address(this), flags, hookBytecode);
-        counter = new Counter{salt: bytes32(salt)}(IPoolManager(address(manager)));
+        (address hookAddress, bytes32 salt) = HookMiner.find(address(this), flags, 0, type(Counter).creationCode, abi.encode(address(manager)));
+        counter = new Counter{salt: salt}(IPoolManager(address(manager)));
         require(address(counter) == hookAddress, "CounterTest: hook address mismatch");
 
         // Create the pool
