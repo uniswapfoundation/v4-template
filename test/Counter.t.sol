@@ -52,11 +52,11 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
 
     function testCounterHooks() public {
         // positions were created in setup()
-        assertEq(counter.beforeModifyPositionCount(), 3);
-        assertEq(counter.afterModifyPositionCount(), 3);
+        assertEq(counter.beforeModifyPositionCount(poolId), 3);
+        assertEq(counter.afterModifyPositionCount(poolId), 3);
 
-        assertEq(counter.beforeSwapCount(), 0);
-        assertEq(counter.afterSwapCount(), 0);
+        assertEq(counter.beforeSwapCount(poolId), 0);
+        assertEq(counter.afterSwapCount(poolId), 0);
 
         // Perform a test swap //
         int256 amount = 100;
@@ -64,7 +64,7 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
         swap(poolKey, amount, zeroForOne);
         // ------------------- //
 
-        assertEq(counter.beforeSwapCount(), 1);
-        assertEq(counter.afterSwapCount(), 1);
+        assertEq(counter.beforeSwapCount(poolId), 1);
+        assertEq(counter.afterSwapCount(poolId), 1);
     }
 }
