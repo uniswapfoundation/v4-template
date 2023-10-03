@@ -2,13 +2,15 @@
 
 ## Introduction
 
-When Uniswap Labs previewed v4, the limitless flexibility of hooks stirred a million different ideas. Anywhere from trading order types, to oracles, to bizarre permissioned trading, v4 opens up an entirely new programming space for developers. To quickly experiment, iterate, and test ideas, having a starter template goes a long way. 
+When Uniswap Labs previewed v4, the limitless flexibility of hooks stirred a million different ideas. From trading order types, to oracles, to bizarre permissioned trading, Uniswap v4 opens up an entirely new programming space for developers. To quickly experiment, iterate, and test ideas, having a starter template goes a long way. 
 
-`v4-template` particulary focuses on providing clean abstractions while being minimally lightweight and unopinonated. Overall it reduces developer friction by providing:
+`v4-template` particulary focuses on providing clean abstractions while being minimally lightweight and unopinonated. Overall, it reduces developer friction by defining:
 
 * A minimal hook contract with swap and modifyPosition hooks
-* Test setup - deploys the v4 PoolManager, router contracts, and the hook
-* Deployment script for local and testnet deployments
+* Some test setup - deploys the v4 PoolManager, test tokens, the router contracts, and the hook
+* A deployment script for local and testnet deployments
+
+By covering the basics, hook developers can start and validate what matters most -- the hook logic
 
 ## Setup
 
@@ -16,19 +18,16 @@ To use the template, all that is required is the [foundry toolkit](https://book.
 
 and then using this link, or this button, anyone can create a new repo from the template
 
-With the repo cloned locally, you can install the Uniswap v4 codebase with 
-
+With the repo cloned locally, you can install the Uniswap v4 codebase:
 ```bash
 forge install
 ```
 
-Verify proper set up
-
+To verify correct setup:
 ```bash
 forge test
-```
 
-```bash
+# output:
 [⠢] Compiling...
 [⠃] Compiling 3 files with 0.8.20
 [⠊] Solc 0.8.20 finished in 2.72s
@@ -45,7 +44,7 @@ Ran 1 test suites: 1 tests passed, 0 failed, 0 skipped (1 total tests)
 
 ## Developing your first hook
 
-The template provides three primary files to boostrap hook development.
+The template provides three primary files to boostrap hook development
 
 ```
 v4-template
@@ -56,35 +55,16 @@ v4-template
 └── test
     ├── Counter.t.sol      // Tests
     └── utils
-        ├── HookMiner.sol
-        └── HookTest.sol
+        └── ...
 ```
 
+### `Counter.sol` - the Hook Contract
 
+The contract defines `beforeSwap`, `afterSwap`, `beforeModifyPosition`, and `afterModifyPosition`. These hook functions are not mandatory, and any combination of hooks can be used
 
-### The Hook Contract
+> Don't forget hooks for `initialize` and `donate` are also available!
 
-The main file to edit is `src/Counter.sol`. The contract defines `beforeSwap`, `afterSwap`, `beforeModifyPosition`, and `afterModifyPosition`. These are not explicitly required by any means, and any combination of hooks can be used.
-
-> Note: Don't forget to update the function:
-
-```solidity
-    // i.e. hook depends on afterSwap and afterModifyPosition
-    function getHooksCalls() public pure override returns (Hooks.Calls memory) {
-        return Hooks.Calls({
-            beforeInitialize: false,
-            afterInitialize: false,
-            beforeModifyPosition: false,
-            afterModifyPosition: true,
-            beforeSwap: false,
-            afterSwap: true,
-            beforeDonate: false,
-            afterDonate: false
-        });
-    }
-```
-
-The existing hook functions are simply counting how often a pool recieves a swap or a liquidity position modification.
+The provided hook functions are simply counting how often a pool recieves a swap or an LP modification
 
 ```solidity
     function afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
@@ -99,7 +79,7 @@ The existing hook functions are simply counting how often a pool recieves a swap
 
 ```solidity
     function testCounterHooks() public {
-        assertEq(counter.afterSwapCount(poolId), 0);
+        assertEq(counter.afterSwapCount(poolKey.toId()), 0);
 
         // Perform a test swap //
         int256 amount = 100;
@@ -107,11 +87,42 @@ The existing hook functions are simply counting how often a pool recieves a swap
         swap(poolKey, amount, zeroForOne);
         // ------------------- //
 
-        assertEq(counter.afterSwapCount(poolId), 1);
+        assertEq(counter.afterSwapCount(poolKey.toId()), 1);
     }
 ```
 
-With the hook functions in mind, you're ready to start developing your own logic. Get started with modifying the hook function bodies.
+<details>
+  <summary>Specifying Hook functionality</summary>
+  
+  ### Specifying Hook functionality
+  To communicate which hook functions are implemented, the Hook contract will return the information with `getHookCalls()`
+
+  If hook implements `afterSwap` and `afterModifyPosition`:
+  ```solidity
+    function getHooksCalls() public pure override returns (Hooks.Calls memory) {
+        return Hooks.Calls({
+            beforeInitialize: false,
+            afterInitialize: false,
+            beforeModifyPosition: false,
+            afterModifyPosition: true,
+            beforeSwap: false,
+            afterSwap: true,
+            beforeDonate: false,
+            afterDonate: false
+        });
+    }
+  ```
+
+  and update the flags during test deployment:
+  ```solidity
+  uint160 flags = uint160(
+    Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_MODIFY_POSITION_FLAG
+  );
+  ```
+</details>
+
+
+You're ready to start developing your own logic! Get started with modifying the hook function bodies:
 
 ```solidity
     function afterSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata params, BalanceDelta delta, bytes calldata hookData)
@@ -124,16 +135,32 @@ With the hook functions in mind, you're ready to start developing your own logic
         // -----------------------
         return BaseHook.afterSwap.selector;
     }
-
-> A note on hook design
-
-Hooks should service multiple trading pairs. One single hook contract, deployed once, should be able to serve both ETHUSDC and ETHUSDT for example
-
 ```
+
+<details>
+  <summary>A note on hook design</summary>
+  
+  ### Hooks should also be singletons!
+  A hook contract should service multiple trading pairs. One single hook contract, deployed once, should be able to serve both ETH/USDC and ETH/USDT
+
+  To support multiple trading pairs/pools, most state variables should be stored in a **mapping** -- keyed by the `PoolId` type. This is the case for the `Counter` hook, which stores the swap count for *each pool*
+
+  ```solidity
+  mapping(uint256 => uint256) public afterSwapCount;
+  ```
+</details>
+
 
 ### Testing
 
-Unit tests will be the easiest way to validate your hook behavior. The template's provided test file setups external dependencies -- the v4 PoolManager, test tokens, swap routers, LP router, etc. All you need to do is deploy your hook, initialize the pool, create liquidity, and swap.
+Unit tests will be the easiest way to validate your hook behavior. The template's provided test file setups external dependencies -- the v4 PoolManager, test tokens, swap routers, LP router, etc
+
+All you need to do is
+
+1. Deploy the hook
+2. Create a pool with the hook
+3. Provide liquidity to the pool
+4. Perform a swap
 
 See [Counter.t.sol](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol) for more
 ```solidity
