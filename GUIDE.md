@@ -212,22 +212,33 @@ function testCounterHooks() public {
 
 When installing dependencies with `forge install`, Github may throw a `Permission Denied` error
 
-This is typically caused by Github SSH keys, and can be resolved by following the steps [here](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh) or adding the keys to your ssh-agent, [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent)
+This is typically caused by missing Github SSH keys, and can be resolved by following the steps [here](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh) or adding the keys to your ssh-agent, if you have already uploaded SSH keys [link](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent)
 
 ### Hook deployment failures
+
+Hook deployment failures are typically caused by incorrect flags or salt mining
+
+1. Verify the flags are in agreement:
+    * `getHookCalls()` returns the correct flags
+    * `flags` provided to `HookMiner.find(...)`
+    * In obscure cases where you're deploying multiple hooks (with the same flags), try setting `seed=1000` for ` HookMiner.find`
+2. Verify salt mining is correct:
+    * In **forge test**: the deployer for: `new Hook{salt: salt}(...)` and `HookMiner.find(deployer, ...)` are the same. This will be `address(this)` if not using `vm.prank`. If using `vm.prank`, the deployer will be the pranking address
+    * In **forge script**: the deployer must be the CREATE2 Proxy: `0x4e59b44847b379578588920cA78FbF26c0B4956C`
+        * If anvil does not have the CREATE2 deployer, your foundry may be out of date. You can update it with `foundryup`
 
 
 
 ## Conclusion and Future
 
-With this guide, you should be able to quickly start your hook development journey. Hooks are intentionally ambigious and open-ended, so I hope the template can get you started on what matters most without getting in the way.
+Hopefully with this guide, your hook development journey is lower friction! The possibilities are intentionally open-ended and ambigious, and I hope the template lets you focus on the hook implementation without getting in the way.
 
 Even if `v4-template` is not for you, and you prefer rolling-your-own environment, I hope that the template offers examples during the Hook development process:
 
-* Hook Contract
-* Hook contract deployment (for local testing, or testnets)
-* Initialize a Pool with the Hook
-* Provisioning Liquidity
-* Performing a swap
+* [Hook Contract](https://github.com/saucepoint/v4-template/blob/main/src/Counter.sol)
+* [Hook contract deployment](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol#L30-L38) (for local testing, or testnets)
+* [Initialize a Pool with the Hook](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol#L40-L43)
+* [Provisioning Liquidity](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol#L45-L50)
+* [Performing a swap](https://github.com/saucepoint/v4-template/blob/main/test/utils/HookTest.sol#L60-L69)
 
 Feedback and contributions are always welcome. For now, the template will strive to stay up to date with the latest v4 changes. And as new best-practices arise, expect the template to reflect and enshrine these patterns
