@@ -84,7 +84,52 @@ The main file to edit is `src/Counter.sol`. The contract defines `beforeSwap`, `
     }
 ```
 
+The existing hook functions are simply counting how often a pool recieves a swap or a liquidity position modification.
 
+```solidity
+    function afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
+        external
+        override
+        returns (bytes4)
+    {
+        afterSwapCount[key.toId()]++;
+        return BaseHook.afterSwap.selector;
+    }
+```
+
+```solidity
+    function testCounterHooks() public {
+        assertEq(counter.afterSwapCount(poolId), 0);
+
+        // Perform a test swap //
+        int256 amount = 100;
+        bool zeroForOne = true;
+        swap(poolKey, amount, zeroForOne);
+        // ------------------- //
+
+        assertEq(counter.afterSwapCount(poolId), 1);
+    }
+```
+
+With the hook functions in mind, you're ready to start developing your own logic. Get started with modifying the hook function bodies.
+
+```solidity
+    function afterSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata params, BalanceDelta delta, bytes calldata hookData)
+        external
+        override
+        returns (bytes4)
+    {
+        // -----------------------
+        // DEFINE AND MODIFY LOGIC
+        // -----------------------
+        return BaseHook.afterSwap.selector;
+    }
+
+> A note on hook design
+
+Hooks should service multiple trading pairs. One single hook contract, deployed once, should be able to serve both ETHUSDC and ETHUSDT for example
+
+```
 
 ### The Tests
 
