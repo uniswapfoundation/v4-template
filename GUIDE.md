@@ -16,7 +16,12 @@ By covering the basics, hook developers can start and validate what matters most
 
 To use the template, all that is required is the [foundry toolkit](https://book.getfoundry.sh)
 
-and then using this link, or this button, anyone can create a new repo from the template
+And [create a new repo](https://github.com/new?template_name=v4-template&template_owner=saucepoint) from the template
+
+
+<img width="758" alt="Screenshot 2023-10-03 at 4 44 41 PM" src="https://github.com/saucepoint/v4-template/assets/98790946/2307d06b-e8c5-4f65-bc1c-c0620b7cbad3">
+
+
 
 With the repo cloned locally, you can install the Uniswap v4 codebase:
 ```bash
@@ -60,9 +65,9 @@ v4-template
 
 ### `Counter.sol` - the Hook Contract
 
-The contract defines `beforeSwap`, `afterSwap`, `beforeModifyPosition`, and `afterModifyPosition`. These hook functions are not mandatory, and any combination of hooks can be used
+The contract defines `beforeSwap`, `afterSwap`, `beforeModifyPosition`, and `afterModifyPosition`. All four hook functions are not mandatory, and any combination of hooks can be used
 
-> Don't forget hooks for `initialize` and `donate` are also available!
+> i.e. don't forget hooks for `initialize` and `donate` are also available!
 
 The provided hook functions are simply counting how often a pool recieves a swap or an LP modification
 
@@ -92,7 +97,7 @@ The provided hook functions are simply counting how often a pool recieves a swap
 ```
 
 <details>
-  <summary>Specifying Hook functionality</summary>
+  <summary>Specifying which functions your Hook supports</summary>
   
   ### Specifying Hook functionality
   To communicate which hook functions are implemented, the Hook contract will return the information with `getHookCalls()`
@@ -122,7 +127,7 @@ The provided hook functions are simply counting how often a pool recieves a swap
 </details>
 
 
-You're ready to start developing your own logic! Get started with modifying the hook function bodies:
+You should be able to start modifying the hook function bodies:
 
 ```solidity
     function afterSwap(address sender, PoolKey calldata key, IPoolManager.SwapParams calldata params, BalanceDelta delta, bytes calldata hookData)
@@ -131,8 +136,9 @@ You're ready to start developing your own logic! Get started with modifying the 
         returns (bytes4)
     {
         // -----------------------
-        // DEFINE AND MODIFY LOGIC
+        // DEFINE YOUR LOGIC
         // -----------------------
+
         return BaseHook.afterSwap.selector;
     }
 ```
@@ -140,7 +146,7 @@ You're ready to start developing your own logic! Get started with modifying the 
 <details>
   <summary>A note on hook design</summary>
   
-  ### Hooks should also be singletons!
+  ### Hooks should be singletons!
   A hook contract should service multiple trading pairs. One single hook contract, deployed once, should be able to serve both ETH/USDC and ETH/USDT
 
   To support multiple trading pairs/pools, most state variables should be stored in a **mapping** -- keyed by the `PoolId` type. This is the case for the `Counter` hook, which stores the swap count for *each pool*
@@ -153,7 +159,7 @@ You're ready to start developing your own logic! Get started with modifying the 
 
 ### Testing
 
-Unit tests will be the easiest way to validate your hook behavior. The template's provided test file setups external dependencies -- the v4 PoolManager, test tokens, swap routers, LP router, etc
+Unit tests will be the easiest way to validate your hook behavior. The template's provided test will setup external dependencies -- the v4 PoolManager, test tokens, swap routers, LP router, etc
 
 All you need to do is
 
@@ -231,14 +237,14 @@ Hook deployment failures are typically caused by incorrect flags or salt mining
 
 ## Conclusion and Future
 
-Hopefully with this guide, your hook development journey is lower friction! The possibilities are intentionally open-ended and ambigious, and I hope the template lets you focus on the hook implementation without getting in the way.
+Hopefully with this guide, your hook development journey is smooth! The possibilities are intentionally open-ended and ambigious, and the template should let you focus on the hook implementation without getting in the way.
 
-Even if `v4-template` is not for you, and you prefer rolling-your-own environment, I hope that the template offers examples during the Hook development process:
+Even if `v4-template` is not for you, and you prefer rolling-your-own environment, the template offers examples of the Hook development process:
 
 * [Hook Contract](https://github.com/saucepoint/v4-template/blob/main/src/Counter.sol)
-* [Hook contract deployment](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol#L30-L38) (for local testing, or testnets)
-* [Initialize a Pool with the Hook](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol#L40-L43)
+* [Hook contract deployment](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol#L30-L38) (for local testing)
+* [Initialize a Pool that calls the Hook](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol#L40-L43)
 * [Provisioning Liquidity](https://github.com/saucepoint/v4-template/blob/main/test/Counter.t.sol#L45-L50)
 * [Performing a swap](https://github.com/saucepoint/v4-template/blob/main/test/utils/HookTest.sol#L60-L69)
 
-Feedback and contributions are always welcome. For now, the template will strive to stay up to date with the latest v4 changes. And as new best-practices arise, expect the template to reflect and enshrine these patterns
+Feedback and contributions are always welcome. For now, the template will strive to stay up to date with the latest v4 changes. And as new best-practices arise, expect the template to reflect and enshrine these patterns!
