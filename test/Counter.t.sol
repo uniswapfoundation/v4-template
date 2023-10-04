@@ -43,10 +43,12 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
         manager.initialize(poolKey, SQRT_RATIO_1_1, ZERO_BYTES);
 
         // Provide liquidity to the pool
-        modifyPositionRouter.modifyPosition(poolKey, IPoolManager.ModifyPositionParams(-60, 60, 10 ether));
-        modifyPositionRouter.modifyPosition(poolKey, IPoolManager.ModifyPositionParams(-120, 120, 10 ether));
+        modifyPositionRouter.modifyPosition(poolKey, IPoolManager.ModifyPositionParams(-60, 60, 10 ether), ZERO_BYTES);
+        modifyPositionRouter.modifyPosition(poolKey, IPoolManager.ModifyPositionParams(-120, 120, 10 ether), ZERO_BYTES);
         modifyPositionRouter.modifyPosition(
-            poolKey, IPoolManager.ModifyPositionParams(TickMath.minUsableTick(60), TickMath.maxUsableTick(60), 10 ether)
+            poolKey,
+            IPoolManager.ModifyPositionParams(TickMath.minUsableTick(60), TickMath.maxUsableTick(60), 10 ether),
+            ZERO_BYTES
         );
     }
 
@@ -61,7 +63,7 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
         // Perform a test swap //
         int256 amount = 100;
         bool zeroForOne = true;
-        swap(poolKey, amount, zeroForOne);
+        swap(poolKey, amount, zeroForOne, ZERO_BYTES);
         // ------------------- //
 
         assertEq(counter.beforeSwapCount(poolId), 1);

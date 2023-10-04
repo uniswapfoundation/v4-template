@@ -56,7 +56,7 @@ contract HookTest is Test {
         token1.approve(address(swapRouter), amount);
     }
 
-    function swap(PoolKey memory key, int256 amountSpecified, bool zeroForOne) internal {
+    function swap(PoolKey memory key, int256 amountSpecified, bool zeroForOne, bytes memory hookData) internal {
         IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
             zeroForOne: zeroForOne,
             amountSpecified: amountSpecified,
@@ -66,6 +66,6 @@ contract HookTest is Test {
         PoolSwapTest.TestSettings memory testSettings =
             PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true});
 
-        swapRouter.swap(key, params, testSettings);
+        swapRouter.swap(key, params, testSettings, hookData);
     }
 }
