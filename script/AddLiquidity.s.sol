@@ -29,9 +29,6 @@ contract CreateLiquidityExampleInputs{
             hooks: IHooks(address(0x3cC6198C897c87353Cb89bCCBd9b5283A0042a14))
         });
 
-        //will need to add approvals for both tokens but b/c mock tokens don't have them it's okay
-        //code here
-
         // approve tokens to the LP Router
         IERC20(token0).approve(address(manager), type(uint256).max);
         IERC20(token1).approve(address(manager), type(uint256).max);
