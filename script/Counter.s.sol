@@ -21,6 +21,7 @@ contract CounterScript is Script {
     function run() public {
         vm.broadcast();
         PoolManager manager = new PoolManager(500000);
+        console.log("Manager deployed at %s", address(manager));
 
         // hook contracts must have specific flags encoded in the address
         uint160 flags = uint160(
@@ -35,8 +36,10 @@ contract CounterScript is Script {
         // Deploy the hook using CREATE2
         vm.broadcast();
         Counter counter = new Counter{salt: salt}(IPoolManager(address(manager)));
+        console.log("Counter deployed at %s", address(counter));
         require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
 
+        
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
         new PoolModifyPositionTest(IPoolManager(address(manager)));
