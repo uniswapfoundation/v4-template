@@ -20,8 +20,8 @@ contract CounterScript is Script {
 
     function run() public {
         vm.broadcast();
-        PoolManager manager = new PoolManager(500000);
-        console.log("Manager deployed at %s", address(manager));
+        // PoolManager manager = new PoolManager(500000);
+        // console.log("Manager deployed at %s", address(manager));
 
         // hook contracts must have specific flags encoded in the address
         uint160 flags = uint160(
@@ -31,20 +31,20 @@ contract CounterScript is Script {
 
         // Mine a salt that will produce a hook address with the correct flags
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, flags, 1000, type(Counter).creationCode, abi.encode(address(manager)));
+            HookMiner.find(CREATE2_DEPLOYER, flags, 1000, type(Counter).creationCode, abi.encode(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9)));
 
         // Deploy the hook using CREATE2
         vm.broadcast();
-        Counter counter = new Counter{salt: salt}(IPoolManager(address(manager)));
+        Counter counter = new Counter{salt: salt}(IPoolManager(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9)));
         console.log("Counter deployed at %s", address(counter));
         require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
 
         
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        new PoolModifyPositionTest(IPoolManager(address(manager)));
-        new PoolSwapTest(IPoolManager(address(manager)));
-        new PoolDonateTest(IPoolManager(address(manager)));
+        // new PoolModifyPositionTest(IPoolManager(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9)));
+        // new PoolSwapTest(IPoolManager(address(manager)));
+        // new PoolDonateTest(IPoolManager(address(manager)));
         vm.stopBroadcast();
     }
 }

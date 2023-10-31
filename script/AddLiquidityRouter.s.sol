@@ -16,8 +16,8 @@ contract CreateLiquidityExampleInputs {
     PoolModifyPositionTest lpRouter = new PoolModifyPositionTest(IPoolManager(0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82));
 
     function run() external {
-        address token0 = address(0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1);//mUSDC deployed locally
-        address token1 = address(0x59b670e9fA9D0A427751Af201D676719a970857b);//mUNI deployed locally
+        address token0 = address(0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1);//mUSDC deployed locally, you paste your contract here for deploying
+        address token1 = address(0x59b670e9fA9D0A427751Af201D676719a970857b);//mUNI deployed locally, you paste your contract here for deploying
 
         // Using a hookless pool
         PoolKey memory pool = PoolKey({
