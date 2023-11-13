@@ -66,13 +66,13 @@ forge script script/CounterDeploy.s.sol \
 Because V4 is still in testing mode, most networks don't have liquidity pools live on V4 testnets. To help you test, we recommend launching your own test tokens and expirementing with them that. We've included in the templace a Mock UNI and Mock USDC contract for easier testing. You can deploy the contracts and when you do you'll have 1 million mock tokens to test with for each contract. To deploy you can follow the script below.
 
 ```
-forge create src/mUNI.sol:MockUNI \
+forge create script/mocks/mUNI.sol:MockUNI \
 --rpc-url [your_rpc_url_here] \
 --private-key [your_private_key_on_goerli_here] \
 ```
 
 ```
-forge create src/mUSDC.sol:MockUSDC \
+forge create script/mocks/mUSDC.sol:MockUSDC \
 --rpc-url [your_rpc_url_here] \
 --private-key [your_private_key_on_goerli_here] \
 ```
