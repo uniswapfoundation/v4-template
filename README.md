@@ -5,6 +5,13 @@
 
 1. The example hook [Counter.sol](src/Counter.sol) demonstrates the `beforeSwap()` and `afterSwap()` hooks
 2. The test template [Counter.t.sol](test/Counter.t.sol) preconfigures the v4 pool manager, test tokens, and test liquidity.
+3. The scripts in the v4-template are written so that you can
+   - Deploy a hook contract
+   - Create a liquidity pool on V4
+   - Add liquidity to a pool
+   - Swap tokens on a pool
+5. The scripts in the v4-template were written for the Goerli Testnet. If working on another network please adjust the scripts accordingly.
+6. This template is built using Foundry.
 
 ---
 
@@ -31,6 +38,44 @@ forge script script/Counter.s.sol \
     --broadcast
 ```
 
+### Goerli Testnet
+
+For testing on Goerli Testnet the Uniswap Foundation team has deployed a slimmed down version of the V4 contract (due to current contract size limits) on the network.
+
+The relevant addresses for testing on Goerli are the ones below
+
+```
+POOL_MANAGER = 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
+POOL_MODIFY_POSITION_TEST = 0x83feDBeD11B3667f40263a88e8435fca51A03F8C
+SWAP_ROUTER = 0xF8AADC65Bf1Ec1645ef931317fD48ffa734a185c
+```
+
+To run scripts with Goerli on Foundry you must include an RPC-URL for the Goerli Testnet. You can add your own by going to [Infura](https://www.infura.io/), signing up for an account, and adding your RPC-URL for Goerli.
+
+Once you have your RPC-URL you can run this script below (update the values first) to deploy your own hook contract to Goerli.
+
+```
+forge script script/CounterDeploy.s.sol \
+--rpc-url [your_rpc_url_here] \
+--private-key [your_private_key_on_goerli_here] \
+--broadcast
+```
+
+### *Deploying your own Tokens For Testing*
+
+Because V4 is still in testing mode, most networks don't have liquidity pools live on V4 testnets. To help you test, we recommend launching your own test tokens and expirementing with them that. We've included in the templace a Mock UNI and Mock USDC contract for easier testing. You can deploy the contracts and when you do you'll have 1 million mock tokens to test with for each contract. To deploy you can follow the script below.
+
+```
+forge create src/mUNI.sol:MockUNI \
+--rpc-url [your_rpc_url_here] \
+--private-key [your_private_key_on_goerli_here] \
+```
+
+```
+forge create src/mUSDC.sol:MockUSDC \
+--rpc-url [your_rpc_url_here] \
+--private-key [your_private_key_on_goerli_here] \
+```
 ---
 
 ## Troubleshooting
