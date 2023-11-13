@@ -11,10 +11,16 @@ import {PoolId} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 
 
 contract PoolInitializeExampleInputs {
-    using CurrencyLibrary for Currency;
+    //The following is for creating a pool without a hook
 
+    
+    using CurrencyLibrary for Currency;
+    //addresses with contracts deployed
+    address constant GOERLI_POOLMANAGER = address(0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b); //pool manager deployed to GOERLI
+    address constant MUNI_ADDRESS = address(0xbD97BF168FA913607b996fab823F88610DCF7737); //mUNI deployed to GOERLI -- insert your own contract address here
+    address constant MUSDC_ADDRESS = address(0xa468864e673a807572598AB6208E49323484c6bF); //mUSDC deployed to GOERLI -- insert your own contract address here
     // set the pool manager address
-    IPoolManager manager = IPoolManager(0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82);
+    IPoolManager manager = IPoolManager(GOERLI_POOLMANAGER);
 
     event Initialize(
         PoolId indexed id,
@@ -26,15 +32,13 @@ contract PoolInitializeExampleInputs {
     );
 
 
-    // 0x3c8B37Cb343Da423aCd0634B9Da6e247219AaDc7
-
     // / @notice Initialize a hookless pool:
     // /     0.05% swap fee
     // /     tick spacing of 10
     // /     starting price of 1:1
     function run() external {
-        address token0 = address(0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1);//usdc deploy locally
-        address token1 = address(0x59b670e9fA9D0A427751Af201D676719a970857b);//uni deployed locally
+        address token0 = address(MUSDC_ADDRESS);
+        address token1 = address(MUNI_ADDRESS);
         uint24 swapFee = 500;
         int24 tickSpacing = 10;
 
@@ -51,12 +55,7 @@ contract PoolInitializeExampleInputs {
             tickSpacing: tickSpacing,
             hooks: IHooks(address(0x0))
         });
+
         manager.initialize(pool, startingPrice, hookData);
     }
-
-    // / @notice Initialize a pool with a custom hook:
-    // /     0.30% swap fee
-    // /     tick spacing of 60
-    // /     starting price of 1:1
-    // /     hook's beforeInitialize() requires providing a timestamp
 }

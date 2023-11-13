@@ -15,13 +15,12 @@ import {HookMiner} from "../test/utils/HookMiner.sol";
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
 contract CounterScript is Script {
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
+    address constant GOERLI_POOLMANAGER = address(0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b);
 
     function setUp() public {}
 
     function run() public {
         vm.broadcast();
-        // PoolManager manager = new PoolManager(500000);
-        // console.log("Manager deployed at %s", address(manager));
 
         // hook contracts must have specific flags encoded in the address
         uint160 flags = uint160(
@@ -31,20 +30,16 @@ contract CounterScript is Script {
 
         // Mine a salt that will produce a hook address with the correct flags
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, flags, 1000, type(Counter).creationCode, abi.encode(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9)));
+            HookMiner.find(CREATE2_DEPLOYER, flags, 1000, type(Counter).creationCode, abi.encode(address(GOERLI_POOLMANAGER)));
 
         // Deploy the hook using CREATE2
         vm.broadcast();
-        Counter counter = new Counter{salt: salt}(IPoolManager(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9)));
-        console.log("Counter deployed at %s", address(counter));
+        Counter counter = new Counter{salt: salt}(IPoolManager(address(GOERLI_POOLMANAGER)));
         require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
 
         
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        // new PoolModifyPositionTest(IPoolManager(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9)));
-        // new PoolSwapTest(IPoolManager(address(manager)));
-        // new PoolDonateTest(IPoolManager(address(manager)));
         vm.stopBroadcast();
     }
 }
