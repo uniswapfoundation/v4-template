@@ -29,15 +29,15 @@ contract CounterScript is Script {
         );
 
         // Mine a salt that will produce a hook address with the correct flags
-        (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, flags, 1000, type(Counter).creationCode, abi.encode(address(GOERLI_POOLMANAGER)));
+        (address hookAddress, bytes32 salt) = HookMiner.find(
+            CREATE2_DEPLOYER, flags, 1000, type(Counter).creationCode, abi.encode(address(GOERLI_POOLMANAGER))
+        );
 
         // Deploy the hook using CREATE2
         vm.broadcast();
         Counter counter = new Counter{salt: salt}(IPoolManager(address(GOERLI_POOLMANAGER)));
         require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
 
-        
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
         vm.stopBroadcast();

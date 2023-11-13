@@ -10,7 +10,6 @@ import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 
-
 contract PoolInitScript is Script {
     //this script is for intializing a pool with a hook in it
     using CurrencyLibrary for Currency;
@@ -20,7 +19,6 @@ contract PoolInitScript is Script {
     address constant MUNI_ADDRESS = address(0xbD97BF168FA913607b996fab823F88610DCF7737); //mUNI deployed to GOERLI -- insert your own contract address here
     address constant MUSDC_ADDRESS = address(0xa468864e673a807572598AB6208E49323484c6bF); //mUSDC deployed to GOERLI -- insert your own contract address here
     address constant HOOK_ADDRESS = address(0x3CA2cD9f71104a6e1b67822454c725FcaeE35fF6); //address of the hook contract deployed to goerli -- you can use this hook address or deploy your own!
-
 
     // set the pool manager address
     IPoolManager manager = IPoolManager(GOERLI_POOLMANAGER);
@@ -61,6 +59,5 @@ contract PoolInitScript is Script {
         // Emit the pool ID so you can easily find it in the logs
         vm.broadcast();
         manager.initialize(pool, startingPrice, hookData);
-
     }
 }

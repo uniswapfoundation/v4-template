@@ -9,13 +9,12 @@ import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {PoolId} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 
-
 contract PoolInitializeExampleInputs {
     //The following is for creating a pool without a hook
 
-    
     using CurrencyLibrary for Currency;
     //addresses with contracts deployed
+
     address constant GOERLI_POOLMANAGER = address(0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b); //pool manager deployed to GOERLI
     address constant MUNI_ADDRESS = address(0xbD97BF168FA913607b996fab823F88610DCF7737); //mUNI deployed to GOERLI -- insert your own contract address here
     address constant MUSDC_ADDRESS = address(0xa468864e673a807572598AB6208E49323484c6bF); //mUSDC deployed to GOERLI -- insert your own contract address here
@@ -30,7 +29,6 @@ contract PoolInitializeExampleInputs {
         int24 tickSpacing,
         IHooks hooks
     );
-
 
     // / @notice Initialize a hookless pool:
     // /     0.05% swap fee
