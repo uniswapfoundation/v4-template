@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.22;
 
 /// @title HookMiner - a library for mining hook addresses
 /// @dev This library is intended for `forge test` environments. There may be gotchas when using salts in `forge script` or `forge create`
@@ -14,29 +14,22 @@ library HookMiner {
     /// @param deployer The address that will deploy the hook. In `forge test`, this will be the test contract `address(this)` or the pranking address
     ///                 In `forge script`, this should be `0x4e59b44847b379578588920cA78FbF26c0B4956C` (CREATE2 Deployer Proxy)
     /// @param flags The desired flags for the hook address
-    /// @param seed Use 0 for as a default. An optional starting salt when linearly searching for a salt. Useful for finding salts for multiple hooks with the same flags
     /// @param creationCode The creation code of a hook contract. Example: `type(Counter).creationCode`
     /// @param constructorArgs The encoded constructor arguments of a hook contract. Example: `abi.encode(address(manager))`
     /// @return hookAddress salt and corresponding address that was found. The salt can be used in `new Hook{salt: salt}(<constructor arguments>)`
-    function find(
-        address deployer,
-        uint160 flags,
-        uint256 seed,
-        bytes memory creationCode,
-        bytes memory constructorArgs
-    ) external pure returns (address, bytes32) {
+    function find(address deployer, uint160 flags, bytes memory creationCode, bytes memory constructorArgs)
+        external
+        view
+        returns (address, bytes32)
+    {
         address hookAddress;
         bytes memory creationCodeWithArgs = abi.encodePacked(creationCode, constructorArgs);
 
-        uint256 salt = seed;
-        for (salt; salt < MAX_LOOP;) {
+        uint256 salt;
+        for (salt; salt < MAX_LOOP; salt++) {
             hookAddress = computeAddress(deployer, salt, creationCodeWithArgs);
-            if (uint160(hookAddress) & FLAG_MASK == flags) {
+            if (uint160(hookAddress) & FLAG_MASK == flags && hookAddress.code.length == 0) {
                 return (hookAddress, bytes32(salt));
-            }
-
-            unchecked {
-                ++salt;
             }
         }
         revert("HookMiner: could not find salt");

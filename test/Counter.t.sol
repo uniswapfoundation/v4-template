@@ -33,7 +33,7 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
                 | Hooks.AFTER_MODIFY_POSITION_FLAG
         );
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(address(this), flags, 0, type(Counter).creationCode, abi.encode(address(manager)));
+            HookMiner.find(address(this), flags, type(Counter).creationCode, abi.encode(address(manager)));
         counter = new Counter{salt: salt}(IPoolManager(address(manager)));
         require(address(counter) == hookAddress, "CounterTest: hook address mismatch");
 
