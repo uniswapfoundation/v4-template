@@ -11,8 +11,6 @@ import {PoolDonateTest} from "@uniswap/v4-core/contracts/test/PoolDonateTest.sol
 import {Counter} from "../src/Counter.sol";
 import {HookMiner} from "../test/utils/HookMiner.sol";
 
-/// @notice Forge script for deploying v4 & hooks to **anvil**
-/// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
 contract CounterScript is Script {
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
     address constant GOERLI_POOLMANAGER = address(0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b);
@@ -20,8 +18,6 @@ contract CounterScript is Script {
     function setUp() public {}
 
     function run() public {
-        vm.broadcast();
-
         // hook contracts must have specific flags encoded in the address
         uint160 flags = uint160(
             Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
@@ -37,9 +33,5 @@ contract CounterScript is Script {
         vm.broadcast();
         Counter counter = new Counter{salt: salt}(IPoolManager(address(GOERLI_POOLMANAGER)));
         require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
-
-        // Additional helpers for interacting with the pool
-        vm.startBroadcast();
-        vm.stopBroadcast();
     }
 }

@@ -11,7 +11,6 @@ import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Curren
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 
 contract PoolInitScript is Script {
-    //this script is for intializing a pool with a hook in it
     using CurrencyLibrary for Currency;
 
     //addresses with contracts deployed
@@ -20,26 +19,19 @@ contract PoolInitScript is Script {
     address constant MUSDC_ADDRESS = address(0xa468864e673a807572598AB6208E49323484c6bF); //mUSDC deployed to GOERLI -- insert your own contract address here
     address constant HOOK_ADDRESS = address(0x3CA2cD9f71104a6e1b67822454c725FcaeE35fF6); //address of the hook contract deployed to goerli -- you can use this hook address or deploy your own!
 
-    // set the pool manager address
     IPoolManager manager = IPoolManager(GOERLI_POOLMANAGER);
 
-    // / @notice Initialize a pool with a custom hook:
-    // /     0.40% swap fee
-    // /     tick spacing of 60
-    // /     starting price of 1:1
-    // /     hook's beforeInitialize() requires providing a timestamp
     function run() external {
         address token0 = address(MUSDC_ADDRESS);
         address token1 = address(MUNI_ADDRESS);
-        address hook = address(HOOK_ADDRESS); // prefix indicates the hook functions
+        address hook = address(HOOK_ADDRESS);
         uint24 swapFee = 4000;
         int24 tickSpacing = 10;
 
         // floor(sqrt(1) * 2^96)
         uint160 startingPrice = 79228162514264337593543950336;
 
-        // Assume the custom hook requires a timestamp when initializing it
-        bytes memory hookData = abi.encode(block.timestamp);
+        bytes memory hookData = new bytes(0);
 
         PoolKey memory pool = PoolKey({
             currency0: Currency.wrap(token0),
@@ -56,7 +48,6 @@ contract PoolInitScript is Script {
         console.log("Pool ID Below");
         console.logBytes32(bytes32(idBytes));
 
-        // Emit the pool ID so you can easily find it in the logs
         vm.broadcast();
         manager.initialize(pool, startingPrice, hookData);
     }

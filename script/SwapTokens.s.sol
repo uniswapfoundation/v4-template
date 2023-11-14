@@ -12,29 +12,28 @@ import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Curren
 import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 
 contract SwapExampleScript is Script {
-    // set the router address
     // PoolSwapTest Contract address on Goerli
     PoolSwapTest swapRouter = PoolSwapTest(0xF8AADC65Bf1Ec1645ef931317fD48ffa734a185c);
 
     address constant MUNI_ADDRESS = address(0xbD97BF168FA913607b996fab823F88610DCF7737); //-- insert your own contract address here -- mUNI deployed to GOERLI
     address constant MUSDC_ADDRESS = address(0xa468864e673a807572598AB6208E49323484c6bF); //-- insert your own contract address here -- mUSDC deployed to GOERLI
-    address constant HOOK_ADDRESS = address(0x3CA2cD9f71104a6e1b67822454c725FcaeE35fF6); //address of the hook contract deployed to goerli -- you can use this hook address or deploy your own!
+    address constant HOOK_ADDRESS = address(0x3CA2cD9f71104a6e1b67822454c725FcaeE35fF6); // address of the hook contract deployed to goerli -- you can use this hook address or deploy your own!
 
     // slippage tolerance to allow for unlimited price impact
     uint160 public constant MIN_PRICE_LIMIT = TickMath.MIN_SQRT_RATIO + 1;
     uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_RATIO - 1;
 
     function run() external {
-        address token0 = address(MUSDC_ADDRESS); //mUSDC deployed locally, you paste your contract here for deploying
-        address token1 = address(MUNI_ADDRESS); //mUNI deployed locally, you paste your contract here for deploying
-        address hook = address(HOOK_ADDRESS); // prefix indicates the hook functions
+        address token0 = address(MUSDC_ADDRESS); // mUSDC deployed locally, you paste your contract here for deploying
+        address token1 = address(MUNI_ADDRESS); // mUNI deployed locally, you paste your contract here for deploying
+        address hook = address(HOOK_ADDRESS);
         uint24 swapFee = 4000;
         int24 tickSpacing = 10;
 
         // Using a hooked pool
         PoolKey memory pool = PoolKey({
-            currency0: Currency.wrap(token0), //update to wrap
-            currency1: Currency.wrap(token1), //update to wrap
+            currency0: Currency.wrap(token0),
+            currency1: Currency.wrap(token1),
             fee: swapFee,
             tickSpacing: tickSpacing,
             hooks: IHooks(hook)
@@ -47,7 +46,7 @@ contract SwapExampleScript is Script {
         IERC20(token1).approve(address(swapRouter), type(uint256).max);
 
         // ---------------------------- //
-        // Swap 1e18 token0 into token1
+        // Swap 100e18 token0 into token1 //
         // ---------------------------- //
         bool zeroForOne = true;
         IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
@@ -61,7 +60,7 @@ contract SwapExampleScript is Script {
         PoolSwapTest.TestSettings memory testSettings =
             PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true});
 
-        bytes memory hookData = abi.encode(block.timestamp);
+        bytes memory hookData = new bytes(0);
         vm.broadcast();
         swapRouter.swap(pool, params, testSettings, hookData);
     }
