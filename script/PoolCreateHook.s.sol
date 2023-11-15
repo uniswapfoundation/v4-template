@@ -31,7 +31,7 @@ contract PoolInitScript is Script {
         // floor(sqrt(1) * 2^96)
         uint160 startingPrice = 79228162514264337593543950336;
 
-        bytes memory hookData = new bytes(0);
+        bytes memory hookData = abi.encode(block.timestamp);
 
         PoolKey memory pool = PoolKey({
             currency0: Currency.wrap(token0),
