@@ -42,7 +42,11 @@ contract CreateLiquidityScript is Script {
         vm.broadcast();
         IERC20(token1).approve(address(lpRouter), 1000e18);
 
-        bytes memory hookData = new bytes(0);
+        //set hookdata as not empty if there is a hook on the pool
+        bytes memory hookData = abi.encode(block.timestamp);
+
+        //set the below hookData if there is no hook on the pool
+        //bytes memory hookData = new bytes(0);
 
         // logging the pool ID
         PoolId id = PoolIdLibrary.toId(pool);
