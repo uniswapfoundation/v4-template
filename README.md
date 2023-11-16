@@ -6,12 +6,23 @@
 1. The example hook [Counter.sol](src/Counter.sol) demonstrates the `beforeSwap()` and `afterSwap()` hooks
 2. The test template [Counter.t.sol](test/Counter.t.sol) preconfigures the v4 pool manager, test tokens, and test liquidity.
 3. The scripts in the v4-template are written so that you can
+   - Designed for Goerli, but usable for other networks
    - Deploy a hook contract
    - Create a liquidity pool on V4
    - Add liquidity to a pool
    - Swap tokens on a pool
-5. The scripts in the v4-template were written for the Goerli Testnet. If working on another network please adjust the scripts accordingly.
-6. This template is built using Foundry.
+6. This template is built using Foundry
+
+<details>
+<summary><b>NOTE: v4-core versioning</b></summary>
+
+Previous versions of `v4-template` accessed `v4-core` as the nested dependency of `v4-periphery`. With recent core activity, `v4-periphery` is slightly out of sync.
+
+As of 11/16/2023, `v4-template` has pinned a version of `v4-core` that is most similar to the testnet deployments.
+
+If there are issues, please do not hesistate on reaching out to [saucepoint](https://t.me/saucepoint)
+
+</details>
 
 ---
 
@@ -38,13 +49,14 @@ forge script script/Anvil.s.sol \
     --broadcast
 ```
 
-### Goerli Testnet
+<details>
+<summary><h3>Goerli Testnet</h3></summary>
 
 For testing on Goerli Testnet the Uniswap Foundation team has deployed a slimmed down version of the V4 contract (due to current contract size limits) on the network.
 
 The relevant addresses for testing on Goerli are the ones below
 
-```
+```bash
 POOL_MANAGER = 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
 POOL_MODIFY_POSITION_TEST = 0x83feDBeD11B3667f40263a88e8435fca51A03F8C
 SWAP_ROUTER = 0xF8AADC65Bf1Ec1645ef931317fD48ffa734a185c
@@ -56,29 +68,34 @@ Once you have your RPC-URL you can run this script below (update the values firs
 
 ```
 forge script script/CounterDeploy.s.sol \
---rpc-url [your_rpc_url_here] \
+--rpc-url https://rpc.ankr.com/eth_goerli \
 --private-key [your_private_key_on_goerli_here] \
 --broadcast
 ```
 
 ### *Deploying your own Tokens For Testing*
 
-Because V4 is still in testing mode, most networks don't have liquidity pools live on V4 testnets. To help you test, we recommend launching your own test tokens and expirementing with them that. We've included in the templace a Mock UNI and Mock USDC contract for easier testing. You can deploy the contracts and when you do you'll have 1 million mock tokens to test with for each contract. To deploy you can follow the script below.
+Because V4 is still in testing mode, most networks don't have liquidity pools live on V4 testnets. We recommend launching your own test tokens and expirementing with them that. We've included in the templace a Mock UNI and Mock USDC contract for easier testing. You can deploy the contracts and when you do you'll have 1 million mock tokens to test with for each contract. See deployment commands below
 
 ```
 forge create script/mocks/mUNI.sol:MockUNI \
 --rpc-url [your_rpc_url_here] \
---private-key [your_private_key_on_goerli_here] \
+--private-key [your_private_key_on_goerli_here]
 ```
 
 ```
 forge create script/mocks/mUSDC.sol:MockUSDC \
 --rpc-url [your_rpc_url_here] \
---private-key [your_private_key_on_goerli_here] \
+--private-key [your_private_key_on_goerli_here]
 ```
+
+</details>
+
 ---
 
-## Troubleshooting
+<details>
+<summary><h2>Troubleshooting</h2></summary>
+
 
 
 ### *Permission Denied*
@@ -100,6 +117,8 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
     * In **forge test**: the *deploye*r for: `new Hook{salt: salt}(...)` and `HookMiner.find(deployer, ...)` are the same. This will be `address(this)`. If using `vm.prank`, the deployer will be the pranking address
     * In **forge script**: the deployer must be the CREATE2 Proxy: `0x4e59b44847b379578588920cA78FbF26c0B4956C`
         * If anvil does not have the CREATE2 deployer, your foundry may be out of date. You can update it with `foundryup`
+
+</details>
 
 ---
 
