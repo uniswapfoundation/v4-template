@@ -96,7 +96,6 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 1. Verify the flags are in agreement:
     * `getHookCalls()` returns the correct flags
     * `flags` provided to `HookMiner.find(...)`
-    * In obscure cases where you're deploying multiple hooks (with the same flags), try setting `seed=1000` for ` HookMiner.find`
 2. Verify salt mining is correct:
     * In **forge test**: the *deploye*r for: `new Hook{salt: salt}(...)` and `HookMiner.find(deployer, ...)` are the same. This will be `address(this)`. If using `vm.prank`, the deployer will be the pranking address
     * In **forge script**: the deployer must be the CREATE2 Proxy: `0x4e59b44847b379578588920cA78FbF26c0B4956C`
