@@ -9,7 +9,7 @@ import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
-import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
+import {Deployers} from "@uniswap/v4-core/contracts/../test/utils/Deployers.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {HookTest} from "./utils/HookTest.sol";
 import {Counter} from "../src/Counter.sol";
