@@ -22,9 +22,9 @@ contract CreatePoolScript is Script {
     IPoolManager manager = IPoolManager(GOERLI_POOLMANAGER);
 
     function run() external {
-        address token0 = address(MUSDC_ADDRESS);
-        address token1 = address(MUNI_ADDRESS);
-        address hook = address(HOOK_ADDRESS);
+        // sort the tokens!
+        address token0 = uint160(MUSDC_ADDRESS) < uint160(MUNI_ADDRESS) ? MUSDC_ADDRESS : MUNI_ADDRESS;
+        address token1 = uint160(MUSDC_ADDRESS) < uint160(MUNI_ADDRESS) ? MUNI_ADDRESS : MUSDC_ADDRESS;
         uint24 swapFee = 4000;
         int24 tickSpacing = 10;
 
@@ -38,7 +38,7 @@ contract CreatePoolScript is Script {
             currency1: Currency.wrap(token1),
             fee: swapFee,
             tickSpacing: tickSpacing,
-            hooks: IHooks(hook)
+            hooks: IHooks(HOOK_ADDRESS)
         });
 
         // Turn the Pool into an ID so you can use it for modifying positions, swapping, etc.
