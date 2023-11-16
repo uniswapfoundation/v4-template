@@ -11,7 +11,7 @@ import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 
-contract SwapExampleScript is Script {
+contract SwapScript is Script {
     // PoolSwapTest Contract address on Goerli
     PoolSwapTest swapRouter = PoolSwapTest(0xF8AADC65Bf1Ec1645ef931317fD48ffa734a185c);
 
@@ -24,9 +24,8 @@ contract SwapExampleScript is Script {
     uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_RATIO - 1;
 
     function run() external {
-        address token0 = address(MUSDC_ADDRESS); // mUSDC deployed locally, you paste your contract here for deploying
-        address token1 = address(MUNI_ADDRESS); // mUNI deployed locally, you paste your contract here for deploying
-        address hook = address(HOOK_ADDRESS);
+        address token0 = uint160(MUSDC_ADDRESS) < uint160(MUNI_ADDRESS) ? MUSDC_ADDRESS : MUNI_ADDRESS;
+        address token1 = uint160(MUSDC_ADDRESS) < uint160(MUNI_ADDRESS) ? MUNI_ADDRESS : MUSDC_ADDRESS;
         uint24 swapFee = 4000;
         int24 tickSpacing = 10;
 
@@ -36,7 +35,7 @@ contract SwapExampleScript is Script {
             currency1: Currency.wrap(token1),
             fee: swapFee,
             tickSpacing: tickSpacing,
-            hooks: IHooks(hook)
+            hooks: IHooks(HOOK_ADDRESS)
         });
 
         // approve tokens to the swap router

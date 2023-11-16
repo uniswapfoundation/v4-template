@@ -11,7 +11,7 @@ import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Curren
 import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 
-contract CreateLiquidityScript is Script {
+contract AddLiquidityScript is Script {
     using CurrencyLibrary for Currency;
 
     address constant GOERLI_POOLMANAGER = address(0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b); // pool manager deployed to GOERLI
@@ -22,9 +22,9 @@ contract CreateLiquidityScript is Script {
     PoolModifyPositionTest lpRouter = PoolModifyPositionTest(address(0x83feDBeD11B3667f40263a88e8435fca51A03F8C));
 
     function run() external {
-        address token0 = address(MUSDC_ADDRESS); // mUSDC deployed locally, you paste your contract here for deploying
-        address token1 = address(MUNI_ADDRESS); // mUNI deployed locally, you paste your contract here for deploying
-        address hook = address(HOOK_ADDRESS);
+        // sort the tokens!
+        address token0 = uint160(MUSDC_ADDRESS) < uint160(MUNI_ADDRESS) ? MUSDC_ADDRESS : MUNI_ADDRESS;
+        address token1 = uint160(MUSDC_ADDRESS) < uint160(MUNI_ADDRESS) ? MUNI_ADDRESS : MUSDC_ADDRESS;
         uint24 swapFee = 4000; // 0.40% fee tier
         int24 tickSpacing = 10;
 
@@ -33,7 +33,7 @@ contract CreateLiquidityScript is Script {
             currency1: Currency.wrap(token1),
             fee: swapFee,
             tickSpacing: tickSpacing,
-            hooks: IHooks(hook)
+            hooks: IHooks(HOOK_ADDRESS)
         });
 
         // approve tokens to the LP Router
@@ -42,11 +42,8 @@ contract CreateLiquidityScript is Script {
         vm.broadcast();
         IERC20(token1).approve(address(lpRouter), 1000e18);
 
-        //set hookdata as not empty if there is a hook on the pool
-        bytes memory hookData = abi.encode(block.timestamp);
-
-        //set the below hookData if there is no hook on the pool
-        //bytes memory hookData = new bytes(0);
+        // optionally specify hookData if the hook depends on arbitrary data for liquidity modification
+        bytes memory hookData = new bytes(0);
 
         // logging the pool ID
         PoolId id = PoolIdLibrary.toId(pool);
