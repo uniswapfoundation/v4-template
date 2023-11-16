@@ -11,7 +11,7 @@ import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 
-contract SwapExampleScript is Script {
+contract SwapScript is Script {
     // PoolSwapTest Contract address on Goerli
     PoolSwapTest swapRouter = PoolSwapTest(0xF8AADC65Bf1Ec1645ef931317fD48ffa734a185c);
 

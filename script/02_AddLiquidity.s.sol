@@ -11,7 +11,7 @@ import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Curren
 import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 
-contract CreateLiquidityScript is Script {
+contract AddLiquidityScript is Script {
     using CurrencyLibrary for Currency;
 
     address constant GOERLI_POOLMANAGER = address(0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b); // pool manager deployed to GOERLI

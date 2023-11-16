@@ -10,7 +10,7 @@ import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 
-contract PoolInitScript is Script {
+contract CreatePoolScript is Script {
     using CurrencyLibrary for Currency;
 
     //addresses with contracts deployed

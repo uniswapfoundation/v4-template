@@ -62,12 +62,10 @@ POOL_MODIFY_POSITION_TEST = 0x83feDBeD11B3667f40263a88e8435fca51A03F8C
 SWAP_ROUTER = 0xF8AADC65Bf1Ec1645ef931317fD48ffa734a185c
 ```
 
-To run scripts with Goerli on Foundry you must include an RPC-URL for the Goerli Testnet. You can add your own by going to [Infura](https://www.infura.io/), signing up for an account, and adding your RPC-URL for Goerli.
-
-Once you have your RPC-URL you can run this script below (update the values first) to deploy your own hook contract to Goerli.
+Update the following command with your own private key:
 
 ```
-forge script script/CounterDeploy.s.sol \
+forge script script/00_Counter.s.sol \
 --rpc-url https://rpc.ankr.com/eth_goerli \
 --private-key [your_private_key_on_goerli_here] \
 --broadcast
