@@ -8,6 +8,7 @@ import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
+import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
 import {Deployers} from "@uniswap/v4-core/contracts/../test/utils/Deployers.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
@@ -63,8 +64,10 @@ contract CounterTest is HookTest, Deployers, GasSnapshot {
         // Perform a test swap //
         int256 amount = 100;
         bool zeroForOne = true;
-        swap(poolKey, amount, zeroForOne, ZERO_BYTES);
+        BalanceDelta swapDelta = swap(poolKey, amount, zeroForOne, ZERO_BYTES);
         // ------------------- //
+
+        assertEq(int256(swapDelta.amount0()), amount);
 
         assertEq(counter.beforeSwapCount(poolId), 1);
         assertEq(counter.afterSwapCount(poolId), 1);
