@@ -44,7 +44,7 @@ forge test
 
 ### Local Development (Anvil)
 
-Because v4 exceeds the bytecode limit of Ethereum and it's *business licensed*, we can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/).
+Because v4 depends on TSTORE and its *business licensed*, you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
 
 ```bash
 # start anvil
