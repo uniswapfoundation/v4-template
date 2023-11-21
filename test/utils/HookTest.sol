@@ -24,6 +24,7 @@ contract HookTest is Test {
     TestERC20 token0;
     TestERC20 token1;
 
+    bytes constant ZERO_BYTES = new bytes(0);
     uint160 public constant MIN_PRICE_LIMIT = TickMath.MIN_SQRT_RATIO + 1;
     uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_RATIO - 1;
 
