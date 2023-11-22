@@ -6,6 +6,7 @@ import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {PoolManager} from "@uniswap/v4-core/contracts/PoolManager.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
+import {PoolInitializeTest} from "@uniswap/v4-core/contracts/test/PoolInitializeTest.sol";
 import {PoolModifyPositionTest} from "@uniswap/v4-core/contracts/test/PoolModifyPositionTest.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/contracts/test/PoolSwapTest.sol";
 import {PoolDonateTest} from "@uniswap/v4-core/contracts/test/PoolDonateTest.sol";
@@ -47,12 +48,13 @@ contract CounterScript is Script {
 
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        (PoolModifyPositionTest lpRouter, PoolSwapTest swapRouter,) = deployRouters(manager);
+        (PoolInitializeTest initializeRouter, PoolModifyPositionTest lpRouter, PoolSwapTest swapRouter,) =
+            deployRouters(manager);
         vm.stopBroadcast();
 
         // test the lifecycle (create pool, add liquidity, swap)
         vm.startBroadcast();
-        testLifecycle(address(counter), manager, lpRouter, swapRouter);
+        testLifecycle(address(counter), initializeRouter, lpRouter, swapRouter);
         vm.stopBroadcast();
     }
 
@@ -65,8 +67,14 @@ contract CounterScript is Script {
 
     function deployRouters(IPoolManager manager)
         internal
-        returns (PoolModifyPositionTest lpRouter, PoolSwapTest swapRouter, PoolDonateTest donateRouter)
+        returns (
+            PoolInitializeTest initializeRouter,
+            PoolModifyPositionTest lpRouter,
+            PoolSwapTest swapRouter,
+            PoolDonateTest donateRouter
+        )
     {
+        initializeRouter = new PoolInitializeTest(manager);
         lpRouter = new PoolModifyPositionTest(manager);
         swapRouter = new PoolSwapTest(manager);
         donateRouter = new PoolDonateTest(manager);
@@ -84,9 +92,12 @@ contract CounterScript is Script {
         }
     }
 
-    function testLifecycle(address hook, IPoolManager manager, PoolModifyPositionTest lpRouter, PoolSwapTest swapRouter)
-        internal
-    {
+    function testLifecycle(
+        address hook,
+        PoolInitializeTest initializeRouter,
+        PoolModifyPositionTest lpRouter,
+        PoolSwapTest swapRouter
+    ) internal {
         (MockERC20 token0, MockERC20 token1) = deployTokens();
         token0.mint(msg.sender, 100_000 ether);
         token1.mint(msg.sender, 100_000 ether);
@@ -97,7 +108,7 @@ contract CounterScript is Script {
         int24 tickSpacing = 60;
         PoolKey memory poolKey =
             PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, tickSpacing, IHooks(hook));
-        manager.initialize(poolKey, Constants.SQRT_RATIO_1_1, ZERO_BYTES);
+        initializeRouter.initialize(poolKey, Constants.SQRT_RATIO_1_1, ZERO_BYTES);
 
         // approve the tokens to the routers
         token0.approve(address(lpRouter), type(uint256).max);

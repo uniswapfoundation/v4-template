@@ -40,7 +40,7 @@ contract CounterTest is HookTest {
         // Create the pool
         poolKey = PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(counter));
         poolId = poolKey.toId();
-        manager.initialize(poolKey, Constants.SQRT_RATIO_1_1, ZERO_BYTES);
+        initializeRouter.initialize(poolKey, Constants.SQRT_RATIO_1_1, ZERO_BYTES);
 
         // Provide liquidity to the pool
         modifyPositionRouter.modifyPosition(poolKey, IPoolManager.ModifyPositionParams(-60, 60, 10 ether), ZERO_BYTES);
