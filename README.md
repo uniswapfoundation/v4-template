@@ -47,8 +47,9 @@ forge test
 Because v4 depends on TSTORE and its *business licensed*, you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
 
 ```bash
-# start anvil
-anvil
+# start anvil with TSTORE support
+# (`foundryup`` to update if cancun is not an option)
+anvil --hardfork cancun
 
 # in a new terminal
 forge script script/Anvil.s.sol \
