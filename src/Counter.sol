@@ -34,7 +34,8 @@ contract Counter is BaseHook {
             beforeSwap: true,
             afterSwap: true,
             beforeDonate: false,
-            afterDonate: false
+            afterDonate: false,
+            noOp: false
         });
     }
 
