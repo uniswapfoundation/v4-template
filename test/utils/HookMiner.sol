@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
 /// @title HookMiner - a library for mining hook addresses
 /// @dev This library is intended for `forge test` environments. There may be gotchas when using salts in `forge script` or `forge create`
 library HookMiner {
-    // mask to slice out the top 8 bit of the address
-    uint160 constant FLAG_MASK = 0xFF << 152;
+    // mask to slice out the top 12 bit of the address
+    uint160 constant FLAG_MASK = 0xFFF << 148;
 
     // Maximum number of iterations to find a salt, avoid infinite loops
     uint256 constant MAX_LOOP = 10_000;

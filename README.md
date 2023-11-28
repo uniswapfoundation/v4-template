@@ -14,19 +14,26 @@
 6. This template is built using Foundry
 
 <details>
-<summary><b>NOTE: v4-core versioning</b></summary>
+<summary>Updating to v4-template:latest</summary>
 
-Previous versions of `v4-template` accessed `v4-core` as the nested dependency of `v4-periphery`. With recent core activity, `v4-periphery` is slightly out of sync.
-
-As of 11/16/2023, `v4-template` has pinned a version of `v4-core` that is most similar to the testnet deployments.
-
-If there are issues, please do not hesistate on reaching out to [saucepoint](https://t.me/saucepoint)
+This template is actively maintained -- you can update the v4 dependencies, scripts, and helpers: 
+```bash
+git remote add template https://github.com/uniswapfoundation/v4-template
+git fetch template
+git merge template/main <BRANCH> --allow-unrelated-histories
+```
 
 </details>
 
 ---
 
-### Local Development (Anvil)
+# Linux / WSL2 (TSTORE/TLOAD)
+
+Please update [foundry.toml](foundry.toml#L9) to use the linux `solc`
+
+Mac users do not need to change anything by default
+
+## Set up
 
 *requires [foundry](https://book.getfoundry.sh)*
 
@@ -35,22 +42,26 @@ forge install
 forge test
 ```
 
-Because v4 exceeds the bytecode limit of Ethereum and it's *business licensed*, we can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/).
+### Local Development (Anvil)
+
+Because v4 depends on TSTORE and its *business licensed*, you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
 
 ```bash
-# start anvil, with a larger code limit
-anvil --code-size-limit 30000
+# start anvil with TSTORE support
+# (`foundryup`` to update if cancun is not an option)
+anvil --hardfork cancun
 
 # in a new terminal
 forge script script/Anvil.s.sol \
     --rpc-url http://localhost:8545 \
     --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-    --code-size-limit 30000 \
     --broadcast
 ```
 
 <details>
 <summary><h3>Goerli Testnet</h3></summary>
+
+NOTE: 11/21/2023, the Goerli deployment is out of sync with the latest v4. It is recommend to use local testing instead
 
 For testing on Goerli Testnet the Uniswap Foundation team has deployed a slimmed down version of the V4 contract (due to current contract size limits) on the network.
 
