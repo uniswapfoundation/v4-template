@@ -57,7 +57,7 @@ contract SwapScript is Script {
         // in v4, users have the option to receieve native ERC20s or wrapped ERC1155 tokens
         // here, we'll take the ERC20s
         PoolSwapTest.TestSettings memory testSettings =
-            PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true});
+            PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true, currencyAlreadySent: false});
 
         bytes memory hookData = new bytes(0);
         vm.broadcast();

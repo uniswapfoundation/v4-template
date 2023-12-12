@@ -72,7 +72,7 @@ contract HookTest is Test {
         });
 
         PoolSwapTest.TestSettings memory testSettings =
-            PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true});
+            PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true, currencyAlreadySent: false});
 
         swapDelta = swapRouter.swap(key, params, testSettings, hookData);
     }
