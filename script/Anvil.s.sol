@@ -7,7 +7,7 @@ import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {PoolManager} from "v4-core/src/PoolManager.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {PoolInitializeTest} from "v4-core/src/test/PoolInitializeTest.sol";
-import {PoolModifyPositionTest} from "v4-core/src/test/PoolModifyPositionTest.sol";
+import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {PoolDonateTest} from "v4-core/src/test/PoolDonateTest.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
@@ -31,8 +31,8 @@ contract CounterScript is Script {
 
         // hook contracts must have specific flags encoded in the address
         uint160 permissions = uint160(
-            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
-                | Hooks.AFTER_MODIFY_POSITION_FLAG
+            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG
+                | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
         );
 
         // Mine a salt that will produce a hook address with the correct permissions
@@ -48,7 +48,7 @@ contract CounterScript is Script {
 
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        (PoolInitializeTest initializeRouter, PoolModifyPositionTest lpRouter, PoolSwapTest swapRouter,) =
+        (PoolInitializeTest initializeRouter, PoolModifyLiquidityTest lpRouter, PoolSwapTest swapRouter,) =
             deployRouters(manager);
         vm.stopBroadcast();
 
@@ -69,13 +69,13 @@ contract CounterScript is Script {
         internal
         returns (
             PoolInitializeTest initializeRouter,
-            PoolModifyPositionTest lpRouter,
+            PoolModifyLiquidityTest lpRouter,
             PoolSwapTest swapRouter,
             PoolDonateTest donateRouter
         )
     {
         initializeRouter = new PoolInitializeTest(manager);
-        lpRouter = new PoolModifyPositionTest(manager);
+        lpRouter = new PoolModifyLiquidityTest(manager);
         swapRouter = new PoolSwapTest(manager);
         donateRouter = new PoolDonateTest(manager);
     }
@@ -95,7 +95,7 @@ contract CounterScript is Script {
     function testLifecycle(
         address hook,
         PoolInitializeTest initializeRouter,
-        PoolModifyPositionTest lpRouter,
+        PoolModifyLiquidityTest lpRouter,
         PoolSwapTest swapRouter
     ) internal {
         (MockERC20 token0, MockERC20 token1) = deployTokens();
@@ -117,9 +117,9 @@ contract CounterScript is Script {
         token1.approve(address(swapRouter), type(uint256).max);
 
         // add full range liquidity to the pool
-        lpRouter.modifyPosition(
+        lpRouter.modifyLiquidity(
             poolKey,
-            IPoolManager.ModifyPositionParams(
+            IPoolManager.ModifyLiquidityParams(
                 TickMath.minUsableTick(tickSpacing), TickMath.maxUsableTick(tickSpacing), 100 ether
             ),
             ZERO_BYTES

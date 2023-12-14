@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {PoolModifyPositionTest} from "v4-core/src/test/PoolModifyPositionTest.sol";
+import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
@@ -19,7 +19,7 @@ contract AddLiquidityScript is Script {
     address constant MUSDC_ADDRESS = address(0xa468864e673a807572598AB6208E49323484c6bF); // mUSDC deployed to GOERLI -- insert your own contract address here
     address constant HOOK_ADDRESS = address(0x3CA2cD9f71104a6e1b67822454c725FcaeE35fF6); // address of the hook contract deployed to goerli -- you can use this hook address or deploy your own!
 
-    PoolModifyPositionTest lpRouter = PoolModifyPositionTest(address(0x83feDBeD11B3667f40263a88e8435fca51A03F8C));
+    PoolModifyLiquidityTest lpRouter = PoolModifyLiquidityTest(address(0x83feDBeD11B3667f40263a88e8435fca51A03F8C));
 
     function run() external {
         // sort the tokens!
@@ -53,6 +53,6 @@ contract AddLiquidityScript is Script {
 
         // Provide 10_000e18 worth of liquidity on the range of [-600, 600]
         vm.broadcast();
-        lpRouter.modifyPosition(pool, IPoolManager.ModifyPositionParams(-600, 600, 10_000e18), hookData);
+        lpRouter.modifyLiquidity(pool, IPoolManager.ModifyLiquidityParams(-600, 600, 10_000e18), hookData);
     }
 }
