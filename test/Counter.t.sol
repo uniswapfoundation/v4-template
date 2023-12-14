@@ -63,6 +63,35 @@ contract CounterTest is Test, Deployers {
         // Perform a test swap //
         bool zeroForOne = true;
         int256 amountSpecified = 1e18;
+        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+        // ------------------- //
+
+        assertEq(int256(swapDelta.amount0()), amountSpecified);
+
+        assertEq(counter.beforeSwapCount(poolId), 1);
+        assertEq(counter.afterSwapCount(poolId), 1);
+    }
+    
+    function testLiquidityHooks() public {
+        // positions were created in setup()
+        assertEq(counter.beforeAddLiquidityCount(poolId), 3);
+        assertEq(counter.beforeRemoveLiquidityCount(poolId), 0);
+
+        // remove liquidity
+        int256 liquidityDelta = -1e18;
+        modifyLiquidityRouter.modifyLiquidity(key, IPoolManager.ModifyLiquidityParams(-60, 60, liquidityDelta), ZERO_BYTES);
+
+        assertEq(counter.beforeAddLiquidityCount(poolId), 3);
+        assertEq(counter.beforeRemoveLiquidityCount(poolId), 1);
+    }
+
+    /// Test Helper
+    function swap(
+        PoolKey memory key,
+        bool zeroForOne,
+        int256 amountSpecified,
+        bytes memory hookData
+    ) internal returns (BalanceDelta delta) {
         IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
             zeroForOne: zeroForOne,
             amountSpecified: amountSpecified,
@@ -72,12 +101,6 @@ contract CounterTest is Test, Deployers {
         PoolSwapTest.TestSettings memory testSettings =
             PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true, currencyAlreadySent: false});
 
-        BalanceDelta swapDelta = swapRouter.swap(key, params, testSettings, ZERO_BYTES);
-        // ------------------- //
-
-        assertEq(int256(swapDelta.amount0()), amountSpecified);
-
-        assertEq(counter.beforeSwapCount(poolId), 1);
-        assertEq(counter.afterSwapCount(poolId), 1);
+        delta = swapRouter.swap(key, params, testSettings, hookData);
     }
 }
