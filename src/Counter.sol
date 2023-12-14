@@ -4,11 +4,11 @@ pragma solidity ^0.8.19;
 // TODO: update to v4-periphery/BaseHook.sol when its compatible
 import {BaseHook} from "./forks/BaseHook.sol";
 
-import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
-import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
-import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
-import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
+import {Hooks} from "v4-core/src/libraries/Hooks.sol";
+import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
+import {PoolKey} from "v4-core/src/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
+import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 
 contract Counter is BaseHook {
     using PoolIdLibrary for PoolKey;
@@ -21,8 +21,8 @@ contract Counter is BaseHook {
     mapping(PoolId => uint256 count) public beforeSwapCount;
     mapping(PoolId => uint256 count) public afterSwapCount;
 
-    mapping(PoolId => uint256 count) public beforeModifyPositionCount;
-    mapping(PoolId => uint256 count) public afterModifyPositionCount;
+    mapping(PoolId => uint256 count) public beforeAddLiquidityCount;
+    mapping(PoolId => uint256 count) public beforeRemoveLiquidityCount;
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
 
@@ -30,8 +30,10 @@ contract Counter is BaseHook {
         return Hooks.Permissions({
             beforeInitialize: false,
             afterInitialize: false,
-            beforeModifyPosition: true,
-            afterModifyPosition: true,
+            beforeAddLiquidity: true,
+            afterAddLiquidity: false,
+            beforeRemoveLiquidity: true,
+            afterRemoveLiquidity: false,
             beforeSwap: true,
             afterSwap: true,
             beforeDonate: false,
@@ -63,24 +65,23 @@ contract Counter is BaseHook {
         return BaseHook.afterSwap.selector;
     }
 
-    function beforeModifyPosition(
+    function beforeAddLiquidity(
         address,
         PoolKey calldata key,
-        IPoolManager.ModifyPositionParams calldata,
+        IPoolManager.ModifyLiquidityParams calldata,
         bytes calldata
     ) external override returns (bytes4) {
-        beforeModifyPositionCount[key.toId()]++;
-        return BaseHook.beforeModifyPosition.selector;
+        beforeAddLiquidityCount[key.toId()]++;
+        return BaseHook.beforeAddLiquidity.selector;
     }
 
-    function afterModifyPosition(
+    function beforeRemoveLiquidity(
         address,
         PoolKey calldata key,
-        IPoolManager.ModifyPositionParams calldata,
-        BalanceDelta,
+        IPoolManager.ModifyLiquidityParams calldata,
         bytes calldata
     ) external override returns (bytes4) {
-        afterModifyPositionCount[key.toId()]++;
-        return BaseHook.afterModifyPosition.selector;
+        beforeRemoveLiquidityCount[key.toId()]++;
+        return BaseHook.beforeRemoveLiquidity.selector;
     }
 }

@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolManager} from "@uniswap/v4-core/contracts/PoolManager.sol";
-import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
-import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
-import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
-import {PoolId} from "@uniswap/v4-core/contracts/types/PoolId.sol";
+import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
+import {PoolManager} from "v4-core/src/PoolManager.sol";
+import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
+import {PoolKey} from "v4-core/src/types/PoolKey.sol";
+import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
+import {PoolId} from "v4-core/src/types/PoolId.sol";
 
 contract PoolInitializeExampleInputs is Script {
     using CurrencyLibrary for Currency;

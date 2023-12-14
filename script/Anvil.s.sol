@@ -2,19 +2,19 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Script.sol";
-import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
-import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
-import {PoolManager} from "@uniswap/v4-core/contracts/PoolManager.sol";
-import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolInitializeTest} from "@uniswap/v4-core/contracts/test/PoolInitializeTest.sol";
-import {PoolModifyPositionTest} from "@uniswap/v4-core/contracts/test/PoolModifyPositionTest.sol";
-import {PoolSwapTest} from "@uniswap/v4-core/contracts/test/PoolSwapTest.sol";
-import {PoolDonateTest} from "@uniswap/v4-core/contracts/test/PoolDonateTest.sol";
-import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
+import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
+import {Hooks} from "v4-core/src/libraries/Hooks.sol";
+import {PoolManager} from "v4-core/src/PoolManager.sol";
+import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
+import {PoolInitializeTest} from "v4-core/src/test/PoolInitializeTest.sol";
+import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.sol";
+import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
+import {PoolDonateTest} from "v4-core/src/test/PoolDonateTest.sol";
+import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
-import {Constants} from "@uniswap/v4-core/contracts/../test/utils/Constants.sol";
-import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
-import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
+import {Constants} from "v4-core/src/../test/utils/Constants.sol";
+import {TickMath} from "v4-core/src/libraries/TickMath.sol";
+import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {Counter} from "../src/Counter.sol";
 import {HookMiner} from "../test/utils/HookMiner.sol";
 
@@ -31,8 +31,8 @@ contract CounterScript is Script {
 
         // hook contracts must have specific flags encoded in the address
         uint160 permissions = uint160(
-            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
-                | Hooks.AFTER_MODIFY_POSITION_FLAG
+            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG
+                | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
         );
 
         // Mine a salt that will produce a hook address with the correct permissions
@@ -48,7 +48,7 @@ contract CounterScript is Script {
 
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        (PoolInitializeTest initializeRouter, PoolModifyPositionTest lpRouter, PoolSwapTest swapRouter,) =
+        (PoolInitializeTest initializeRouter, PoolModifyLiquidityTest lpRouter, PoolSwapTest swapRouter,) =
             deployRouters(manager);
         vm.stopBroadcast();
 
@@ -69,13 +69,13 @@ contract CounterScript is Script {
         internal
         returns (
             PoolInitializeTest initializeRouter,
-            PoolModifyPositionTest lpRouter,
+            PoolModifyLiquidityTest lpRouter,
             PoolSwapTest swapRouter,
             PoolDonateTest donateRouter
         )
     {
         initializeRouter = new PoolInitializeTest(manager);
-        lpRouter = new PoolModifyPositionTest(manager);
+        lpRouter = new PoolModifyLiquidityTest(manager);
         swapRouter = new PoolSwapTest(manager);
         donateRouter = new PoolDonateTest(manager);
     }
@@ -95,7 +95,7 @@ contract CounterScript is Script {
     function testLifecycle(
         address hook,
         PoolInitializeTest initializeRouter,
-        PoolModifyPositionTest lpRouter,
+        PoolModifyLiquidityTest lpRouter,
         PoolSwapTest swapRouter
     ) internal {
         (MockERC20 token0, MockERC20 token1) = deployTokens();
@@ -117,9 +117,9 @@ contract CounterScript is Script {
         token1.approve(address(swapRouter), type(uint256).max);
 
         // add full range liquidity to the pool
-        lpRouter.modifyPosition(
+        lpRouter.modifyLiquidity(
             poolKey,
-            IPoolManager.ModifyPositionParams(
+            IPoolManager.ModifyLiquidityParams(
                 TickMath.minUsableTick(tickSpacing), TickMath.maxUsableTick(tickSpacing), 100 ether
             ),
             ZERO_BYTES
@@ -134,7 +134,7 @@ contract CounterScript is Script {
             sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1 // unlimited impact
         });
         PoolSwapTest.TestSettings memory testSettings =
-            PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true});
+            PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true, currencyAlreadySent: false});
         swapRouter.swap(poolKey, params, testSettings, ZERO_BYTES);
     }
 }
