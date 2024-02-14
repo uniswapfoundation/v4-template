@@ -4,9 +4,8 @@ out = "out"
 libs = ["lib"]
 ffi = true
 fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
-cancun = true
+solc_version = "0.8.24"
+evm_version = "cancun"
 
-# For Linux/WSL2 systems, please change to `lib/v4-core/bin/solc-static-linux`
-solc = "lib/v4-core/bin/solc-static-linux"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
