@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// TODO: update to v4-periphery/BaseHook.sol when its compatible
 import {BaseHook} from "./forks/BaseHook.sol";
 
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
