@@ -27,12 +27,6 @@ git merge template/main <BRANCH> --allow-unrelated-histories
 
 ---
 
-# Linux / WSL2 (TSTORE/TLOAD)
-
-Please update [foundry.toml](foundry.toml#L9) to use the linux `solc`
-
-Mac users do not need to change anything by default
-
 ## Set up
 
 *requires [foundry](https://book.getfoundry.sh)*
