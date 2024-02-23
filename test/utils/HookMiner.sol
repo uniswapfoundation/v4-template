@@ -18,7 +18,7 @@ library HookMiner {
     /// @param constructorArgs The encoded constructor arguments of a hook contract. Example: `abi.encode(address(manager))`
     /// @return hookAddress salt and corresponding address that was found. The salt can be used in `new Hook{salt: salt}(<constructor arguments>)`
     function find(address deployer, uint160 flags, bytes memory creationCode, bytes memory constructorArgs)
-        external
+        internal
         view
         returns (address, bytes32)
     {
