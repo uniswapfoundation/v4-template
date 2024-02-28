@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
@@ -25,7 +25,7 @@ contract CounterTest is Test, Deployers {
     function setUp() public {
         // creates the pool manager, utility routers, and test tokens
         Deployers.deployFreshManagerAndRouters();
-        (currency0, currency1) = Deployers.deployMintAndApprove2Currencies();
+        Deployers.deployMintAndApprove2Currencies();
 
         // Deploy the hook to an address with the correct flags
         uint160 flags = uint160(
@@ -38,7 +38,7 @@ contract CounterTest is Test, Deployers {
         require(address(counter) == hookAddress, "CounterTest: hook address mismatch");
 
         // Create the pool
-        key = PoolKey(currency0, currency1, 3000, 60, IHooks(counter));
+        key = PoolKey(currency0, currency1, 3000, 60, IHooks(address(counter)));
         poolId = key.toId();
         initializeRouter.initialize(key, SQRT_RATIO_1_1, ZERO_BYTES);
 
