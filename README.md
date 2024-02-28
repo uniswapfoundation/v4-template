@@ -5,13 +5,6 @@
 
 1. The example hook [Counter.sol](src/Counter.sol) demonstrates the `beforeSwap()` and `afterSwap()` hooks
 2. The test template [Counter.t.sol](test/Counter.t.sol) preconfigures the v4 pool manager, test tokens, and test liquidity.
-3. The scripts in the v4-template are written so that you can
-   - Designed for Goerli, but usable for other networks
-   - Deploy a hook contract
-   - Create a liquidity pool on V4
-   - Add liquidity to a pool
-   - Swap tokens on a pool
-6. This template is built using Foundry
 
 <details>
 <summary>Updating to v4-template:latest</summary>
@@ -38,7 +31,7 @@ forge test
 
 ### Local Development (Anvil)
 
-Because v4 depends on TSTORE and its *business licensed*, you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
+Other than writing unit tests (recommended!), you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
 
 ```bash
 # start anvil with TSTORE support
@@ -53,18 +46,18 @@ forge script script/Anvil.s.sol \
 ```
 
 <details>
-<summary><h3>Goerli Testnet</h3></summary>
+<summary><h3>Testnets</h3></summary>
 
-NOTE: 11/21/2023, the Goerli deployment is out of sync with the latest v4. It is recommend to use local testing instead
+NOTE: 11/21/2023, the Goerli deployment is out of sync with the latest v4. **It is recommend to use local testing instead**
 
-For testing on Goerli Testnet the Uniswap Foundation team has deployed a slimmed down version of the V4 contract (due to current contract size limits) on the network.
+~~For testing on Goerli Testnet the Uniswap Foundation team has deployed a slimmed down version of the V4 contract (due to current contract size limits) on the network.~~
 
-The relevant addresses for testing on Goerli are the ones below
+~~The relevant addresses for testing on Goerli are the ones below~~
 
 ```bash
-POOL_MANAGER = 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b
-POOL_MODIFY_POSITION_TEST = 0x83feDBeD11B3667f40263a88e8435fca51A03F8C
-SWAP_ROUTER = 0xF8AADC65Bf1Ec1645ef931317fD48ffa734a185c
+POOL_MANAGER = 0x0
+POOL_MODIFY_POSITION_TEST = 0x0
+SWAP_ROUTER = 0x0
 ```
 
 Update the following command with your own private key:
