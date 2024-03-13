@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {PoolInitializeTest} from "v4-core/src/test/PoolInitializeTest.sol";
+import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
@@ -13,12 +13,10 @@ contract CreatePoolScript is Script {
     using CurrencyLibrary for Currency;
 
     //addresses with contracts deployed
-    address constant POOL_INITIALIZE_ROUTER = address(0x0); // TODO: Update once deployed
+    address constant POOL_MANAGER = address(0x0); // TODO: Update once deployed
     address constant MUNI_ADDRESS = address(0xbD97BF168FA913607b996fab823F88610DCF7737); //mUNI deployed to GOERLI -- insert your own contract address here
     address constant MUSDC_ADDRESS = address(0xa468864e673a807572598AB6208E49323484c6bF); //mUSDC deployed to GOERLI -- insert your own contract address here
     address constant HOOK_ADDRESS = address(0x3CA2cD9f71104a6e1b67822454c725FcaeE35fF6); //address of the hook contract deployed to goerli -- you can use this hook address or deploy your own!
-
-    PoolInitializeTest initializeRouter = PoolInitializeTest(POOL_INITIALIZE_ROUTER);
 
     function run() external {
         // sort the tokens!
@@ -48,6 +46,6 @@ contract CreatePoolScript is Script {
         console.logBytes32(bytes32(idBytes));
 
         vm.broadcast();
-        initializeRouter.initialize(pool, startingPrice, hookData);
+        IPoolManager(POOL_MANAGER).initialize(pool, startingPrice, hookData);
     }
 }

@@ -6,7 +6,6 @@ import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {PoolManager} from "v4-core/src/PoolManager.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {PoolInitializeTest} from "v4-core/src/test/PoolInitializeTest.sol";
 import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {PoolDonateTest} from "v4-core/src/test/PoolDonateTest.sol";
@@ -48,13 +47,13 @@ contract CounterScript is Script {
 
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        (PoolInitializeTest initializeRouter, PoolModifyLiquidityTest lpRouter, PoolSwapTest swapRouter,) =
+        (PoolModifyLiquidityTest lpRouter, PoolSwapTest swapRouter,) =
             deployRouters(manager);
         vm.stopBroadcast();
 
         // test the lifecycle (create pool, add liquidity, swap)
         vm.startBroadcast();
-        testLifecycle(address(counter), initializeRouter, lpRouter, swapRouter);
+        testLifecycle(manager, address(counter), lpRouter, swapRouter);
         vm.stopBroadcast();
     }
 
@@ -68,13 +67,11 @@ contract CounterScript is Script {
     function deployRouters(IPoolManager manager)
         internal
         returns (
-            PoolInitializeTest initializeRouter,
             PoolModifyLiquidityTest lpRouter,
             PoolSwapTest swapRouter,
             PoolDonateTest donateRouter
         )
     {
-        initializeRouter = new PoolInitializeTest(manager);
         lpRouter = new PoolModifyLiquidityTest(manager);
         swapRouter = new PoolSwapTest(manager);
         donateRouter = new PoolDonateTest(manager);
@@ -93,8 +90,8 @@ contract CounterScript is Script {
     }
 
     function testLifecycle(
+        IPoolManager manager,
         address hook,
-        PoolInitializeTest initializeRouter,
         PoolModifyLiquidityTest lpRouter,
         PoolSwapTest swapRouter
     ) internal {
@@ -108,7 +105,7 @@ contract CounterScript is Script {
         int24 tickSpacing = 60;
         PoolKey memory poolKey =
             PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, tickSpacing, IHooks(hook));
-        initializeRouter.initialize(poolKey, Constants.SQRT_RATIO_1_1, ZERO_BYTES);
+        manager.initialize(poolKey, Constants.SQRT_RATIO_1_1, ZERO_BYTES);
 
         // approve the tokens to the routers
         token0.approve(address(lpRouter), type(uint256).max);
