@@ -62,7 +62,7 @@ contract CounterTest is Test, Deployers {
 
         // Perform a test swap //
         bool zeroForOne = true;
-        int256 amountSpecified = 1e18;
+        int256 amountSpecified = -1e18; // negative number indicates exact input swap!
         BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
         // ------------------- //
 
