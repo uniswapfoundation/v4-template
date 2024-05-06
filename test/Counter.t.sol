@@ -71,7 +71,7 @@ contract CounterTest is Test, Deployers {
         assertEq(counter.beforeSwapCount(poolId), 1);
         assertEq(counter.afterSwapCount(poolId), 1);
     }
-    
+
     function testLiquidityHooks() public {
         // positions were created in setup()
         assertEq(counter.beforeAddLiquidityCount(poolId), 3);
@@ -79,7 +79,9 @@ contract CounterTest is Test, Deployers {
 
         // remove liquidity
         int256 liquidityDelta = -1e18;
-        modifyLiquidityRouter.modifyLiquidity(key, IPoolManager.ModifyLiquidityParams(-60, 60, liquidityDelta), ZERO_BYTES);
+        modifyLiquidityRouter.modifyLiquidity(
+            key, IPoolManager.ModifyLiquidityParams(-60, 60, liquidityDelta), ZERO_BYTES
+        );
 
         assertEq(counter.beforeAddLiquidityCount(poolId), 3);
         assertEq(counter.beforeRemoveLiquidityCount(poolId), 1);
