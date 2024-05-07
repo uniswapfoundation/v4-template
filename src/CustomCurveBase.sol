@@ -10,6 +10,7 @@ import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {Currency} from "v4-core/src/types/Currency.sol";
 import {CurrencySettleTake} from "v4-core/src/libraries/CurrencySettleTake.sol";
+import {console2} from "forge-std/console2.sol";
 
 abstract contract CustomCurveBase is BaseHook {
     using PoolIdLibrary for PoolKey;
@@ -29,7 +30,7 @@ abstract contract CustomCurveBase is BaseHook {
         returns (uint256)
     {}
 
-    function addLiquidity(PoolKey calldata key, bytes calldata hookData) internal virtual {}
+    function addLiquidity(PoolKey calldata key, bytes calldata hookData) external virtual {}
 
     // --- Hook Functions --- //
 
@@ -40,6 +41,8 @@ abstract contract CustomCurveBase is BaseHook {
     {
         uint256 amountIn = getAmountIn(key, params, hookData);
         uint256 amountOut = getAmountOut(key, params, hookData);
+
+        int128 hookDelta = params.amountSpecified < 0 ? int128(int256(amountIn)) : -int128(int256(amountIn));
 
         // zeroForOne: swapper pays currency0 for currency1
         // take amountIn: creating a debt, paid for by swapper
@@ -55,19 +58,22 @@ abstract contract CustomCurveBase is BaseHook {
         assembly {
             tstore(0, amountOut)
         }
-        return (BaseHook.beforeSwap.selector, -int128(int256(amountIn)));
+        return (BaseHook.beforeSwap.selector, hookDelta);
     }
 
-    function afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
-        external
-        override
-        returns (bytes4, int128)
-    {
-        uint256 amountOut;
+    function afterSwap(
+        address,
+        PoolKey calldata key,
+        IPoolManager.SwapParams calldata params,
+        BalanceDelta,
+        bytes calldata
+    ) external override returns (bytes4, int128) {
+        int256 amountOut;
         assembly {
             amountOut := tload(0)
         }
-        return (BaseHook.afterSwap.selector, -int128(int256(amountOut)));
+        int128 hookDelta = params.amountSpecified < 0 ? -int128(amountOut) : int128(amountOut);
+        return (BaseHook.afterSwap.selector, hookDelta);
     }
 
     function beforeAddLiquidity(

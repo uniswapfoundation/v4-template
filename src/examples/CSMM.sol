@@ -7,14 +7,16 @@ import {Currency} from "v4-core/src/types/Currency.sol";
 import {CurrencySettleTake} from "v4-core/src/libraries/CurrencySettleTake.sol";
 import {CustomCurveBase} from "../CustomCurveBase.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {console2} from "forge-std/console2.sol";
 
 contract CSMM is CustomCurveBase {
     using CurrencySettleTake for Currency;
 
     struct CallbackData {
+        uint256 amountEach;
         Currency currency0;
         Currency currency1;
-        uint256 amountEach;
+        address sender;
     }
 
     constructor(IPoolManager _poolManager) CustomCurveBase(_poolManager) {}
@@ -39,20 +41,18 @@ contract CSMM is CustomCurveBase {
         return 0 < amountSpecified ? uint256(amountSpecified) : uint256(-amountSpecified);
     }
 
-    function addLiquidity(PoolKey calldata key, bytes calldata hookData) internal override {
+    function addLiquidity(PoolKey calldata key, bytes calldata hookData) external override {
         uint256 amountEach = abi.decode(hookData, (uint256));
-        poolManager.unlock(abi.encode(CallbackData(key.currency0, key.currency1, amountEach)));
+        poolManager.unlock(abi.encode(CallbackData(amountEach, key.currency0, key.currency1, msg.sender)));
     }
 
     function unlockCallback(bytes calldata data) external override returns (bytes memory) {
         CallbackData memory params = abi.decode(data, (CallbackData));
-        uint256 amountEach = params.amountEach;
-        Currency currency0 = params.currency0;
-        Currency currency1 = params.currency1;
-        currency0.take(poolManager, address(this), amountEach, true);
-        currency1.take(poolManager, address(this), amountEach, true);
-        currency0.settle(poolManager, msg.sender, amountEach, false);
-        currency1.settle(poolManager, msg.sender, amountEach, false);
+
+        params.currency0.take(poolManager, address(this), params.amountEach, true);
+        params.currency1.take(poolManager, address(this), params.amountEach, true);
+        params.currency0.settle(poolManager, params.sender, params.amountEach, false);
+        params.currency1.settle(poolManager, params.sender, params.amountEach, false);
 
         return new bytes(0);
     }
