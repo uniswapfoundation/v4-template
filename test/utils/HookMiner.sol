@@ -4,11 +4,11 @@ pragma solidity ^0.8.21;
 /// @title HookMiner - a library for mining hook addresses
 /// @dev This library is intended for `forge test` environments. There may be gotchas when using salts in `forge script` or `forge create`
 library HookMiner {
-    // mask to slice out the top 14 bit of the address
-    uint160 constant FLAG_MASK = 0x3FFF << 146;
+    // mask to slice out the top 12 bit of the address
+    uint160 constant FLAG_MASK = 0xFFF << 148;
 
     // Maximum number of iterations to find a salt, avoid infinite loops
-    uint256 constant MAX_LOOP = 100_000;
+    uint256 constant MAX_LOOP = 20_000;
 
     /// @notice Find a salt that produces a hook address with the desired `flags`
     /// @param deployer The address that will deploy the hook. In `forge test`, this will be the test contract `address(this)` or the pranking address

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {BaseHook} from "./forks/BaseHook.sol";
+import {BaseHook} from "v4-periphery/BaseHook.sol";
 
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
@@ -36,11 +36,7 @@ contract Counter is BaseHook {
             beforeSwap: true,
             afterSwap: true,
             beforeDonate: false,
-            afterDonate: false,
-            beforeSwapReturnDelta: false,
-            afterSwapReturnDelta: false,
-            afterAddLiquidityReturnDelta: false,
-            afterRemoveLiquidityReturnDelta: false
+            afterDonate: false
         });
     }
 
@@ -51,19 +47,19 @@ contract Counter is BaseHook {
     function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, bytes calldata)
         external
         override
-        returns (bytes4, int128)
+        returns (bytes4)
     {
         beforeSwapCount[key.toId()]++;
-        return (BaseHook.beforeSwap.selector, 0);
+        return BaseHook.beforeSwap.selector;
     }
 
     function afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
         external
         override
-        returns (bytes4, int128)
+        returns (bytes4)
     {
         afterSwapCount[key.toId()]++;
-        return (BaseHook.afterSwap.selector, 0);
+        return BaseHook.afterSwap.selector;
     }
 
     function beforeAddLiquidity(
