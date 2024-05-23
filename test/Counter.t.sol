@@ -40,14 +40,16 @@ contract CounterTest is Test, Deployers {
         // Create the pool
         key = PoolKey(currency0, currency1, 3000, 60, IHooks(address(counter)));
         poolId = key.toId();
-        manager.initialize(key, SQRT_RATIO_1_1, ZERO_BYTES);
+        manager.initialize(key, SQRT_PRICE_1_1, ZERO_BYTES);
 
         // Provide liquidity to the pool
-        modifyLiquidityRouter.modifyLiquidity(key, IPoolManager.ModifyLiquidityParams(-60, 60, 10 ether), ZERO_BYTES);
-        modifyLiquidityRouter.modifyLiquidity(key, IPoolManager.ModifyLiquidityParams(-120, 120, 10 ether), ZERO_BYTES);
+        modifyLiquidityRouter.modifyLiquidity(key, IPoolManager.ModifyLiquidityParams(-60, 60, 10 ether, 0), ZERO_BYTES);
+        modifyLiquidityRouter.modifyLiquidity(
+            key, IPoolManager.ModifyLiquidityParams(-120, 120, 10 ether, 0), ZERO_BYTES
+        );
         modifyLiquidityRouter.modifyLiquidity(
             key,
-            IPoolManager.ModifyLiquidityParams(TickMath.minUsableTick(60), TickMath.maxUsableTick(60), 10 ether),
+            IPoolManager.ModifyLiquidityParams(TickMath.minUsableTick(60), TickMath.maxUsableTick(60), 10 ether, 0),
             ZERO_BYTES
         );
     }
@@ -71,7 +73,7 @@ contract CounterTest is Test, Deployers {
         assertEq(counter.beforeSwapCount(poolId), 1);
         assertEq(counter.afterSwapCount(poolId), 1);
     }
-    
+
     function testLiquidityHooks() public {
         // positions were created in setup()
         assertEq(counter.beforeAddLiquidityCount(poolId), 3);
@@ -79,7 +81,9 @@ contract CounterTest is Test, Deployers {
 
         // remove liquidity
         int256 liquidityDelta = -1e18;
-        modifyLiquidityRouter.modifyLiquidity(key, IPoolManager.ModifyLiquidityParams(-60, 60, liquidityDelta), ZERO_BYTES);
+        modifyLiquidityRouter.modifyLiquidity(
+            key, IPoolManager.ModifyLiquidityParams(-60, 60, liquidityDelta, 0), ZERO_BYTES
+        );
 
         assertEq(counter.beforeAddLiquidityCount(poolId), 3);
         assertEq(counter.beforeRemoveLiquidityCount(poolId), 1);

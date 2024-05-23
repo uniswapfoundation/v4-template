@@ -53,6 +53,6 @@ contract AddLiquidityScript is Script {
 
         // Provide 10_000e18 worth of liquidity on the range of [-600, 600]
         vm.broadcast();
-        lpRouter.modifyLiquidity(pool, IPoolManager.ModifyLiquidityParams(-600, 600, 10_000e18), hookData);
+        lpRouter.modifyLiquidity(pool, IPoolManager.ModifyLiquidityParams(-600, 600, 10_000e18, 0), hookData);
     }
 }
