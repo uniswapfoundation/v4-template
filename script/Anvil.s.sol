@@ -47,8 +47,7 @@ contract CounterScript is Script {
 
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        (PoolModifyLiquidityTest lpRouter, PoolSwapTest swapRouter,) =
-            deployRouters(manager);
+        (PoolModifyLiquidityTest lpRouter, PoolSwapTest swapRouter,) = deployRouters(manager);
         vm.stopBroadcast();
 
         // test the lifecycle (create pool, add liquidity, swap)
@@ -66,11 +65,7 @@ contract CounterScript is Script {
 
     function deployRouters(IPoolManager manager)
         internal
-        returns (
-            PoolModifyLiquidityTest lpRouter,
-            PoolSwapTest swapRouter,
-            PoolDonateTest donateRouter
-        )
+        returns (PoolModifyLiquidityTest lpRouter, PoolSwapTest swapRouter, PoolDonateTest donateRouter)
     {
         lpRouter = new PoolModifyLiquidityTest(manager);
         swapRouter = new PoolSwapTest(manager);
@@ -105,7 +100,7 @@ contract CounterScript is Script {
         int24 tickSpacing = 60;
         PoolKey memory poolKey =
             PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, tickSpacing, IHooks(hook));
-        manager.initialize(poolKey, Constants.SQRT_RATIO_1_1, ZERO_BYTES);
+        manager.initialize(poolKey, Constants.SQRT_PRICE_1_1, ZERO_BYTES);
 
         // approve the tokens to the routers
         token0.approve(address(lpRouter), type(uint256).max);
@@ -117,7 +112,7 @@ contract CounterScript is Script {
         lpRouter.modifyLiquidity(
             poolKey,
             IPoolManager.ModifyLiquidityParams(
-                TickMath.minUsableTick(tickSpacing), TickMath.maxUsableTick(tickSpacing), 100 ether
+                TickMath.minUsableTick(tickSpacing), TickMath.maxUsableTick(tickSpacing), 100 ether, 0
             ),
             ZERO_BYTES
         );
@@ -128,10 +123,10 @@ contract CounterScript is Script {
         IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
             zeroForOne: zeroForOne,
             amountSpecified: amountSpecified,
-            sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1 // unlimited impact
+            sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1 // unlimited impact
         });
         PoolSwapTest.TestSettings memory testSettings =
-            PoolSwapTest.TestSettings({withdrawTokens: true, settleUsingTransfer: true, currencyAlreadySent: false});
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false});
         swapRouter.swap(poolKey, params, testSettings, ZERO_BYTES);
     }
 }
