@@ -13,10 +13,12 @@ import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {Deployers} from "v4-core/test/utils/Deployers.sol";
 import {Counter} from "../src/Counter.sol";
+import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 
 contract CounterTest is Test, Deployers {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
+    using StateLibrary for State;
 
     Counter hook;
     PoolId poolId;
