@@ -18,6 +18,7 @@ import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 contract CounterTest is Test, Deployers {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
+    using StateLibrary for IPoolManager;
 
     Counter hook;
     PoolId poolId;
