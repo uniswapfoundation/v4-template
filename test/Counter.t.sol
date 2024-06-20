@@ -33,7 +33,7 @@ contract CounterTest is Test, Deployers {
             uint160(
                 Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG
                     | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
-            )
+            ) ^ (0x4444 << 144) // Namespace the hook to avoid collisions
         );
         deployCodeTo("Counter.sol:Counter", abi.encode(manager), flags);
         hook = Counter(flags);
@@ -79,7 +79,11 @@ contract CounterTest is Test, Deployers {
         // remove liquidity
         int256 liquidityDelta = -1e18;
         modifyLiquidityRouter.modifyLiquidity(
-            key, IPoolManager.ModifyLiquidityParams(TickMath.minUsableTick(60), TickMath.maxUsableTick(60), liquidityDelta, 0), ZERO_BYTES
+            key,
+            IPoolManager.ModifyLiquidityParams(
+                TickMath.minUsableTick(60), TickMath.maxUsableTick(60), liquidityDelta, 0
+            ),
+            ZERO_BYTES
         );
 
         assertEq(hook.beforeAddLiquidityCount(poolId), 1);
