@@ -33,7 +33,7 @@ contract CounterTest is Test, Deployers {
             uint160(
                 Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG
                     | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
-            ) ^ (0x7634 << 144)
+            ) ^ (0x4444 << 144) // Namespace the hook to avoid collisions
         );
         deployCodeTo("Counter.sol:Counter", abi.encode(manager), flags);
         hook = Counter(flags);
