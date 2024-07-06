@@ -14,8 +14,9 @@ import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {Deployers} from "v4-core/test/utils/Deployers.sol";
 import {Counter} from "../src/Counter.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
+import {Fuzzers} from "v4-core/src/test/Fuzzers.sol";
 
-contract CounterTest is Test, Deployers {
+contract CounterTest is Test, Deployers, Fuzzers {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
     using StateLibrary for IPoolManager;
@@ -88,5 +89,38 @@ contract CounterTest is Test, Deployers {
 
         assertEq(hook.beforeAddLiquidityCount(poolId), 1);
         assertEq(hook.beforeRemoveLiquidityCount(poolId), 1);
+    }
+
+    function test_fuzz_swap(bool zeroForOne, int256 amountSpecified) public {
+        amountSpecified = bound(amountSpecified, -100e18, int256(100e18));
+        vm.assume(amountSpecified != 0);
+        
+        assertEq(hook.beforeSwapCount(poolId), 0);
+        assertEq(hook.afterSwapCount(poolId), 0);
+
+        // Perform a test swap //
+        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
+        assertEq(hook.beforeSwapCount(poolId), 1);
+        assertEq(hook.afterSwapCount(poolId), 1);
+    }
+
+    function test_fuzz_liquidity(IPoolManager.ModifyLiquidityParams memory params) public {
+        // positions were created in setup()
+        assertEq(hook.beforeAddLiquidityCount(poolId), 1);
+        assertEq(hook.beforeRemoveLiquidityCount(poolId), 0);
+
+        // create a liquidity position with the fuzzer
+        BalanceDelta delta;
+        (params, delta) = Fuzzers.createFuzzyLiquidity(
+            modifyLiquidityRouter,
+            key,
+            params,
+            SQRT_PRICE_1_1,
+            ZERO_BYTES
+        );
+
+        assertEq(hook.beforeAddLiquidityCount(poolId), 2);
+        assertEq(hook.beforeRemoveLiquidityCount(poolId), 0);
     }
 }
