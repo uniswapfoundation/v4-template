@@ -122,4 +122,22 @@ contract CounterTest is Test, Fixtures {
             tokenId, config, liquidityToRemove, 0, 0, address(this), block.timestamp + 1, ZERO_BYTES
         );
     }
+
+    function test_collect() public {
+        PositionConfig memory config = PositionConfig({poolKey: key, tickLower: -60, tickUpper: 60});
+
+        (uint256 tokenId,) = posm.mint(
+            config, 10_000 ether, type(uint256).max, type(uint256).max, address(this), block.timestamp + 1, ZERO_BYTES
+        );
+
+        // donate to regenerate fee revenue
+        uint128 feeRevenue0 = 1e18;
+        uint128 feeRevenue1 = 0.1e18;
+        donateRouter.donate(key, feeRevenue0, feeRevenue1, ZERO_BYTES);
+
+        // position collects half of the revenue since 50% of the liquidity is minted in setUp()
+        BalanceDelta delta = posm.collect(tokenId, config, 0, 0, address(0x123), block.timestamp + 1, ZERO_BYTES);
+        assertEq(uint128(delta.amount0()), (feeRevenue0 / 2) - 1 wei);
+        assertEq(uint128(delta.amount1()), (feeRevenue1 / 2) - 1 wei);
+    }
 }
