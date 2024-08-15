@@ -97,7 +97,7 @@ contract CounterTest is Test, Fixtures {
         assertEq(hook.beforeRemoveLiquidityCount(poolId), 1);
     }
 
-    function test_easyPosm() public {
+    function test_mintLiquidity() public {
         PositionConfig memory config =
             PositionConfig({poolKey: key, tickLower: TickMath.minUsableTick(60), tickUpper: TickMath.maxUsableTick(60)});
         uint256 liquidityToMint = 100e18;
@@ -107,5 +107,19 @@ contract CounterTest is Test, Fixtures {
 
         (uint256 tokenId, BalanceDelta delta) =
             posm.mint(config, liquidityToMint, amount0Max, amount1Max, recipient, block.timestamp + 1, ZERO_BYTES);
+    }
+
+    function test_decreaseLiquidity() public {
+        PositionConfig memory config =
+            PositionConfig({poolKey: key, tickLower: TickMath.minUsableTick(60), tickUpper: TickMath.maxUsableTick(60)});
+
+        (uint256 tokenId,) = posm.mint(
+            config, 100e18, type(uint256).max, type(uint256).max, address(this), block.timestamp + 1, ZERO_BYTES
+        );
+
+        uint256 liquidityToRemove = 1e18;
+        BalanceDelta delta = posm.decreaseLiquidity(
+            tokenId, config, liquidityToRemove, 0, 0, address(this), block.timestamp + 1, ZERO_BYTES
+        );
     }
 }
