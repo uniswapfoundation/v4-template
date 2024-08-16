@@ -139,6 +139,18 @@ contract CounterTest is Test, Fixtures {
         );
     }
 
+    function test_burn() public {
+        PositionConfig memory config = PositionConfig({poolKey: key, tickLower: -60, tickUpper: 60});
+
+        (uint256 tokenId,) = posm.mint(
+            config, 10_000 ether, type(uint256).max, type(uint256).max, address(this), block.timestamp + 1, ZERO_BYTES
+        );
+
+        BalanceDelta delta = posm.burn(tokenId, config, 0, 0, address(this), block.timestamp + 1, ZERO_BYTES);
+        assertGt(delta.amount0(), 0);
+        assertGt(delta.amount1(), 0);
+    }
+
     function test_collect() public {
         PositionConfig memory config = PositionConfig({poolKey: key, tickLower: -60, tickUpper: 60});
 

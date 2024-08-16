@@ -70,7 +70,13 @@ library EasyPosm {
         uint256 balance1Before = currency1.balanceOf(address(this));
 
         posm.modifyLiquidities(
-            abi.encode(abi.encodePacked(uint8(Actions.INCREASE_LIQUIDITY), uint8(Actions.CLOSE_CURRENCY), uint8(Actions.CLOSE_CURRENCY)), params), deadline
+            abi.encode(
+                abi.encodePacked(
+                    uint8(Actions.INCREASE_LIQUIDITY), uint8(Actions.CLOSE_CURRENCY), uint8(Actions.CLOSE_CURRENCY)
+                ),
+                params
+            ),
+            deadline
         );
 
         delta = toBalanceDelta(
@@ -133,6 +139,36 @@ library EasyPosm {
 
         posm.modifyLiquidities(
             abi.encode(abi.encodePacked(uint8(Actions.DECREASE_LIQUIDITY), uint8(Actions.TAKE_PAIR)), params), deadline
+        );
+
+        delta = toBalanceDelta(
+            (currency0.balanceOf(recipient) - balance0Before).toInt128(),
+            (currency1.balanceOf(recipient) - balance1Before).toInt128()
+        );
+    }
+
+    function burn(
+        IPositionManager posm,
+        uint256 tokenId,
+        PositionConfig memory config,
+        uint256 amount0Min,
+        uint256 amount1Min,
+        address recipient,
+        uint256 deadline,
+        bytes memory hookData
+    ) internal returns (BalanceDelta delta) {
+        Currency currency0 = config.poolKey.currency0;
+        Currency currency1 = config.poolKey.currency1;
+
+        bytes[] memory params = new bytes[](2);
+        params[0] = abi.encode(tokenId, config, 0, amount0Min, amount1Min, hookData);
+        params[1] = abi.encode(currency0, currency1, recipient);
+
+        uint256 balance0Before = currency0.balanceOf(recipient);
+        uint256 balance1Before = currency1.balanceOf(recipient);
+
+        posm.modifyLiquidities(
+            abi.encode(abi.encodePacked(uint8(Actions.BURN_POSITION), uint8(Actions.TAKE_PAIR)), params), deadline
         );
 
         delta = toBalanceDelta(
