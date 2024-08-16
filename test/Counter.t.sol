@@ -28,6 +28,9 @@ contract CounterTest is Test, Fixtures {
     Counter hook;
     PoolId poolId;
 
+    uint256 tokenId;
+    PositionConfig config;
+
     function setUp() public {
         // creates the pool manager, utility routers, and test tokens
         deployFreshManagerAndRouters();
@@ -51,9 +54,18 @@ contract CounterTest is Test, Fixtures {
         manager.initialize(key, SQRT_PRICE_1_1, ZERO_BYTES);
 
         // Provide full-range liquidity to the pool
-        modifyLiquidityRouter.modifyLiquidity(
-            key,
-            IPoolManager.ModifyLiquidityParams(TickMath.minUsableTick(60), TickMath.maxUsableTick(60), 10_000 ether, 0),
+        config = PositionConfig({
+            poolKey: key,
+            tickLower: TickMath.minUsableTick(key.tickSpacing),
+            tickUpper: TickMath.maxUsableTick(key.tickSpacing)
+        });
+        (tokenId,) = posm.mint(
+            config,
+            10_000e18,
+            MAX_SLIPPAGE_ADD_LIQUIDITY,
+            MAX_SLIPPAGE_ADD_LIQUIDITY,
+            address(this),
+            block.timestamp,
             ZERO_BYTES
         );
     }
@@ -84,12 +96,15 @@ contract CounterTest is Test, Fixtures {
         assertEq(hook.beforeRemoveLiquidityCount(poolId), 0);
 
         // remove liquidity
-        int256 liquidityDelta = -1e18;
-        modifyLiquidityRouter.modifyLiquidity(
-            key,
-            IPoolManager.ModifyLiquidityParams(
-                TickMath.minUsableTick(60), TickMath.maxUsableTick(60), liquidityDelta, 0
-            ),
+        uint256 liquidityToRemove = 1e18;
+        posm.decreaseLiquidity(
+            tokenId,
+            config,
+            liquidityToRemove,
+            MAX_SLIPPAGE_REMOVE_LIQUIDITY,
+            MAX_SLIPPAGE_REMOVE_LIQUIDITY,
+            address(this),
+            block.timestamp,
             ZERO_BYTES
         );
 
