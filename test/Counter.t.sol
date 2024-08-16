@@ -11,11 +11,16 @@ import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
-import {Deployers} from "v4-core/test/utils/Deployers.sol";
 import {Counter} from "../src/Counter.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
+import {PositionConfig} from "v4-periphery/src/libraries/PositionConfig.sol";
 
-contract CounterTest is Test, Deployers {
+import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
+import {EasyPosm} from "./utils/EasyPosm.sol";
+import {Fixtures} from "./utils/Fixtures.sol";
+
+contract CounterTest is Test, Fixtures {
+    using EasyPosm for IPositionManager;
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
     using StateLibrary for IPoolManager;
@@ -23,10 +28,15 @@ contract CounterTest is Test, Deployers {
     Counter hook;
     PoolId poolId;
 
+    uint256 tokenId;
+    PositionConfig config;
+
     function setUp() public {
         // creates the pool manager, utility routers, and test tokens
-        Deployers.deployFreshManagerAndRouters();
-        Deployers.deployMintAndApprove2Currencies();
+        deployFreshManagerAndRouters();
+        deployMintAndApprove2Currencies();
+
+        deployAndApprovePosm(manager);
 
         // Deploy the hook to an address with the correct flags
         address flags = address(
@@ -44,9 +54,18 @@ contract CounterTest is Test, Deployers {
         manager.initialize(key, SQRT_PRICE_1_1, ZERO_BYTES);
 
         // Provide full-range liquidity to the pool
-        modifyLiquidityRouter.modifyLiquidity(
-            key,
-            IPoolManager.ModifyLiquidityParams(TickMath.minUsableTick(60), TickMath.maxUsableTick(60), 10_000 ether, 0),
+        config = PositionConfig({
+            poolKey: key,
+            tickLower: TickMath.minUsableTick(key.tickSpacing),
+            tickUpper: TickMath.maxUsableTick(key.tickSpacing)
+        });
+        (tokenId,) = posm.mint(
+            config,
+            10_000e18,
+            MAX_SLIPPAGE_ADD_LIQUIDITY,
+            MAX_SLIPPAGE_ADD_LIQUIDITY,
+            address(this),
+            block.timestamp,
             ZERO_BYTES
         );
     }
@@ -77,12 +96,15 @@ contract CounterTest is Test, Deployers {
         assertEq(hook.beforeRemoveLiquidityCount(poolId), 0);
 
         // remove liquidity
-        int256 liquidityDelta = -1e18;
-        modifyLiquidityRouter.modifyLiquidity(
-            key,
-            IPoolManager.ModifyLiquidityParams(
-                TickMath.minUsableTick(60), TickMath.maxUsableTick(60), liquidityDelta, 0
-            ),
+        uint256 liquidityToRemove = 1e18;
+        posm.decreaseLiquidity(
+            tokenId,
+            config,
+            liquidityToRemove,
+            MAX_SLIPPAGE_REMOVE_LIQUIDITY,
+            MAX_SLIPPAGE_REMOVE_LIQUIDITY,
+            address(this),
+            block.timestamp,
             ZERO_BYTES
         );
 
