@@ -109,6 +109,22 @@ contract CounterTest is Test, Fixtures {
             posm.mint(config, liquidityToMint, amount0Max, amount1Max, recipient, block.timestamp + 1, ZERO_BYTES);
     }
 
+    function test_increaseLiquidity() public {
+        PositionConfig memory config =
+            PositionConfig({poolKey: key, tickLower: TickMath.minUsableTick(60), tickUpper: TickMath.maxUsableTick(60)});
+
+        (uint256 tokenId,) = posm.mint(
+            config, 100e18, type(uint256).max, type(uint256).max, address(this), block.timestamp + 1, ZERO_BYTES
+        );
+
+        uint256 liquidityToAdd = 1e18;
+        BalanceDelta delta = posm.increaseLiquidity(
+            tokenId, config, liquidityToAdd, type(uint256).max, type(uint256).max, block.timestamp + 1, ZERO_BYTES
+        );
+        assertLt(delta.amount0(), 0);
+        assertLt(delta.amount1(), 0);
+    }
+
     function test_decreaseLiquidity() public {
         PositionConfig memory config =
             PositionConfig({poolKey: key, tickLower: TickMath.minUsableTick(60), tickUpper: TickMath.maxUsableTick(60)});

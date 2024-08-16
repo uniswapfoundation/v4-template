@@ -14,6 +14,7 @@ import {SafeCast} from "v4-core/src/libraries/SafeCast.sol";
 library EasyPosm {
     using CurrencyLibrary for Currency;
     using SafeCast for uint256;
+    using SafeCast for int256;
 
     function mint(
         IPositionManager posm,
@@ -44,6 +45,37 @@ library EasyPosm {
         delta = toBalanceDelta(
             -(balance0Before - currency0.balanceOf(address(this))).toInt128(),
             -(balance1Before - currency1.balanceOf(address(this))).toInt128()
+        );
+    }
+
+    function increaseLiquidity(
+        IPositionManager posm,
+        uint256 tokenId,
+        PositionConfig memory config,
+        uint256 liquidityToAdd,
+        uint256 amount0Max,
+        uint256 amount1Max,
+        uint256 deadline,
+        bytes memory hookData
+    ) internal returns (BalanceDelta delta) {
+        Currency currency0 = config.poolKey.currency0;
+        Currency currency1 = config.poolKey.currency1;
+
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode(tokenId, config, liquidityToAdd, amount0Max, amount1Max, hookData);
+        params[1] = abi.encode(currency0);
+        params[2] = abi.encode(currency1);
+
+        uint256 balance0Before = currency0.balanceOf(address(this));
+        uint256 balance1Before = currency1.balanceOf(address(this));
+
+        posm.modifyLiquidities(
+            abi.encode(abi.encodePacked(uint8(Actions.INCREASE_LIQUIDITY), uint8(Actions.CLOSE_CURRENCY), uint8(Actions.CLOSE_CURRENCY)), params), deadline
+        );
+
+        delta = toBalanceDelta(
+            (currency0.balanceOf(address(this)).toInt256() - balance0Before.toInt256()).toInt128(),
+            (currency1.balanceOf(address(this)).toInt256() - balance1Before.toInt256()).toInt128()
         );
     }
 
