@@ -13,7 +13,6 @@ import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {Counter} from "../src/Counter.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
-import {PositionConfig} from "v4-periphery/src/libraries/PositionConfig.sol";
 
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {EasyPosm} from "./utils/EasyPosm.sol";
@@ -29,7 +28,8 @@ contract CounterTest is Test, Fixtures {
     PoolId poolId;
 
     uint256 tokenId;
-    PositionConfig config;
+    int24 tickLower;
+    int24 tickUpper;
 
     function setUp() public {
         // creates the pool manager, utility routers, and test tokens
@@ -55,13 +55,13 @@ contract CounterTest is Test, Fixtures {
         manager.initialize(key, SQRT_PRICE_1_1, ZERO_BYTES);
 
         // Provide full-range liquidity to the pool
-        config = PositionConfig({
-            poolKey: key,
-            tickLower: TickMath.minUsableTick(key.tickSpacing),
-            tickUpper: TickMath.maxUsableTick(key.tickSpacing)
-        });
+        tickLower = TickMath.minUsableTick(key.tickSpacing);
+        tickUpper = TickMath.maxUsableTick(key.tickSpacing);
+
         (tokenId,) = posm.mint(
-            config,
+            key,
+            tickLower,
+            tickUpper,
             10_000e18,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
@@ -100,7 +100,6 @@ contract CounterTest is Test, Fixtures {
         uint256 liquidityToRemove = 1e18;
         posm.decreaseLiquidity(
             tokenId,
-            config,
             liquidityToRemove,
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,

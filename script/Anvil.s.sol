@@ -60,7 +60,7 @@ contract CounterScript is Script {
     // Helpers
     // -----------------------------------------------------------
     function deployPoolManager() internal returns (IPoolManager) {
-        return IPoolManager(address(new PoolManager(500000)));
+        return IPoolManager(address(new PoolManager()));
     }
 
     function deployRouters(IPoolManager manager)

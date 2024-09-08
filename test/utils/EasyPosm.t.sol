@@ -11,7 +11,6 @@ import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
-import {PositionConfig} from "v4-periphery/src/libraries/PositionConfig.sol";
 import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
@@ -24,7 +23,8 @@ contract CounterTest is Test, Fixtures {
     using CurrencyLibrary for Currency;
     using StateLibrary for IPoolManager;
 
-    PositionConfig config;
+    int24 tickLower;
+    int24 tickUpper;
 
     function setUp() public {
         // creates the pool manager, utility routers, and test tokens
@@ -38,11 +38,8 @@ contract CounterTest is Test, Fixtures {
         manager.initialize(key, SQRT_PRICE_1_1, ZERO_BYTES);
 
         // full-range liquidity
-        config = PositionConfig({
-            poolKey: key,
-            tickLower: TickMath.minUsableTick(key.tickSpacing),
-            tickUpper: TickMath.maxUsableTick(key.tickSpacing)
-        });
+        tickLower = TickMath.minUsableTick(key.tickSpacing);
+        tickUpper = TickMath.maxUsableTick(key.tickSpacing);
     }
 
     function test_mintLiquidity() public {
@@ -51,13 +48,15 @@ contract CounterTest is Test, Fixtures {
 
         (uint256 amount0, uint256 amount1) = LiquidityAmounts.getAmountsForLiquidity(
             SQRT_PRICE_1_1,
-            TickMath.getSqrtPriceAtTick(config.tickLower),
-            TickMath.getSqrtPriceAtTick(config.tickUpper),
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
             uint128(liquidityToMint)
         );
 
         (, BalanceDelta delta) = posm.mint(
-            config,
+            key,
+            tickLower,
+            tickUpper,
             liquidityToMint,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
@@ -71,7 +70,9 @@ contract CounterTest is Test, Fixtures {
 
     function test_increaseLiquidity() public {
         (uint256 tokenId,) = posm.mint(
-            config,
+            key,
+            tickLower,
+            tickUpper,
             100e18,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
@@ -84,14 +85,13 @@ contract CounterTest is Test, Fixtures {
 
         (uint256 amount0, uint256 amount1) = LiquidityAmounts.getAmountsForLiquidity(
             SQRT_PRICE_1_1,
-            TickMath.getSqrtPriceAtTick(config.tickLower),
-            TickMath.getSqrtPriceAtTick(config.tickUpper),
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
             uint128(liquidityToAdd)
         );
 
         BalanceDelta delta = posm.increaseLiquidity(
             tokenId,
-            config,
             liquidityToAdd,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
@@ -104,7 +104,9 @@ contract CounterTest is Test, Fixtures {
 
     function test_decreaseLiquidity() public {
         (uint256 tokenId,) = posm.mint(
-            config,
+            key,
+            tickLower,
+            tickUpper,
             100e18,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
@@ -117,14 +119,13 @@ contract CounterTest is Test, Fixtures {
 
         (uint256 amount0, uint256 amount1) = LiquidityAmounts.getAmountsForLiquidity(
             SQRT_PRICE_1_1,
-            TickMath.getSqrtPriceAtTick(config.tickLower),
-            TickMath.getSqrtPriceAtTick(config.tickUpper),
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
             uint128(liquidityToRemove)
         );
 
         BalanceDelta delta = posm.decreaseLiquidity(
             tokenId,
-            config,
             liquidityToRemove,
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
@@ -138,8 +139,10 @@ contract CounterTest is Test, Fixtures {
 
     function test_burn() public {
         (uint256 tokenId, BalanceDelta mintDelta) = posm.mint(
-            config,
-            10_000 ether,
+            key,
+            tickLower,
+            tickUpper,
+            100e18,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             address(this),
@@ -149,7 +152,6 @@ contract CounterTest is Test, Fixtures {
 
         BalanceDelta delta = posm.burn(
             tokenId,
-            config,
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
             address(this),
@@ -162,8 +164,10 @@ contract CounterTest is Test, Fixtures {
 
     function test_collect() public {
         (uint256 tokenId,) = posm.mint(
-            config,
-            10_000 ether,
+            key,
+            tickLower,
+            tickUpper,
+            100e18,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             address(this),
@@ -179,7 +183,6 @@ contract CounterTest is Test, Fixtures {
         // position collects half of the revenue since 50% of the liquidity is minted in setUp()
         BalanceDelta delta = posm.collect(
             tokenId,
-            config,
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
             address(0x123),
