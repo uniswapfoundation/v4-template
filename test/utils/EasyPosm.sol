@@ -37,27 +37,47 @@ library EasyPosm {
         uint256 deadline,
         bytes memory hookData
     ) internal returns (uint256 tokenId, BalanceDelta delta) {
-        (Currency currency0, Currency currency1) = (poolKey.currency0, poolKey.currency1);
+        (Currency currency0, Currency currency1) = (
+            poolKey.currency0,
+            poolKey.currency1
+        );
 
         MintData memory mintData = MintData({
             balance0Before: currency0.balanceOf(address(this)),
             balance1Before: currency1.balanceOf(address(this)),
             params: new bytes[](2)
         });
-        mintData.params[0] =
-            abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, recipient, hookData);
+        mintData.params[0] = abi.encode(
+            poolKey,
+            tickLower,
+            tickUpper,
+            liquidity,
+            amount0Max,
+            amount1Max,
+            recipient,
+            hookData
+        );
         mintData.params[1] = abi.encode(currency0, currency1);
 
         // Mint Liquidity
         tokenId = posm.nextTokenId();
-        posm.modifyLiquidities(
-            abi.encode(abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR)), mintData.params),
+        uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
+        posm.modifyLiquidities{value: valueToPass}(
+            abi.encode(
+                abi.encodePacked(
+                    uint8(Actions.MINT_POSITION),
+                    uint8(Actions.SETTLE_PAIR)
+                ),
+                mintData.params
+            ),
             deadline
         );
 
         delta = toBalanceDelta(
-            -(mintData.balance0Before - currency0.balanceOf(address(this))).toInt128(),
-            -(mintData.balance1Before - currency1.balanceOf(address(this))).toInt128()
+            -(mintData.balance0Before - currency0.balanceOf(address(this)))
+                .toInt128(),
+            -(mintData.balance1Before - currency1.balanceOf(address(this)))
+                .toInt128()
         );
     }
 
@@ -73,17 +93,26 @@ library EasyPosm {
         (Currency currency0, Currency currency1) = getCurrencies(posm, tokenId);
 
         bytes[] memory params = new bytes[](3);
-        params[0] = abi.encode(tokenId, liquidityToAdd, amount0Max, amount1Max, hookData);
+        params[0] = abi.encode(
+            tokenId,
+            liquidityToAdd,
+            amount0Max,
+            amount1Max,
+            hookData
+        );
         params[1] = abi.encode(currency0);
         params[2] = abi.encode(currency1);
 
         uint256 balance0Before = currency0.balanceOf(address(this));
         uint256 balance1Before = currency1.balanceOf(address(this));
 
-        posm.modifyLiquidities(
+        uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
+        posm.modifyLiquidities{value: valueToPass}(
             abi.encode(
                 abi.encodePacked(
-                    uint8(Actions.INCREASE_LIQUIDITY), uint8(Actions.CLOSE_CURRENCY), uint8(Actions.CLOSE_CURRENCY)
+                    uint8(Actions.INCREASE_LIQUIDITY),
+                    uint8(Actions.CLOSE_CURRENCY),
+                    uint8(Actions.CLOSE_CURRENCY)
                 ),
                 params
             ),
@@ -91,8 +120,10 @@ library EasyPosm {
         );
 
         delta = toBalanceDelta(
-            (currency0.balanceOf(address(this)).toInt256() - balance0Before.toInt256()).toInt128(),
-            (currency1.balanceOf(address(this)).toInt256() - balance1Before.toInt256()).toInt128()
+            (currency0.balanceOf(address(this)).toInt256() -
+                balance0Before.toInt256()).toInt128(),
+            (currency1.balanceOf(address(this)).toInt256() -
+                balance1Before.toInt256()).toInt128()
         );
     }
 
@@ -109,14 +140,27 @@ library EasyPosm {
         (Currency currency0, Currency currency1) = getCurrencies(posm, tokenId);
 
         bytes[] memory params = new bytes[](2);
-        params[0] = abi.encode(tokenId, liquidityToRemove, amount0Min, amount1Min, hookData);
+        params[0] = abi.encode(
+            tokenId,
+            liquidityToRemove,
+            amount0Min,
+            amount1Min,
+            hookData
+        );
         params[1] = abi.encode(currency0, currency1, recipient);
 
         uint256 balance0Before = currency0.balanceOf(address(this));
         uint256 balance1Before = currency1.balanceOf(address(this));
 
         posm.modifyLiquidities(
-            abi.encode(abi.encodePacked(uint8(Actions.DECREASE_LIQUIDITY), uint8(Actions.TAKE_PAIR)), params), deadline
+            abi.encode(
+                abi.encodePacked(
+                    uint8(Actions.DECREASE_LIQUIDITY),
+                    uint8(Actions.TAKE_PAIR)
+                ),
+                params
+            ),
+            deadline
         );
 
         delta = toBalanceDelta(
@@ -145,7 +189,14 @@ library EasyPosm {
         uint256 balance1Before = currency1.balanceOf(recipient);
 
         posm.modifyLiquidities(
-            abi.encode(abi.encodePacked(uint8(Actions.DECREASE_LIQUIDITY), uint8(Actions.TAKE_PAIR)), params), deadline
+            abi.encode(
+                abi.encodePacked(
+                    uint8(Actions.DECREASE_LIQUIDITY),
+                    uint8(Actions.TAKE_PAIR)
+                ),
+                params
+            ),
+            deadline
         );
 
         delta = toBalanceDelta(
@@ -173,7 +224,14 @@ library EasyPosm {
         uint256 balance1Before = currency1.balanceOf(recipient);
 
         posm.modifyLiquidities(
-            abi.encode(abi.encodePacked(uint8(Actions.BURN_POSITION), uint8(Actions.TAKE_PAIR)), params), deadline
+            abi.encode(
+                abi.encodePacked(
+                    uint8(Actions.BURN_POSITION),
+                    uint8(Actions.TAKE_PAIR)
+                ),
+                params
+            ),
+            deadline
         );
 
         delta = toBalanceDelta(
@@ -182,12 +240,11 @@ library EasyPosm {
         );
     }
 
-    function getCurrencies(IPositionManager posm, uint256 tokenId)
-        internal
-        view
-        returns (Currency currency0, Currency currency1)
-    {
-        (PoolKey memory key,) = posm.getPoolAndPositionInfo(tokenId);
+    function getCurrencies(
+        IPositionManager posm,
+        uint256 tokenId
+    ) internal view returns (Currency currency0, Currency currency1) {
+        (PoolKey memory key, ) = posm.getPoolAndPositionInfo(tokenId);
         return (key.currency0, key.currency1);
     }
 }

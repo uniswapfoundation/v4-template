@@ -46,12 +46,13 @@ contract CounterTest is Test, Fixtures {
         uint256 liquidityToMint = 100e18;
         address recipient = address(this);
 
-        (uint256 amount0, uint256 amount1) = LiquidityAmounts.getAmountsForLiquidity(
-            SQRT_PRICE_1_1,
-            TickMath.getSqrtPriceAtTick(tickLower),
-            TickMath.getSqrtPriceAtTick(tickUpper),
-            uint128(liquidityToMint)
-        );
+        (uint256 amount0, uint256 amount1) = LiquidityAmounts
+            .getAmountsForLiquidity(
+                SQRT_PRICE_1_1,
+                TickMath.getSqrtPriceAtTick(tickLower),
+                TickMath.getSqrtPriceAtTick(tickUpper),
+                uint128(liquidityToMint)
+            );
 
         (, BalanceDelta delta) = posm.mint(
             key,
@@ -69,7 +70,7 @@ contract CounterTest is Test, Fixtures {
     }
 
     function test_increaseLiquidity() public {
-        (uint256 tokenId,) = posm.mint(
+        (uint256 tokenId, ) = posm.mint(
             key,
             tickLower,
             tickUpper,
@@ -83,12 +84,13 @@ contract CounterTest is Test, Fixtures {
 
         uint256 liquidityToAdd = 1e18;
 
-        (uint256 amount0, uint256 amount1) = LiquidityAmounts.getAmountsForLiquidity(
-            SQRT_PRICE_1_1,
-            TickMath.getSqrtPriceAtTick(tickLower),
-            TickMath.getSqrtPriceAtTick(tickUpper),
-            uint128(liquidityToAdd)
-        );
+        (uint256 amount0, uint256 amount1) = LiquidityAmounts
+            .getAmountsForLiquidity(
+                SQRT_PRICE_1_1,
+                TickMath.getSqrtPriceAtTick(tickLower),
+                TickMath.getSqrtPriceAtTick(tickUpper),
+                uint128(liquidityToAdd)
+            );
 
         BalanceDelta delta = posm.increaseLiquidity(
             tokenId,
@@ -103,7 +105,7 @@ contract CounterTest is Test, Fixtures {
     }
 
     function test_decreaseLiquidity() public {
-        (uint256 tokenId,) = posm.mint(
+        (uint256 tokenId, ) = posm.mint(
             key,
             tickLower,
             tickUpper,
@@ -117,12 +119,13 @@ contract CounterTest is Test, Fixtures {
 
         uint256 liquidityToRemove = 1e18;
 
-        (uint256 amount0, uint256 amount1) = LiquidityAmounts.getAmountsForLiquidity(
-            SQRT_PRICE_1_1,
-            TickMath.getSqrtPriceAtTick(tickLower),
-            TickMath.getSqrtPriceAtTick(tickUpper),
-            uint128(liquidityToRemove)
-        );
+        (uint256 amount0, uint256 amount1) = LiquidityAmounts
+            .getAmountsForLiquidity(
+                SQRT_PRICE_1_1,
+                TickMath.getSqrtPriceAtTick(tickLower),
+                TickMath.getSqrtPriceAtTick(tickUpper),
+                uint128(liquidityToRemove)
+            );
 
         BalanceDelta delta = posm.decreaseLiquidity(
             tokenId,
@@ -163,7 +166,7 @@ contract CounterTest is Test, Fixtures {
     }
 
     function test_collect() public {
-        (uint256 tokenId,) = posm.mint(
+        (uint256 tokenId, ) = posm.mint(
             key,
             tickLower,
             tickUpper,
