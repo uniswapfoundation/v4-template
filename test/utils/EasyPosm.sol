@@ -25,6 +25,8 @@ library EasyPosm {
         bytes[] params;
     }
 
+    /// @dev This function supports sending native tokens (ETH), the amount-to-pay is determined by amount0Max.
+    ///      Any excess amount is NOT refunded since it is not encoding the SWEEP action
     function mint(
         IPositionManager posm,
         PoolKey memory poolKey,

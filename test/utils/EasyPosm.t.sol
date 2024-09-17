@@ -35,7 +35,10 @@ contract CounterTest is Test, Fixtures {
 
         // Create the pool
         key = PoolKey(currency0, currency1, 3000, 60, IHooks(address(0)));
+        nativeKey = PoolKey(Currency.wrap(address(0)), currency1, 3000, 60, IHooks(address(0)));
+
         manager.initialize(key, SQRT_PRICE_1_1, ZERO_BYTES);
+        manager.initialize(nativeKey, SQRT_PRICE_1_1, ZERO_BYTES);
 
         // full-range liquidity
         tickLower = TickMath.minUsableTick(key.tickSpacing);
@@ -60,6 +63,33 @@ contract CounterTest is Test, Fixtures {
             liquidityToMint,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
+            recipient,
+            block.timestamp + 1,
+            ZERO_BYTES
+        );
+        assertEq(delta.amount0(), -int128(uint128(amount0 + 1 wei)));
+        assertEq(delta.amount1(), -int128(uint128(amount1 + 1 wei)));
+    }
+
+    function test_mintLiquidityNative() public {
+        uint256 liquidityToMint = 100e18;
+        address recipient = address(this);
+
+        (uint256 amount0, uint256 amount1) = LiquidityAmounts.getAmountsForLiquidity(
+            SQRT_PRICE_1_1,
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
+            uint128(liquidityToMint)
+        );
+
+        vm.deal(address(this), amount0 + 1);
+        (, BalanceDelta delta) = posm.mint(
+            nativeKey,
+            tickLower,
+            tickUpper,
+            liquidityToMint,
+            amount0 + 1,
+            amount1 + 1,
             recipient,
             block.timestamp + 1,
             ZERO_BYTES
@@ -97,6 +127,47 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             block.timestamp + 1,
             ZERO_BYTES
+        );
+        assertEq(delta.amount0(), -int128(uint128(amount0 + 1 wei)));
+        assertEq(delta.amount1(), -int128(uint128(amount1 + 1 wei)));
+    }
+
+    function test_increaseLiquidityNative() public {
+        uint256 liquidityToMint = 100e18;
+        address recipient = address(this);
+
+        (uint256 amount0, uint256 amount1) = LiquidityAmounts.getAmountsForLiquidity(
+            SQRT_PRICE_1_1,
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
+            uint128(liquidityToMint)
+        );
+
+        vm.deal(address(this), amount0 + 1);
+        (uint256 tokenId, BalanceDelta delta) = posm.mint(
+            nativeKey,
+            tickLower,
+            tickUpper,
+            liquidityToMint,
+            amount0 + 1,
+            amount1 + 1,
+            recipient,
+            block.timestamp + 1,
+            ZERO_BYTES
+        );
+
+        uint256 liquidityToIncrease = 1e18;
+
+        (amount0, amount1) = LiquidityAmounts.getAmountsForLiquidity(
+            SQRT_PRICE_1_1,
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
+            uint128(liquidityToIncrease)
+        );
+
+        vm.deal(address(this), amount0 + 1);
+        delta = posm.increaseLiquidity(
+            tokenId, liquidityToIncrease, amount0 + 1, amount1 + 1, block.timestamp + 1, ZERO_BYTES
         );
         assertEq(delta.amount0(), -int128(uint128(amount0 + 1 wei)));
         assertEq(delta.amount1(), -int128(uint128(amount1 + 1 wei)));
