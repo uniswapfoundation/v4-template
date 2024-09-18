@@ -25,6 +25,8 @@ library EasyPosm {
         bytes[] params;
     }
 
+    /// @dev This function supports sending native tokens (ETH), the amount-to-pay is determined by amount0Max.
+    ///      Any excess amount is NOT refunded since it is not encoding the SWEEP action
     function mint(
         IPositionManager posm,
         PoolKey memory poolKey,
@@ -50,7 +52,8 @@ library EasyPosm {
 
         // Mint Liquidity
         tokenId = posm.nextTokenId();
-        posm.modifyLiquidities(
+        uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
+        posm.modifyLiquidities{value: valueToPass}(
             abi.encode(abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR)), mintData.params),
             deadline
         );
@@ -80,7 +83,8 @@ library EasyPosm {
         uint256 balance0Before = currency0.balanceOf(address(this));
         uint256 balance1Before = currency1.balanceOf(address(this));
 
-        posm.modifyLiquidities(
+        uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
+        posm.modifyLiquidities{value: valueToPass}(
             abi.encode(
                 abi.encodePacked(
                     uint8(Actions.INCREASE_LIQUIDITY), uint8(Actions.CLOSE_CURRENCY), uint8(Actions.CLOSE_CURRENCY)

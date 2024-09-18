@@ -14,6 +14,7 @@ import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {Counter} from "../src/Counter.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 
+import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {EasyPosm} from "./utils/EasyPosm.sol";
 import {Fixtures} from "./utils/Fixtures.sol";
@@ -58,13 +59,22 @@ contract CounterTest is Test, Fixtures {
         tickLower = TickMath.minUsableTick(key.tickSpacing);
         tickUpper = TickMath.maxUsableTick(key.tickSpacing);
 
+        uint128 liquidityAmount = 100e18;
+
+        (uint256 amount0Expected, uint256 amount1Expected) = LiquidityAmounts.getAmountsForLiquidity(
+            SQRT_PRICE_1_1,
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
+            liquidityAmount
+        );
+
         (tokenId,) = posm.mint(
             key,
             tickLower,
             tickUpper,
-            10_000e18,
-            MAX_SLIPPAGE_ADD_LIQUIDITY,
-            MAX_SLIPPAGE_ADD_LIQUIDITY,
+            liquidityAmount,
+            amount0Expected + 1,
+            amount1Expected + 1,
             address(this),
             block.timestamp,
             ZERO_BYTES
