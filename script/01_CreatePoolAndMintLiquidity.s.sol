@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
-import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";

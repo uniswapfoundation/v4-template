@@ -2,13 +2,10 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "forge-std/console.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 
-import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {Constants} from "./base/Constants.sol";
 import {Config} from "./base/Config.sol";
 

@@ -2,14 +2,11 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "forge-std/console.sol";
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
-import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 
 import {Constants} from "./base/Constants.sol";
 import {Config} from "./base/Config.sol";
@@ -42,9 +39,9 @@ contract SwapScript is Script, Constants, Config {
 
         // approve tokens to the swap router
         vm.broadcast();
-        IERC20(token0).approve(address(swapRouter), type(uint256).max);
+        token0.approve(address(swapRouter), type(uint256).max);
         vm.broadcast();
-        IERC20(token1).approve(address(swapRouter), type(uint256).max);
+        token1.approve(address(swapRouter), type(uint256).max);
 
         // ------------------------------ //
         // Swap 100e18 token0 into token1 //
