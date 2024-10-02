@@ -10,49 +10,83 @@ import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
+import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
+import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
+import {TickMath} from "v4-core/src/libraries/TickMath.sol";
+import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 
-contract AddLiquidityScript is Script {
+import {EasyPosm} from "../test/utils/EasyPosm.sol";
+import {Constants} from "./base/Constants.sol";
+import {Config} from "./base/Config.sol";
+
+contract AddLiquidityScript is Script, Constants, Config {
     using CurrencyLibrary for Currency;
+    using EasyPosm for IPositionManager;
+    using StateLibrary for IPoolManager;
 
-    address constant GOERLI_POOLMANAGER = address(0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b); // pool manager deployed to GOERLI
-    address constant MUNI_ADDRESS = address(0xbD97BF168FA913607b996fab823F88610DCF7737); // mUNI deployed to GOERLI -- insert your own contract address here
-    address constant MUSDC_ADDRESS = address(0xa468864e673a807572598AB6208E49323484c6bF); // mUSDC deployed to GOERLI -- insert your own contract address here
-    address constant HOOK_ADDRESS = address(0x3CA2cD9f71104a6e1b67822454c725FcaeE35fF6); // address of the hook contract deployed to goerli -- you can use this hook address or deploy your own!
+    /////////////////////////////////////
+    // --- Parameters to Configure --- //
+    /////////////////////////////////////
 
-    PoolModifyLiquidityTest lpRouter = PoolModifyLiquidityTest(address(0x83feDBeD11B3667f40263a88e8435fca51A03F8C));
+    // --- pool configuration --- //
+    // fees paid by swappers that accrue to liquidity providers
+    uint24 lpFee = 3000; // 0.30%
+    int24 tickSpacing = 60;
+
+    // --- liquidity position configuration --- //
+    uint256 public token0Amount = 1e18;
+    uint256 public token1Amount = 1e18;
+
+    // range of the position
+    int24 tickLower = -600; // must be a multiple of tickSpacing
+    int24 tickUpper = 600;
+    /////////////////////////////////////
 
     function run() external {
-        // sort the tokens!
-        address token0 = uint160(MUSDC_ADDRESS) < uint160(MUNI_ADDRESS) ? MUSDC_ADDRESS : MUNI_ADDRESS;
-        address token1 = uint160(MUSDC_ADDRESS) < uint160(MUNI_ADDRESS) ? MUNI_ADDRESS : MUSDC_ADDRESS;
-        uint24 swapFee = 4000; // 0.40% fee tier
-        int24 tickSpacing = 10;
-
         PoolKey memory pool = PoolKey({
-            currency0: Currency.wrap(token0),
-            currency1: Currency.wrap(token1),
-            fee: swapFee,
+            currency0: currency0,
+            currency1: currency1,
+            fee: lpFee,
             tickSpacing: tickSpacing,
-            hooks: IHooks(HOOK_ADDRESS)
+            hooks: hookContract
         });
 
-        // approve tokens to the LP Router
-        vm.broadcast();
-        IERC20(token0).approve(address(lpRouter), 1000e18);
-        vm.broadcast();
-        IERC20(token1).approve(address(lpRouter), 1000e18);
+        (uint160 sqrtPriceX96,,,) = POOLMANAGER.getSlot0(pool.toId());
 
-        // optionally specify hookData if the hook depends on arbitrary data for liquidity modification
+        // Converts token amounts to liquidity units
+        uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(
+            sqrtPriceX96,
+            TickMath.getSqrtPriceAtTick(tickLower),
+            TickMath.getSqrtPriceAtTick(tickUpper),
+            token0Amount,
+            token1Amount
+        );
+
+        // slippage limits
+        uint256 amount0Max = token0Amount + 1 wei;
+        uint256 amount1Max = token1Amount + 1 wei;
+
         bytes memory hookData = new bytes(0);
 
-        // logging the pool ID
-        PoolId id = PoolIdLibrary.toId(pool);
-        bytes32 idBytes = PoolId.unwrap(id);
-        console.log("Pool ID Below");
-        console.logBytes32(bytes32(idBytes));
+        vm.startBroadcast();
+        tokenApprovals();
+        vm.stopBroadcast();
 
-        // Provide 10_000e18 worth of liquidity on the range of [-600, 600]
-        vm.broadcast();
-        lpRouter.modifyLiquidity(pool, IPoolManager.ModifyLiquidityParams(-600, 600, 10_000e18, 0), hookData);
+        vm.startBroadcast();
+        IPositionManager(address(posm)).mint(
+            pool, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, block.timestamp + 60, hookData
+        );
+        vm.stopBroadcast();
+    }
+
+    function tokenApprovals() public {
+        if (!currency0.isAddressZero()) {
+            token0.approve(address(PERMIT2), type(uint256).max);
+            PERMIT2.approve(address(token0), address(posm), type(uint160).max, type(uint48).max);
+        }
+        if (!currency1.isAddressZero()) {
+            token1.approve(address(PERMIT2), type(uint256).max);
+            PERMIT2.approve(address(token1), address(posm), type(uint160).max, type(uint48).max);
+        }
     }
 }

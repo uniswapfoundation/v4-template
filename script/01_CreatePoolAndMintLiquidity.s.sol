@@ -10,26 +10,20 @@ import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
-import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
-import {Permit2Forwarder} from "v4-periphery/src/base/Permit2Forwarder.sol";
 
-contract CreatePoolAndAddLiquidityScript is Script {
+import {Constants} from "./base/Constants.sol";
+import {Config} from "./base/Config.sol";
+
+contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
     using CurrencyLibrary for Currency;
-
-    IAllowanceTransfer permit2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
 
     /////////////////////////////////////
     // --- Parameters to Configure --- //
     /////////////////////////////////////
-    // addresses of the contracts
-    PositionManager public posm = PositionManager(address(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0));
-    IHooks public hookContract = IHooks(address(0x0));
-    address public token0 = address(0); // use CurrencyLibrary.ADDRESS_ZERO for Native Token (Ether)
-    address public token1 = address(0xa513E6E4b8f2a923D98304ec87F64353C4D5C853);
 
     // --- pool configuration --- //
     // fees paid by swappers that accrue to liquidity providers
-    uint24 lpFee = 4000; // 0.30%
+    uint24 lpFee = 3000; // 0.30%
     int24 tickSpacing = 60;
 
     // starting price of the pool, in sqrtPriceX96
@@ -42,17 +36,10 @@ contract CreatePoolAndAddLiquidityScript is Script {
     // range of the position
     int24 tickLower = -600; // must be a multiple of tickSpacing
     int24 tickUpper = 600;
-    // ------------------------------- //
     /////////////////////////////////////
 
     function run() external {
-        // sort the tokens!
-        address _token0 = uint160(token0) < uint160(token1) ? token0 : token1;
-        address _token1 = uint160(token0) < uint160(token1) ? token1 : token0;
-
-        Currency currency0 = Currency.wrap(_token0);
-        Currency currency1 = Currency.wrap(_token1);
-
+        // tokens should be sorted
         PoolKey memory pool = PoolKey({
             currency0: currency0,
             currency1: currency1,
@@ -60,7 +47,6 @@ contract CreatePoolAndAddLiquidityScript is Script {
             tickSpacing: tickSpacing,
             hooks: hookContract
         });
-
         bytes memory hookData = new bytes(0);
 
         // --------------------------------- //
@@ -125,13 +111,13 @@ contract CreatePoolAndAddLiquidityScript is Script {
     }
 
     function tokenApprovals() public {
-        if (token0 != address(0)) {
-            IERC20(token0).approve(address(permit2), type(uint256).max);
-            permit2.approve(token0, address(posm), type(uint160).max, type(uint48).max);
+        if (!currency0.isAddressZero()) {
+            token0.approve(address(PERMIT2), type(uint256).max);
+            PERMIT2.approve(address(token0), address(posm), type(uint160).max, type(uint48).max);
         }
-        if (token1 != address(0)) {
-            IERC20(token1).approve(address(permit2), type(uint256).max);
-            permit2.approve(token1, address(posm), type(uint160).max, type(uint48).max);
+        if (!currency1.isAddressZero()) {
+            token1.approve(address(PERMIT2), type(uint256).max);
+            PERMIT2.approve(address(token1), address(posm), type(uint160).max, type(uint48).max);
         }
     }
 }
