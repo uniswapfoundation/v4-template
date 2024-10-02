@@ -3,18 +3,14 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Script.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
-import {PoolManager} from "v4-core/src/PoolManager.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.sol";
-import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
-import {PoolDonateTest} from "v4-core/src/test/PoolDonateTest.sol";
+
+import {Constants} from "./base/Constants.sol";
 import {Counter} from "../src/Counter.sol";
 import {HookMiner} from "../test/utils/HookMiner.sol";
 
-contract CounterScript is Script {
-    address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
-    address constant GOERLI_POOLMANAGER = address(0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b);
-
+/// @notice Mines the address and deploys the Counter.sol Hook contract
+contract CounterScript is Script, Constants {
     function setUp() public {}
 
     function run() public {
@@ -25,12 +21,13 @@ contract CounterScript is Script {
         );
 
         // Mine a salt that will produce a hook address with the correct flags
+        bytes memory constructorArgs = abi.encode(POOLMANAGER);
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, flags, type(Counter).creationCode, abi.encode(address(GOERLI_POOLMANAGER)));
+            HookMiner.find(CREATE2_DEPLOYER, flags, type(Counter).creationCode, constructorArgs);
 
         // Deploy the hook using CREATE2
         vm.broadcast();
-        Counter counter = new Counter{salt: salt}(IPoolManager(address(GOERLI_POOLMANAGER)));
+        Counter counter = new Counter{salt: salt}(IPoolManager(POOLMANAGER));
         require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
     }
 }

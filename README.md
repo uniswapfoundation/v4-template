@@ -20,7 +20,7 @@ git merge template/main <BRANCH> --allow-unrelated-histories
 
 ---
 
-## Check Forge Installation
+### Check Forge Installation
 *Ensure that you have correctly installed Foundry (Forge) and that it's up to date. You can update Foundry by running:*
 
 ```
@@ -51,47 +51,7 @@ forge script script/Anvil.s.sol \
     --broadcast
 ```
 
-<details>
-<summary><h3>Testnets</h3></summary>
-
-NOTE: 11/21/2023, the Goerli deployment is out of sync with the latest v4. **It is recommend to use local testing instead**
-
-~~For testing on Goerli Testnet the Uniswap Foundation team has deployed a slimmed down version of the V4 contract (due to current contract size limits) on the network.~~
-
-~~The relevant addresses for testing on Goerli are the ones below~~
-
-```bash
-POOL_MANAGER = 0x0
-POOL_MODIFY_POSITION_TEST = 0x0
-SWAP_ROUTER = 0x0
-```
-
-Update the following command with your own private key:
-
-```
-forge script script/00_Counter.s.sol \
---rpc-url https://rpc.ankr.com/eth_goerli \
---private-key [your_private_key_on_goerli_here] \
---broadcast
-```
-
-### *Deploying your own Tokens For Testing*
-
-Because V4 is still in testing mode, most networks don't have liquidity pools live on V4 testnets. We recommend launching your own test tokens and expirementing with them that. We've included in the templace a Mock UNI and Mock USDC contract for easier testing. You can deploy the contracts and when you do you'll have 1 million mock tokens to test with for each contract. See deployment commands below
-
-```
-forge create script/mocks/mUNI.sol:MockUNI \
---rpc-url [your_rpc_url_here] \
---private-key [your_private_key_on_goerli_here]
-```
-
-```
-forge create script/mocks/mUSDC.sol:MockUSDC \
---rpc-url [your_rpc_url_here] \
---private-key [your_private_key_on_goerli_here]
-```
-
-</details>
+See [script/](script/) for hook deployment, pool creation, liquidity provision, and swapping.
 
 ---
 
@@ -125,6 +85,8 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
 ---
 
 Additional resources:
+
+[Uniswap v4 docs](https://docs.uniswap.org/contracts/v4/overview)
 
 [v4-periphery](https://github.com/uniswap/v4-periphery) contains advanced hook implementations that serve as a great reference
 

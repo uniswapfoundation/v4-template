@@ -16,10 +16,18 @@ import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {Counter} from "../src/Counter.sol";
 import {HookMiner} from "../test/utils/HookMiner.sol";
+import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
+import {PositionManager} from "v4-periphery/src/PositionManager.sol";
+import {EasyPosm} from "../test/utils/EasyPosm.sol";
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
+import {DeployPermit2} from "../test/utils/forks/DeployPermit2.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
-contract CounterScript is Script {
+contract CounterScript is Script, DeployPermit2 {
+    using EasyPosm for IPositionManager;
+
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
 
     function setUp() public {}
@@ -47,12 +55,13 @@ contract CounterScript is Script {
 
         // Additional helpers for interacting with the pool
         vm.startBroadcast();
+        IPositionManager posm = deployPosm(manager);
         (PoolModifyLiquidityTest lpRouter, PoolSwapTest swapRouter,) = deployRouters(manager);
         vm.stopBroadcast();
 
         // test the lifecycle (create pool, add liquidity, swap)
         vm.startBroadcast();
-        testLifecycle(manager, address(counter), lpRouter, swapRouter);
+        testLifecycle(manager, address(counter), posm, lpRouter, swapRouter);
         vm.stopBroadcast();
     }
 
@@ -72,6 +81,19 @@ contract CounterScript is Script {
         donateRouter = new PoolDonateTest(manager);
     }
 
+    function deployPosm(IPoolManager poolManager) public returns (IPositionManager) {
+        anvilPermit2();
+        return IPositionManager(new PositionManager(poolManager, permit2, 300_000));
+    }
+
+    function approvePosmCurrency(IPositionManager posm, Currency currency) internal {
+        // Because POSM uses permit2, we must execute 2 permits/approvals.
+        // 1. First, the caller must approve permit2 on the token.
+        IERC20(Currency.unwrap(currency)).approve(address(permit2), type(uint256).max);
+        // 2. Then, the caller must approve POSM as a spender of permit2
+        permit2.approve(Currency.unwrap(currency), address(posm), type(uint160).max, type(uint48).max);
+    }
+
     function deployTokens() internal returns (MockERC20 token0, MockERC20 token1) {
         MockERC20 tokenA = new MockERC20("MockA", "A", 18);
         MockERC20 tokenB = new MockERC20("MockB", "B", 18);
@@ -87,6 +109,7 @@ contract CounterScript is Script {
     function testLifecycle(
         IPoolManager manager,
         address hook,
+        IPositionManager posm,
         PoolModifyLiquidityTest lpRouter,
         PoolSwapTest swapRouter
     ) internal {
@@ -108,12 +131,27 @@ contract CounterScript is Script {
         token0.approve(address(swapRouter), type(uint256).max);
         token1.approve(address(swapRouter), type(uint256).max);
 
+        approvePosmCurrency(posm, Currency.wrap(address(token0)));
+        approvePosmCurrency(posm, Currency.wrap(address(token1)));
+
         // add full range liquidity to the pool
         lpRouter.modifyLiquidity(
             poolKey,
             IPoolManager.ModifyLiquidityParams(
                 TickMath.minUsableTick(tickSpacing), TickMath.maxUsableTick(tickSpacing), 100 ether, 0
             ),
+            ZERO_BYTES
+        );
+
+        posm.mint(
+            poolKey,
+            TickMath.minUsableTick(tickSpacing),
+            TickMath.maxUsableTick(tickSpacing),
+            100e18,
+            10_000e18,
+            10_000e18,
+            msg.sender,
+            block.timestamp + 300,
             ZERO_BYTES
         );
 
