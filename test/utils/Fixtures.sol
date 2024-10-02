@@ -11,7 +11,7 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {Deployers} from "v4-core/test/utils/Deployers.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
-import {DeployPermit2} from "permit2/test/utils/DeployPermit2.sol";
+import {DeployPermit2} from "./forks/DeployPermit2.sol";
 import {IERC721Permit_v4} from "v4-periphery/src/interfaces/IERC721Permit_v4.sol";
 import {IEIP712_v4} from "v4-periphery/src/interfaces/IEIP712_v4.sol";
 import {ERC721PermitHash} from "v4-periphery/src/libraries/ERC721PermitHash.sol";
@@ -23,7 +23,6 @@ contract Fixtures is Deployers, DeployPermit2 {
     uint256 constant MAX_SLIPPAGE_REMOVE_LIQUIDITY = 0;
 
     IPositionManager posm;
-    IAllowanceTransfer permit2;
 
     function deployAndApprovePosm(IPoolManager poolManager) public {
         deployPosm(poolManager);
@@ -31,8 +30,8 @@ contract Fixtures is Deployers, DeployPermit2 {
     }
 
     function deployPosm(IPoolManager poolManager) internal {
-        // We use deployPermit2() to prevent having to use via-ir in this repository.
-        permit2 = IAllowanceTransfer(deployPermit2());
+        // We use vm.etch to prevent having to use via-ir in this repository.
+        etchPermit2();
         posm = IPositionManager(new PositionManager(poolManager, permit2, 300_000));
     }
 
