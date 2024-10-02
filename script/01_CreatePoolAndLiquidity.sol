@@ -9,22 +9,27 @@ import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
+import {Permit2Forwarder} from "v4-periphery/src/base/Permit2Forwarder.sol";
 
 contract CreatePoolAndAddLiquidityScript is Script {
     using CurrencyLibrary for Currency;
+
+    IAllowanceTransfer permit2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
 
     /////////////////////////////////////
     // --- Parameters to Configure --- //
     /////////////////////////////////////
     // addresses of the contracts
-    PositionManager public posm = PositionManager(address(0x1111));
-    IHooks public hookContract = IHooks(address(0x2222));
-    address public token0 = address(0x3333); // use CurrencyLibrary.ADDRESS_ZERO for Native Token (Ether)
-    address public token1 = address(0x4444);
+    PositionManager public posm = PositionManager(address(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0));
+    IHooks public hookContract = IHooks(address(0x0));
+    address public token0 = address(0); // use CurrencyLibrary.ADDRESS_ZERO for Native Token (Ether)
+    address public token1 = address(0xa513E6E4b8f2a923D98304ec87F64353C4D5C853);
 
     // --- pool configuration --- //
     // fees paid by swappers that accrue to liquidity providers
-    uint24 lpFee = 3000; // 0.30%
+    uint24 lpFee = 4000; // 0.30%
     int24 tickSpacing = 60;
 
     // starting price of the pool, in sqrtPriceX96
@@ -84,11 +89,15 @@ contract CreatePoolAndAddLiquidityScript is Script {
 
         // mint liquidity
         params[1] = abi.encodeWithSelector(
-            posm.modifyLiquidities.selector, abi.encode(actions, mintParams), block.timestamp + 20
+            posm.modifyLiquidities.selector, abi.encode(actions, mintParams), block.timestamp + 60
         );
 
         // if the pool is an ETH pair, native tokens are to be transferred
         uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
+
+        vm.startBroadcast();
+        tokenApprovals();
+        vm.stopBroadcast();
 
         // multicall to atomically create pool & add liquidity
         vm.broadcast();
@@ -113,5 +122,16 @@ contract CreatePoolAndAddLiquidityScript is Script {
         params[0] = abi.encode(poolKey, _tickLower, _tickUpper, liquidity, amount0Max, amount1Max, recipient, hookData);
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
         return (actions, params);
+    }
+
+    function tokenApprovals() public {
+        if (token0 != address(0)) {
+            IERC20(token0).approve(address(permit2), type(uint256).max);
+            permit2.approve(token0, address(posm), type(uint160).max, type(uint48).max);
+        }
+        if (token1 != address(0)) {
+            IERC20(token1).approve(address(permit2), type(uint256).max);
+            permit2.approve(token1, address(posm), type(uint160).max, type(uint48).max);
+        }
     }
 }
