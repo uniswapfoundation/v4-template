@@ -76,7 +76,7 @@ Hook deployment failures are caused by incorrect flags or incorrect salt mining
     * `getHookCalls()` returns the correct flags
     * `flags` provided to `HookMiner.find(...)`
 2. Verify salt mining is correct:
-    * In **forge test**: the *deploye*r for: `new Hook{salt: salt}(...)` and `HookMiner.find(deployer, ...)` are the same. This will be `address(this)`. If using `vm.prank`, the deployer will be the pranking address
+    * In **forge test**: the *deployer* for: `new Hook{salt: salt}(...)` and `HookMiner.find(deployer, ...)` are the same. This will be `address(this)`. If using `vm.prank`, the deployer will be the pranking address
     * In **forge script**: the deployer must be the CREATE2 Proxy: `0x4e59b44847b379578588920cA78FbF26c0B4956C`
         * If anvil does not have the CREATE2 deployer, your foundry may be out of date. You can update it with `foundryup`
 
