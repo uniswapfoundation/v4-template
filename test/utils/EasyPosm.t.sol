@@ -37,8 +37,8 @@ contract CounterTest is Test, Fixtures {
         key = PoolKey(currency0, currency1, 3000, 60, IHooks(address(0)));
         nativeKey = PoolKey(Currency.wrap(address(0)), currency1, 3000, 60, IHooks(address(0)));
 
-        manager.initialize(key, SQRT_PRICE_1_1, ZERO_BYTES);
-        manager.initialize(nativeKey, SQRT_PRICE_1_1, ZERO_BYTES);
+        manager.initialize(key, SQRT_PRICE_1_1);
+        manager.initialize(nativeKey, SQRT_PRICE_1_1);
 
         // full-range liquidity
         tickLower = TickMath.minUsableTick(key.tickSpacing);

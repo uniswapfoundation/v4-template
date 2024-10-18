@@ -128,7 +128,7 @@ contract ExampleHookTest is Test, Deployers {
     function _etchHookAndInitPool(address hookAddr, address implAddr) internal {
         vm.etch(hookAddr, implAddr.code);
         hook = hookAddr;
-        (key,) = initPoolAndAddLiquidity(currency0, currency1, IHooks(hook), 100, SQRT_PRICE_1_1, ZERO_BYTES);
+        (key,) = initPoolAndAddLiquidity(currency0, currency1, IHooks(hook), 100, SQRT_PRICE_1_1);
     }
 
     function _defaultTestSettings() internal returns (PoolSwapTest.TestSettings memory testSetting) {

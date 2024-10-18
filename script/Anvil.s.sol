@@ -22,6 +22,7 @@ import {EasyPosm} from "../test/utils/EasyPosm.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {DeployPermit2} from "../test/utils/forks/DeployPermit2.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {IPositionDescriptor} from "v4-periphery/src/interfaces/IPositionDescriptor.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
@@ -83,7 +84,7 @@ contract CounterScript is Script, DeployPermit2 {
 
     function deployPosm(IPoolManager poolManager) public returns (IPositionManager) {
         anvilPermit2();
-        return IPositionManager(new PositionManager(poolManager, permit2, 300_000));
+        return IPositionManager(new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0))));
     }
 
     function approvePosmCurrency(IPositionManager posm, Currency currency) internal {
@@ -123,7 +124,7 @@ contract CounterScript is Script, DeployPermit2 {
         int24 tickSpacing = 60;
         PoolKey memory poolKey =
             PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, tickSpacing, IHooks(hook));
-        manager.initialize(poolKey, Constants.SQRT_PRICE_1_1, ZERO_BYTES);
+        manager.initialize(poolKey, Constants.SQRT_PRICE_1_1);
 
         // approve the tokens to the routers
         token0.approve(address(lpRouter), type(uint256).max);
