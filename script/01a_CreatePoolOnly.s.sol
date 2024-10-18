@@ -46,6 +46,6 @@ contract CreatePoolOnly is Script, Constants, Config {
         bytes memory hookData = new bytes(0);
 
         vm.broadcast();
-        IPoolManager(POOLMANAGER).initialize(pool, startingPrice, hookData);
+        IPoolManager(POOLMANAGER).initialize(pool, startingPrice);
     }
 }
