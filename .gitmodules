@@ -7,3 +7,6 @@
 [submodule "lib/v4-core"]
 	path = lib/v4-core
 	url = https://github.com/uniswap/v4-core
+[submodule "counter-hook/lib/forge-std"]
+	path = counter-hook/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
