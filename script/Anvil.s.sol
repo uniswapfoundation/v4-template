@@ -23,6 +23,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 import {DeployPermit2} from "../test/utils/forks/DeployPermit2.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {IPositionDescriptor} from "v4-periphery/src/interfaces/IPositionDescriptor.sol";
+import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
 /// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
@@ -70,7 +71,7 @@ contract CounterScript is Script, DeployPermit2 {
     // Helpers
     // -----------------------------------------------------------
     function deployPoolManager() internal returns (IPoolManager) {
-        return IPoolManager(address(new PoolManager()));
+        return IPoolManager(address(new PoolManager(address(0))));
     }
 
     function deployRouters(IPoolManager manager)
@@ -84,7 +85,7 @@ contract CounterScript is Script, DeployPermit2 {
 
     function deployPosm(IPoolManager poolManager) public returns (IPositionManager) {
         anvilPermit2();
-        return IPositionManager(new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0))));
+        return IPositionManager(new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0)), IWETH9(address(0))));
     }
 
     function approvePosmCurrency(IPositionManager posm, Currency currency) internal {
