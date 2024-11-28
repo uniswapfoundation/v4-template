@@ -3,11 +3,11 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
-import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {CurrencyLibrary, Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
-import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
-import {TickMath} from "v4-core/src/libraries/TickMath.sol";
+import {LiquidityAmounts} from "@uniswap/v4-core/test/utils/LiquidityAmounts.sol";
+import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 
 import {Constants} from "./base/Constants.sol";
