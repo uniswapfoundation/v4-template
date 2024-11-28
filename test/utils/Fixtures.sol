@@ -16,6 +16,7 @@ import {IERC721Permit_v4} from "v4-periphery/src/interfaces/IERC721Permit_v4.sol
 import {IEIP712_v4} from "v4-periphery/src/interfaces/IEIP712_v4.sol";
 import {ERC721PermitHash} from "v4-periphery/src/libraries/ERC721PermitHash.sol";
 import {IPositionDescriptor} from "v4-periphery/src/interfaces/IPositionDescriptor.sol";
+import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
 
 /// @notice A shared test contract that wraps the v4-core deployers contract and exposes basic liquidity operations on posm.
 contract Fixtures is Deployers, DeployPermit2 {
@@ -33,7 +34,7 @@ contract Fixtures is Deployers, DeployPermit2 {
     function deployPosm(IPoolManager poolManager) internal {
         // We use vm.etch to prevent having to use via-ir in this repository.
         etchPermit2();
-        posm = IPositionManager(new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0))));
+        posm = IPositionManager(new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0)), IWETH9(address(0))));
     }
 
     function seedBalance(address to) internal {
