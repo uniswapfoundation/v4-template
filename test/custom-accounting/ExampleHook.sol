@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import {Hooks} from "v4-core/src/libraries/Hooks.sol";
-import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
-import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {BeforeSwapDelta, toBeforeSwapDelta} from "v4-core/src/types/BeforeSwapDelta.sol";
-import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
-import {Currency} from "v4-core/src/types/Currency.sol";
-import {CurrencySettler} from "v4-core/test/utils/CurrencySettler.sol";
-import {BaseTestHooks} from "v4-core/src/test/BaseTestHooks.sol";
-import {Currency} from "v4-core/src/types/Currency.sol";
+import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {BeforeSwapDelta, toBeforeSwapDelta} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
+import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {CurrencySettler} from "@uniswap/v4-core/test/utils/CurrencySettler.sol";
+import {BaseTestHooks} from "@uniswap/v4-core/src/test/BaseTestHooks.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 
 contract ExampleHook is BaseTestHooks {
     using Hooks for IHooks;
