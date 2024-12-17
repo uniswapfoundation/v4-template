@@ -34,7 +34,9 @@ contract Fixtures is Deployers, DeployPermit2 {
     function deployPosm(IPoolManager poolManager) internal {
         // We use vm.etch to prevent having to use via-ir in this repository.
         etchPermit2();
-        posm = IPositionManager(new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0)), IWETH9(address(0))));
+        posm = IPositionManager(
+            new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0)), IWETH9(address(0)))
+        );
     }
 
     function seedBalance(address to) internal {

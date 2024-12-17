@@ -85,7 +85,9 @@ contract CounterScript is Script, DeployPermit2 {
 
     function deployPosm(IPoolManager poolManager) public returns (IPositionManager) {
         anvilPermit2();
-        return IPositionManager(new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0)), IWETH9(address(0))));
+        return IPositionManager(
+            new PositionManager(poolManager, permit2, 300_000, IPositionDescriptor(address(0)), IWETH9(address(0)))
+        );
     }
 
     function approvePosmCurrency(IPositionManager posm, Currency currency) internal {
