@@ -21,11 +21,15 @@ git merge template/main <BRANCH> --allow-unrelated-histories
 ---
 
 ### Check Forge Installation
-*Ensure that you have correctly installed Foundry (Forge) and that it's up to date. You can update Foundry by running:*
+*Ensure that you have correctly installed Foundry (Forge) Stable. You can update Foundry by running:*
 
 ```
 foundryup
 ```
+
+> *v4-template* appears to be _incompatible_ with Foundry Nightly. See [foundry announcements](https://book.getfoundry.sh/announcements) to revert back to the stable build
+
+
 
 ## Set up
 
