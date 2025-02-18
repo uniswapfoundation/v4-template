@@ -18,6 +18,7 @@ import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {EasyPosm} from "./utils/EasyPosm.sol";
 import {Fixtures} from "./utils/Fixtures.sol";
+import {HookMiner} from "../test/utils/HookMiner.sol";
 
 contract CounterTest is Test, Fixtures {
     using EasyPosm for IPositionManager;
@@ -39,16 +40,22 @@ contract CounterTest is Test, Fixtures {
 
         deployAndApprovePosm(manager);
 
-        // Deploy the hook to an address with the correct flags
-        address flags = address(
-            uint160(
-                Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG
-                    | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
-            ) ^ (0x4444 << 144) // Namespace the hook to avoid collisions
+        // hook contracts must have specific flags encoded in the address
+        uint160 flags = uint160(
+            Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG
+                | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
         );
-        bytes memory constructorArgs = abi.encode(manager); //Add all the necessary constructor arguments from the hook
-        deployCodeTo("Counter.sol:Counter", constructorArgs, flags);
-        hook = Counter(flags);
+
+        // Mine a salt that will produce a hook address with the correct flags
+        bytes memory constructorArgs = abi.encode(address(0));
+        // (address hookAddress, bytes32 salt) =
+        //     HookMiner.find(address(0x4e59b44847b379578588920cA78FbF26c0B4956C), flags, type(Counter).creationCode, constructorArgs);
+        (address hookAddress, bytes32 salt) =
+            HookMiner.find(address(this), flags, type(Counter).creationCode, constructorArgs);
+
+        // Deploy the hook using CREATE2
+        hook = new Counter{salt: salt}(IPoolManager(address(0)));
+        require(address(hook) == hookAddress, "CounterScript: hook address mismatch");
 
         // Create the pool
         key = PoolKey(currency0, currency1, 3000, 60, IHooks(hook));
