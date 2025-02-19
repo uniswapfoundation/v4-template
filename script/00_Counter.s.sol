@@ -7,7 +7,7 @@ import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 
 import {Constants} from "./base/Constants.sol";
 import {Counter} from "../src/Counter.sol";
-import {HookMiner} from "../test/utils/HookMiner.sol";
+import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 
 /// @notice Mines the address and deploys the Counter.sol Hook contract
 contract CounterScript is Script, Constants {
