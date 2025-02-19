@@ -26,7 +26,6 @@ import {IPositionDescriptor} from "v4-periphery/src/interfaces/IPositionDescript
 import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
 
 /// @notice Forge script for deploying v4 & hooks to **anvil**
-/// @dev This script only works on an anvil RPC because v4 exceeds bytecode limits
 contract CounterScript is Script, DeployPermit2 {
     using EasyPosm for IPositionManager;
 
