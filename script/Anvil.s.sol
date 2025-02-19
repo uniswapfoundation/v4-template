@@ -15,7 +15,7 @@ import {Constants} from "v4-core/src/../test/utils/Constants.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {Counter} from "../src/Counter.sol";
-import {HookMiner} from "../test/utils/HookMiner.sol";
+import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {EasyPosm} from "../test/utils/EasyPosm.sol";
