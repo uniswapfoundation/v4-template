@@ -15,6 +15,7 @@ import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeS
 /// @notice 50% of the time you double your money, 50% of the time you lose it all
 contract FiftyFifty is BaseCustomCurve {
     constructor(IPoolManager _poolManager) BaseCustomCurve(_poolManager) {}
+
     function _getUnspecifiedAmount(IPoolManager.SwapParams calldata params)
         internal
         override
@@ -30,13 +31,29 @@ contract FiftyFifty is BaseCustomCurve {
         if (win && exactInput) {
             return swapAmount * 2;
         } else if (win && !exactInput) {
-            // for wins on exact output, set the
+            // for wins on exact output, the input (unspecified) is half the output
             return swapAmount / 2;
         } else {
             return 0;
         }
     }
 
-    function _getAmountIn(BaseCustomAccounting.AddLiquidityParams memory params) internal override returns (uint256 amount0, uint256 amount1, uint256 shares) {}
-    function _getAmountOut(BaseCustomAccounting.RemoveLiquidityParams memory params) internal override returns (uint256 amount0, uint256 amount1, uint256 shares) {}
+    function _mint(BaseCustomAccounting.AddLiquidityParams memory params, BalanceDelta delta, uint256 shares)
+        internal
+        override
+    {}
+    function _burn(BaseCustomAccounting.RemoveLiquidityParams memory params, BalanceDelta delta, uint256 shares)
+        internal
+        override
+    {}
+    function _getAmountIn(BaseCustomAccounting.AddLiquidityParams memory params)
+        internal
+        override
+        returns (uint256 amount0, uint256 amount1, uint256 shares)
+    {}
+    function _getAmountOut(BaseCustomAccounting.RemoveLiquidityParams memory params)
+        internal
+        override
+        returns (uint256 amount0, uint256 amount1, uint256 shares)
+    {}
 }
