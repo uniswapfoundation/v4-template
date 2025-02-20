@@ -18,6 +18,7 @@ contract FiftyFifty is BaseCustomCurve {
 
     function _getUnspecifiedAmount(IPoolManager.SwapParams calldata params)
         internal
+        view
         override
         returns (uint256 unspecifiedAmount)
     {
@@ -38,20 +39,20 @@ contract FiftyFifty is BaseCustomCurve {
         }
     }
 
-    function _mint(BaseCustomAccounting.AddLiquidityParams memory params, BalanceDelta delta, uint256 shares)
+    function _mint(BaseCustomCurve.AddLiquidityParams memory params, BalanceDelta callerDelta, BalanceDelta feesAccrued, uint256 shares)
         internal
         override
     {}
-    function _burn(BaseCustomAccounting.RemoveLiquidityParams memory params, BalanceDelta delta, uint256 shares)
+    function _burn(BaseCustomCurve.RemoveLiquidityParams memory params, BalanceDelta callerDelta, BalanceDelta feesAccrued, uint256 shares)
         internal
         override
     {}
-    function _getAmountIn(BaseCustomAccounting.AddLiquidityParams memory params)
+    function _getAmountIn(BaseCustomCurve.AddLiquidityParams memory params)
         internal
         override
         returns (uint256 amount0, uint256 amount1, uint256 shares)
     {}
-    function _getAmountOut(BaseCustomAccounting.RemoveLiquidityParams memory params)
+    function _getAmountOut(BaseCustomCurve.RemoveLiquidityParams memory params)
         internal
         override
         returns (uint256 amount0, uint256 amount1, uint256 shares)
