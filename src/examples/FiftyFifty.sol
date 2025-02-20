@@ -39,14 +39,18 @@ contract FiftyFifty is BaseCustomCurve {
         }
     }
 
-    function _mint(BaseCustomCurve.AddLiquidityParams memory params, BalanceDelta callerDelta, BalanceDelta feesAccrued, uint256 shares)
-        internal
-        override
-    {}
-    function _burn(BaseCustomCurve.RemoveLiquidityParams memory params, BalanceDelta callerDelta, BalanceDelta feesAccrued, uint256 shares)
-        internal
-        override
-    {}
+    function _mint(
+        BaseCustomCurve.AddLiquidityParams memory params,
+        BalanceDelta callerDelta,
+        BalanceDelta feesAccrued,
+        uint256 shares
+    ) internal override {}
+    function _burn(
+        BaseCustomCurve.RemoveLiquidityParams memory params,
+        BalanceDelta callerDelta,
+        BalanceDelta feesAccrued,
+        uint256 shares
+    ) internal override {}
     function _getAmountIn(BaseCustomCurve.AddLiquidityParams memory params)
         internal
         override
