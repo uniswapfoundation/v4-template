@@ -76,6 +76,9 @@ abstract contract MyCustomCurve is BaseHook, IUnlockCallback {
         return (this.beforeSwap.selector, returnDelta, 0);
     }
 
+    /// @notice a utility function to add or remove capital from the hook
+    /// @dev when adding liquidity, ERC20s are transferred to the PoolManager and the hook custodies ERC6909
+    /// @dev when removing liquidity, ERC20s are transferred to a recipient, and the hook burns ERC6909
     function _addOrRemove(Currency currency0, Currency currency1, BalanceDelta amounts, address user)
         internal
         virtual
