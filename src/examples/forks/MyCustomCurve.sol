@@ -157,7 +157,7 @@ abstract contract MyCustomCurve is BaseHook, IUnlockCallback {
      */
     function getHookPermissions() public pure virtual override returns (Hooks.Permissions memory permissions) {
         return Hooks.Permissions({
-            beforeInitialize: true,
+            beforeInitialize: false,
             afterInitialize: false,
             beforeAddLiquidity: true,
             beforeRemoveLiquidity: false,

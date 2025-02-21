@@ -13,7 +13,7 @@ import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeS
 
 /// @title FiftyFifty: the Gambling Hook
 /// @notice 50% of the time you double your money, 50% of the time you lose it all
-contract FiftyFifty is BaseCustomCurve {
+contract OldFiftyFifty is BaseCustomCurve {
     constructor(IPoolManager _poolManager) BaseCustomCurve(_poolManager) {}
 
     function _getUnspecifiedAmount(IPoolManager.SwapParams calldata params)
