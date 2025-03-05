@@ -18,12 +18,16 @@ import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {EasyPosm} from "./utils/EasyPosm.sol";
 import {Fixtures} from "./utils/Fixtures.sol";
+import {IHookMetadata} from "v4-periphery/src/interfaces/IHookMetadata.sol";
+import {IEIP7512} from "v4-periphery/src/interfaces/IEIP7512.sol";
 
 contract CounterTest is Test, Fixtures {
     using EasyPosm for IPositionManager;
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
     using StateLibrary for IPoolManager;
+
+    event AuditSummaryRegistered(uint256 indexed auditId, bytes32 auditHash, string auditUri);
 
     Counter hook;
     PoolId poolId;
@@ -120,5 +124,89 @@ contract CounterTest is Test, Fixtures {
 
         assertEq(hook.beforeAddLiquidityCount(poolId), 1);
         assertEq(hook.beforeRemoveLiquidityCount(poolId), 1);
+    }
+
+    function test_HookMetadata_auditSummaries_shouldRevert() external {
+        vm.expectRevert(IHookMetadata.WrongAuditId.selector);
+        hook.auditSummaries(0);
+
+        vm.expectRevert(IHookMetadata.WrongAuditId.selector);
+        hook.auditSummaries(100);
+    }
+
+    function test_PointsHookWithMetadata_registerAuditSummary() external {
+        IEIP7512.SignedAuditSummary memory _signedAuditSummary = IEIP7512.SignedAuditSummary({
+            summary: IEIP7512.AuditSummary({
+                auditor: IEIP7512.Auditor({name: "Auditor", uri: "https://example.com/auditor", authors: new string[](2)}),
+                issuedAt: block.timestamp,
+                ercs: new uint256[](3),
+                bytecodeHash: "0x1234567890abcdef",
+                auditHash: "0x1234567890abcdef",
+                auditUri: "https://example.com/audit"
+            }),
+            signedAt: block.timestamp,
+            auditorSignature: IEIP7512.Signature({
+                signatureType: IEIP7512.SignatureType.SECP256K1,
+                data: abi.encode("Signature data")
+            })
+        });
+
+        _signedAuditSummary.summary.auditor.authors[0] = "Author 1";
+        _signedAuditSummary.summary.auditor.authors[1] = "Author 2";
+        _signedAuditSummary.summary.ercs[0] = 1;
+        _signedAuditSummary.summary.ercs[1] = 2;
+        _signedAuditSummary.summary.ercs[2] = 3;
+
+        vm.expectEmit(true, true, true, true, address(hook));
+
+        emit AuditSummaryRegistered(
+            hook.auditsCount(), _signedAuditSummary.summary.auditHash, _signedAuditSummary.summary.auditUri
+        );
+
+        uint256 _auditId = hook.registerAuditSummary(_signedAuditSummary);
+
+        assertEq(hook.auditsCount(), 1);
+        assertEq(_auditId, hook.auditsCount() - 1);
+
+        Counter.SignedAuditSummary memory _retrievedAuditSummary = hook.auditSummaries(_auditId);
+
+        assertEq(_retrievedAuditSummary.summary.auditor.name, _signedAuditSummary.summary.auditor.name);
+        assertEq(_retrievedAuditSummary.summary.auditor.uri, _signedAuditSummary.summary.auditor.uri);
+        assertEq(_retrievedAuditSummary.summary.auditor.authors, _signedAuditSummary.summary.auditor.authors);
+        assertEq(_retrievedAuditSummary.summary.issuedAt, _signedAuditSummary.summary.issuedAt);
+        assertEq(_retrievedAuditSummary.summary.ercs, _signedAuditSummary.summary.ercs);
+        assertEq(_retrievedAuditSummary.summary.bytecodeHash, _signedAuditSummary.summary.bytecodeHash);
+        assertEq(_retrievedAuditSummary.summary.auditHash, _signedAuditSummary.summary.auditHash);
+        assertEq(_retrievedAuditSummary.summary.auditUri, _signedAuditSummary.summary.auditUri);
+        assertEq(_retrievedAuditSummary.signedAt, _signedAuditSummary.signedAt);
+        assertEq(
+            uint8(_retrievedAuditSummary.auditorSignature.signatureType),
+            uint8(_signedAuditSummary.auditorSignature.signatureType)
+        );
+        assertEq(_retrievedAuditSummary.auditorSignature.data, _signedAuditSummary.auditorSignature.data);
+    }
+
+    function test_PointsHookWithMetadata_name() external view {
+        assertEq(hook.name(), "Counter");
+    }
+
+    function test_PointsHookWithMetadata_repositoryURI() external view {
+        assertEq(hook.repositoryURI(), "Hook's repository URI");
+    }
+
+    function test_PointsHookWithMetadata_logoURI() external view {
+        assertEq(hook.logoURI(), "Hook's logo URI");
+    }
+
+    function test_PointsHookWithMetadata_websiteURI() external view {
+        assertEq(hook.websiteURI(), "Hook's website URI");
+    }
+
+    function test_PointsHookWithMetadata_description() external view {
+        assertEq(hook.description(), "Counter hook with metadata which might be useful for external indexing services.");
+    }
+
+    function test_PointsHookWithMetadata_version() external view {
+        assertEq(hook.version(), "1.0");
     }
 }
