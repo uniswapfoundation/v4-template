@@ -3,13 +3,13 @@ pragma solidity ^0.8.0;
 
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {HookMetadata} from "v4-periphery/src/utils/HookMetadata.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {EIP712_v4} from "v4-periphery/src/base/EIP712_v4.sol";
 import {BaseHook} from "v4-periphery/src/utils/BaseHook.sol";
-import {Ownable} from "@openzeppelin/access/Ownable.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {PointsToken} from "./PointsToken.sol";
+import {PointsToken} from "./mock/PointsToken.sol";
 
 /**
  * @title PointsHookWithMetadata
