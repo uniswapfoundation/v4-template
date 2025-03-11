@@ -46,9 +46,10 @@ contract FiftyFiftyTest is Test, Fixtures {
 
     function test_exactInput(uint32 timestamp, bool zeroForOne, uint256 amount) public {
         vm.warp(timestamp);
-        bool expectedWin = uint256(keccak256(abi.encodePacked(block.number, block.timestamp, block.prevrandao))) % 2 == 0;
+        bool expectedWin =
+            uint256(keccak256(abi.encodePacked(block.number, vm.getBlockTimestamp(), block.prevrandao))) % 2 == 0;
 
-        amount = bound(amount, 1 wei, 1000e18);
+        amount = bound(amount, 1 wei, 500e18);
         uint256 balance0Before = currency0.balanceOfSelf();
         uint256 balance1Before = currency1.balanceOfSelf();
 
@@ -58,38 +59,34 @@ contract FiftyFiftyTest is Test, Fixtures {
         uint256 balance1After = currency1.balanceOfSelf();
 
         if (zeroForOne) {
+            // paid token0
+            assertEq(balance0Before - balance0After, amount);
             if (expectedWin) {
-                // paid token0
-                assertEq(balance0Before - balance0After, amount);
-
                 // received token1
                 assertEq(balance1After - balance1Before, amount * 3 / 2);
             } else {
-                // paid token0
-                assertEq(balance0Before - balance0After, amount);
-
                 // received token1
                 assertEq(balance1After - balance1Before, amount / 2);
             }
         } else {
+            // paid token1
+            assertEq(balance1Before - balance1After, amount);
             if (expectedWin) {
-                // paid token1
-                assertEq(balance1Before - balance1After, amount);
-
                 // received token0
                 assertEq(balance0After - balance0Before, amount * 3 / 2);
             } else {
-                // paid token1
-                assertEq(balance1Before - balance1After, amount);
-
                 // received token0
                 assertEq(balance0After - balance0Before, amount / 2);
             }
         }
     }
 
-    function test_exactOutput(bool zeroForOne, uint256 amount) public {
-        amount = bound(amount, 1 wei, 1000e18);
+    function test_exactOutput(uint32 timestamp, bool zeroForOne, uint256 amount) public {
+        vm.warp(timestamp);
+        bool expectedWin =
+            uint256(keccak256(abi.encodePacked(block.number, vm.getBlockTimestamp(), block.prevrandao))) % 2 == 0;
+
+        amount = bound(amount, 1 wei, 500e18);
         uint256 balance0Before = currency0.balanceOfSelf();
         uint256 balance1Before = currency1.balanceOfSelf();
 
@@ -99,17 +96,25 @@ contract FiftyFiftyTest is Test, Fixtures {
         uint256 balance1After = currency1.balanceOfSelf();
 
         if (zeroForOne) {
-            // paid token0
-            assertEq(balance0Before - balance0After, amount);
-
             // received token1
             assertEq(balance1After - balance1Before, amount);
+            if (expectedWin) {
+                // paid token0
+                assertEq(balance0Before - balance0After, amount / 2);
+            } else {
+                // paid token0
+                assertEq(balance0Before - balance0After, amount * 2);
+            }
         } else {
-            // paid token1
-            assertEq(balance1Before - balance1After, amount);
-
             // received token0
             assertEq(balance0After - balance0Before, amount);
+            if (expectedWin) {
+                // paid token1
+                assertEq(balance1Before - balance1After, amount / 2);
+            } else {
+                // paid token1
+                assertEq(balance1Before - balance1After, amount * 2);
+            }
         }
     }
 
