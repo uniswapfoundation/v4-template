@@ -76,7 +76,9 @@ Or [adding the keys to your ssh-agent](https://docs.github.com/en/authentication
 
 Some versions of Foundry may limit contract code size to ~25kb, which could prevent local tests to fail. You can resolve this by setting the `code-size-limit` flag
 
-`anvil --code-size-limit 40000`
+```
+anvil --code-size-limit 40000
+```
 
 ### Hook deployment failures
 
