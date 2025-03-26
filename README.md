@@ -45,8 +45,8 @@ forge test
 Other than writing unit tests (recommended!), you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
 
 ```bash
-# start anvil, a local EVM chain with increased contract size limit to handle test contracts
-anvil --code-size-limit 40000
+# start anvil, a local EVM chain
+anvil
 
 # in a new terminal
 forge script script/Anvil.s.sol \
@@ -71,6 +71,12 @@ When installing dependencies with `forge install`, Github may throw a `Permissio
 Typically caused by missing Github SSH keys, and can be resolved by following the steps [here](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh) 
 
 Or [adding the keys to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent), if you have already uploaded SSH keys
+
+### Anvil fork test failures
+
+Some versions of Foundry may limit contract code size to ~25kb, which could prevent local tests to fail. You can resolve this by setting the `code-size-limit` flag
+
+`anvil --code-size-limit 40000`
 
 ### Hook deployment failures
 
