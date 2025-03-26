@@ -45,8 +45,8 @@ forge test
 Other than writing unit tests (recommended!), you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
 
 ```bash
-# start anvil, a local EVM chain
-anvil
+# start anvil, a local EVM chain with increased contract size limit to handle test contracts
+anvil --code-size-limit 40000
 
 # in a new terminal
 forge script script/Anvil.s.sol \
