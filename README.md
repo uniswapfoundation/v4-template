@@ -1,108 +1,84 @@
-# v4-template
-### **A template for writing Uniswap v4 Hooks 🦄**
+# VCOP Stablecoin Algorítmica con Hooks de Uniswap v4
 
-[`Use this Template`](https://github.com/uniswapfoundation/v4-template/generate)
+Este proyecto implementa una stablecoin algorítmica llamada VCOP utilizando Hooks de Uniswap v4 para mantener automáticamente su precio cercano a $1 USD a través de un mecanismo de rebase.
 
-1. The example hook [Counter.sol](src/Counter.sol) demonstrates the `beforeSwap()` and `afterSwap()` hooks
-2. The test template [Counter.t.sol](test/Counter.t.sol) preconfigures the v4 pool manager, test tokens, and test liquidity.
+## Descripción
 
-<details>
-<summary>Updating to v4-template:latest</summary>
+VCOP es una stablecoin algorítmica que utiliza un mecanismo de rebase inspirado en protocolos como Ampleforth. El sistema ajusta automáticamente el suministro total de tokens VCOP basándose en las desviaciones de precio:
 
-This template is actively maintained -- you can update the v4 dependencies, scripts, and helpers: 
+- Si VCOP > $1.05: Se ejecuta un rebase positivo (expansión del suministro)
+- Si VCOP < $0.95: Se ejecuta un rebase negativo (contracción del suministro)
+- Si $0.95 ≤ VCOP ≤ $1.05: No se realiza ningún rebase
+
+El sistema aprovecha los hooks de Uniswap v4 para monitorear el precio después de cada swap y ejecutar rebases cuando sea necesario.
+
+## Componentes Principales
+
+El sistema consta de los siguientes componentes:
+
+1. **VCOPRebased.sol**: Implementación de la stablecoin con mecanismo de rebase. Utiliza un sistema de "gons" para rastrear balances de manera proporcional durante los rebases.
+
+2. **VCOPOracle.sol**: Oráculo que proporciona el precio de referencia para VCOP. En un entorno de producción, se reemplazaría por un oráculo descentralizado como Chainlink.
+
+3. **VCOPRebaseHook.sol**: Hook de Uniswap v4 que monitorea los swaps y ejecuta rebases automáticamente cuando es necesario.
+
+4. **Scripts de Despliegue**: Scripts para desplegar la stablecoin y sus componentes en diferentes entornos.
+
+## Algoritmo de Rebase
+
+El algoritmo de rebase funciona de la siguiente manera:
+
+1. Después de cada swap en un pool que incluya VCOP, el hook verifica si el tiempo mínimo entre rebases ha pasado.
+2. Si es el momento adecuado, el hook consulta el oráculo para obtener el precio actual de VCOP.
+3. Si el precio está fuera del rango objetivo, se ejecuta un rebase:
+   - Expansión: Si el precio es alto, se aumenta el suministro en un porcentaje fijo.
+   - Contracción: Si el precio es bajo, se reduce el suministro en un porcentaje fijo.
+4. Los balances de todos los usuarios se ajustan proporcionalmente.
+
+## Configuración del Proyecto
+
+### Requisitos
+
+- [Foundry](https://github.com/foundry-rs/foundry)
+- [Node.js](https://nodejs.org/) (opcional)
+
+### Instalación
+
 ```bash
-git remote add template https://github.com/uniswapfoundation/v4-template
-git fetch template
-git merge template/main <BRANCH> --allow-unrelated-histories
-```
+# Clonar el repositorio
+git clone https://github.com/tuusuario/VCOPstablecoin.git
+cd VCOPstablecoin
 
-</details>
-
----
-
-### Check Forge Installation
-*Ensure that you have correctly installed Foundry (Forge) Stable. You can update Foundry by running:*
-
-```
-foundryup
-```
-
-> *v4-template* appears to be _incompatible_ with Foundry Nightly. See [foundry announcements](https://book.getfoundry.sh/announcements) to revert back to the stable build
-
-
-
-## Set up
-
-*requires [foundry](https://book.getfoundry.sh)*
-
-```
+# Instalar dependencias
 forge install
+```
+
+### Compilación
+
+```bash
+forge build
+```
+
+### Tests
+
+```bash
 forge test
 ```
 
-### Local Development (Anvil)
+### Despliegue
 
-Other than writing unit tests (recommended!), you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
+Para desplegar en una red de producción:
 
 ```bash
-# start anvil, a local EVM chain
-anvil
-
-# in a new terminal
-forge script script/Anvil.s.sol \
-    --rpc-url http://localhost:8545 \
-    --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-    --broadcast
+forge script script/DeployVCOP.s.sol:DeployVCOP --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
 ```
 
-See [script/](script/) for hook deployment, pool creation, liquidity provision, and swapping.
+Para desplegar en un entorno de desarrollo local:
 
----
-
-<details>
-<summary><h2>Troubleshooting</h2></summary>
-
-
-
-### *Permission Denied*
-
-When installing dependencies with `forge install`, Github may throw a `Permission Denied` error
-
-Typically caused by missing Github SSH keys, and can be resolved by following the steps [here](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh) 
-
-Or [adding the keys to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent), if you have already uploaded SSH keys
-
-### Anvil fork test failures
-
-Some versions of Foundry may limit contract code size to ~25kb, which could prevent local tests to fail. You can resolve this by setting the `code-size-limit` flag
-
-```
-anvil --code-size-limit 40000
+```bash
+forge script script/DeployVCOP.s.sol:DeployVCOPDev --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
 ```
 
-### Hook deployment failures
+## Licencia
 
-Hook deployment failures are caused by incorrect flags or incorrect salt mining
-
-1. Verify the flags are in agreement:
-    * `getHookCalls()` returns the correct flags
-    * `flags` provided to `HookMiner.find(...)`
-2. Verify salt mining is correct:
-    * In **forge test**: the *deployer* for: `new Hook{salt: salt}(...)` and `HookMiner.find(deployer, ...)` are the same. This will be `address(this)`. If using `vm.prank`, the deployer will be the pranking address
-    * In **forge script**: the deployer must be the CREATE2 Proxy: `0x4e59b44847b379578588920cA78FbF26c0B4956C`
-        * If anvil does not have the CREATE2 deployer, your foundry may be out of date. You can update it with `foundryup`
-
-</details>
-
----
-
-Additional resources:
-
-[Uniswap v4 docs](https://docs.uniswap.org/contracts/v4/overview)
-
-[v4-periphery](https://github.com/uniswap/v4-periphery) contains advanced hook implementations that serve as a great reference
-
-[v4-core](https://github.com/uniswap/v4-core)
-
-[v4-by-example](https://v4-by-example.org)
-
+Este proyecto está licenciado bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles. 
