@@ -10,3 +10,21 @@
 [submodule "lib/uniswap-hooks"]
 	path = lib/uniswap-hooks
 	url = https://github.com/openzeppelin/uniswap-hooks
+[submodule "pool-reader/lib/forge-std"]
+	path = pool-reader/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "pool-reader/lib/v4-core"]
+	path = pool-reader/lib/v4-core
+	url = https://github.com/uniswap/v4-core
+[submodule "pool-reader/lib/v4-periphery"]
+	path = pool-reader/lib/v4-periphery
+	url = https://github.com/uniswap/v4-periphery
+[submodule "lib/universal-router"]
+	path = lib/universal-router
+	url = https://github.com/Uniswap/universal-router
+[submodule "lib/permit2"]
+	path = lib/permit2
+	url = https://github.com/Uniswap/permit2
+[submodule "lib/openzeppelin-contracts"]
+	path = lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

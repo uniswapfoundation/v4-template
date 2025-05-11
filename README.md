@@ -56,7 +56,7 @@ USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 
 #### 2. Obtener USDC en Base Sepolia
 
-Antes de desplegar, asegúrate de tener suficiente USDC en Base Sepolia para añadir liquidez inicial. El script está configurado para utilizar 10,000 USDC.
+Antes de desplegar, asegúrate de tener suficiente USDC en Base Sepolia para añadir liquidez inicial. El script está configurado para utilizar 50 USDC.
 
 #### 3. Desplegar el Sistema VCOP Completo
 
@@ -64,7 +64,7 @@ Ejecuta el script de despliegue completo:
 
 ```bash
 # Usar la opción --via-ir para resolver posibles errores "stack too deep"
-forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url $RPC_URL
+forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url base-sepolia
 ```
 
 Este script realiza el proceso de despliegue en tres pasos:
@@ -74,6 +74,19 @@ Este script realiza el proceso de despliegue en tres pasos:
 3. **Paso 3**: Crea el pool VCOP/USDC y añade liquidez inicial
 
 Los contratos desplegados y sus direcciones se mostrarán en la salida del script.
+
+#### 4. Verificar Contratos en BaseScan Sepolia
+
+Puedes verificar automáticamente los contratos desplegados usando el script incluido:
+
+```bash
+./verify-contracts.sh
+```
+
+El script verifica:
+- VCOP Token
+- VCOP Oracle
+- VCOP Rebase Hook
 
 ### Opción 2: Entorno Local con Anvil
 
@@ -96,6 +109,19 @@ forge script script/Anvil.s.sol --broadcast --rpc-url http://localhost:8545 --pr
 ```bash
 forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
+
+## Scripts Principales
+
+| Script | Descripción |
+|--------|-------------|
+| `DeployVCOPComplete.s.sol` | Script principal para desplegar todo el sistema VCOP |
+| `DeployVCOPRebaseHook.s.sol` | Script auxiliar para desplegar el hook de rebase |
+| `MintVCOPToWallet.s.sol` | Minta tokens VCOP a una dirección específica |
+| `ReadPoolState.sol` | Lee el estado del pool de Uniswap v4 |
+| `ReadVCOPPoolState.s.sol` | Lee el estado específico del pool VCOP/USDC |
+| `Anvil.s.sol` | Configura el entorno local de Anvil |
+
+Los scripts antiguos y ejemplos se han movido a la carpeta `script/archive`.
 
 ## ¿Por qué necesitamos HookMiner?
 
