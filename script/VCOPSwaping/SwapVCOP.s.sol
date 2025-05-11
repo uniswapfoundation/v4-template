@@ -16,12 +16,12 @@ contract SwapVCOPScript is Script {
     uint160 public constant MIN_PRICE_LIMIT = TickMath.MIN_SQRT_PRICE + 1;
     uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_PRICE - 1;
 
-    // VCOP Token address
-    address public constant VCOP_ADDRESS = 0xd16Ee99c7EA2B30c13c3dC298EADEE00B870BBCC;
-    // USDC Token address
-    address public constant USDC_ADDRESS = 0xE7a4113a8a497DD72D29F35E188eEd7403e8B2E8;
-    // VCOP Rebase Hook
-    address public constant HOOK_ADDRESS = 0x866bf94370e8A7C9cDeAFb592C2ac62903e30040;
+    // VCOP Token address - ACTUALIZADO
+    address public constant VCOP_ADDRESS = 0x70370F8507f0c40D5Ed3222F669B0727FFF8C12c;
+    // USDC Token address - ACTUALIZADO
+    address public constant USDC_ADDRESS = 0xAE919425E485C6101E391091350E3f0304749574;
+    // VCOP Rebase Hook - ACTUALIZADO
+    address public constant HOOK_ADDRESS = 0x1E70FbbF7A9ADcD550BaeE80E58B244EcdFF0040;
     
     // Base Sepolia deployed contracts
     address public constant POOL_MANAGER = 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408;

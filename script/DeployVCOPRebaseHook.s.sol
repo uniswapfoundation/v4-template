@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
+import {console2} from "forge-std/console2.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
@@ -47,9 +48,9 @@ contract DeployVCOPRebaseHook is Script {
             constructorArgs
         );
         
-        console.log("Mining hook address...");
-        console.log("Found address:", hookAddress);
-        console.log("With salt:", vm.toString(salt));
+        console2.log("Mining hook address...");
+        console2.log("Found address:", hookAddress);
+        console2.log("With salt:", vm.toString(salt));
         
         // Broadcast transaction to deploy the hook
         vm.startBroadcast(deployerPrivateKey);
@@ -69,7 +70,7 @@ contract DeployVCOPRebaseHook is Script {
         // Autorizar al hook para ejecutar rebases
         VCOPRebased(vcopAddress).setRebaser(address(hook), true);
         
-        console.log("VCOPRebaseHook desplegado en:", address(hook));
+        console2.log("VCOPRebaseHook desplegado en:", address(hook));
         
         // Guardar la dirección del hook para el siguiente script
         vm.setEnv("HOOK_ADDRESS", vm.toString(address(hook)));

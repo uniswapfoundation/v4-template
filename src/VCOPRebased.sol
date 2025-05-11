@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {ERC20} from "v4-core/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "v4-core/lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import {console2 as console} from "forge-std/console2.sol"; // Usar console2 en lugar de console
 
 /**
  * @title VCOPRebased
@@ -19,6 +20,11 @@ contract VCOPRebased is ERC20, Ownable {
         uint256 rebasePercentageUp, 
         uint256 rebasePercentageDown
     );
+    // Nuevos eventos detallados para seguimiento del rebase
+    event RebaseInitiated(address initiator, uint256 vcopToCopRate);
+    event RebaseExpansion(uint256 oldSupply, uint256 newSupply, uint256 factor);
+    event RebaseContraction(uint256 oldSupply, uint256 newSupply, uint256 factor);
+    event RebaseSkipped(uint256 vcopToCopRate, uint256 thresholdUp, uint256 thresholdDown);
 
     // Parámetros de rebase - Ahora basados en la relación VCOP/COP
     // Los umbrales están en términos de la relación VCOP/COP donde 1:1 es el ideal (1e6)
@@ -63,6 +69,7 @@ contract VCOPRebased is ERC20, Ownable {
         rebasers[msg.sender] = true;
         
         emit Transfer(address(0), msg.sender, initialSupply);
+        console.log("VCOP creado con suministro inicial:", initialSupply);
     }
 
     /**
@@ -102,6 +109,7 @@ contract VCOPRebased is ERC20, Ownable {
      */
     function setRebaser(address rebaser, bool authorized) external onlyOwner {
         rebasers[rebaser] = authorized;
+        console.log("Rebaser actualizado:", rebaser, "Autorizado:", authorized);
     }
 
     /**
@@ -114,18 +122,43 @@ contract VCOPRebased is ERC20, Ownable {
         
         uint256 newTotalSupply = _totalSupply;
         
+        console.log("======== REBASE INICIADO ========");
+        console.log("Iniciador del rebase:", msg.sender);
+        console.log("Tasa VCOP/COP actual:", vcopToCopRate);
+        console.log("Umbral superior:", rebaseThresholdUp);
+        console.log("Umbral inferior:", rebaseThresholdDown);
+        console.log("Supply antes del rebase:", _totalSupply);
+        
+        emit RebaseInitiated(msg.sender, vcopToCopRate);
+        
         if (vcopToCopRate >= rebaseThresholdUp) {
             // Expansión (rebase positivo) - VCOP vale más que 1 COP
             uint256 factor = rebasePercentageUp;
             uint256 supplyDelta = (_totalSupply * factor) / 1e6;
             newTotalSupply = _totalSupply + supplyDelta;
+            
+            console.log("REBASE POSITIVO (Expansion)");
+            console.log("Factor de rebase:", factor);
+            console.log("Incremento de supply:", supplyDelta);
+            console.log("Nuevo supply total:", newTotalSupply);
+            
+            emit RebaseExpansion(_totalSupply, newTotalSupply, factor);
         } else if (vcopToCopRate <= rebaseThresholdDown) {
             // Contracción (rebase negativo) - VCOP vale menos que 1 COP
             uint256 factor = rebasePercentageDown;
             uint256 supplyDelta = (_totalSupply * factor) / 1e6;
             newTotalSupply = _totalSupply - supplyDelta;
+            
+            console.log("REBASE NEGATIVO (Contraccion)");
+            console.log("Factor de rebase:", factor);
+            console.log("Reduccion de supply:", supplyDelta);
+            console.log("Nuevo supply total:", newTotalSupply);
+            
+            emit RebaseContraction(_totalSupply, newTotalSupply, factor);
         } else {
             // No rebase si el precio está dentro del rango aceptable
+            console.log("REBASE OMITIDO - Precio dentro del rango aceptable");
+            emit RebaseSkipped(vcopToCopRate, rebaseThresholdUp, rebaseThresholdDown);
             return _totalSupply;
         }
         
@@ -135,8 +168,13 @@ contract VCOPRebased is ERC20, Ownable {
             
             epoch++;
             
+            console.log("Epoca de rebase actualizada:", epoch);
+            console.log("Nuevo factor gons/fragmento:", _gonsPerFragment);
+            
             emit Rebase(epoch, newTotalSupply, _gonsPerFragment);
         }
+        
+        console.log("======== REBASE COMPLETADO ========");
         
         return _totalSupply;
     }

@@ -5,7 +5,7 @@
 ETHERSCAN_API_KEY="${ETHERSCAN_API_KEY:-IS3DBRSG4KAU2T8BS54ECSD2TKSIT9T9CI}"
 
 # Cargar direcciones de contratos desde cache/broadcast
-LATEST_RUN=$(ls -t broadcast/DeployVCOPComplete.s.sol/84532/run-*.json | head -1)
+LATEST_RUN=$(ls -t broadcast/SimpleDeploy.sol/84532/run-*.json | head -1)
 echo "Usando el último despliegue: $LATEST_RUN"
 
 # Extraer direcciones de contratos desde variables de entorno si existen
@@ -13,11 +13,11 @@ if [ -f .env ]; then
     source .env
 fi
 
-# Direcciones del último despliegue
-VCOP_ADDRESS="0xd16Ee99c7EA2B30c13c3dC298EADEE00B870BBCC"
-ORACLE_ADDRESS="0xa75399067378e21b5F418b8bAB1F2075dF63FDB4"
-HOOK_ADDRESS="0x866bf94370e8A7C9cDeAFb592C2ac62903e30040"
-MOCK_USDC_ADDRESS="0xE7a4113a8a497DD72D29F35E188eEd7403e8B2E8"
+# Direcciones del último despliegue (actualizadas)
+VCOP_ADDRESS="0x70370F8507f0c40D5Ed3222F669B0727FFF8C12c"
+ORACLE_ADDRESS="0x94A6787725B17fA278B622dE17949bc146e80FC5"
+HOOK_ADDRESS="0x1E70FbbF7A9ADcD550BaeE80E58B244EcdFF0040"
+MOCK_USDC_ADDRESS="0xAE919425E485C6101E391091350E3f0304749574"
 # Dirección del PoolManager en Base Sepolia
 POOL_MANAGER_ADDRESS="0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408"
 
@@ -40,7 +40,7 @@ forge verify-contract --chain-id 84532 \
     --watch \
     --etherscan-api-key $ETHERSCAN_API_KEY \
     $VCOP_ADDRESS src/VCOPRebased.sol:VCOPRebased \
-    --constructor-args $(cast abi-encode "constructor(uint256)" 100000000000000)
+    --constructor-args $(cast abi-encode "constructor(uint256)" 1000000000000000)
 
 # Verificar VCOP Oracle
 echo "Verificando VCOP Oracle..."

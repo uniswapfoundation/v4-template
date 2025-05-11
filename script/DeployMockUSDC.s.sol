@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Script, console} from "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
+import "forge-std/console2.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 
 /**
@@ -18,8 +19,8 @@ contract DeployMockUSDC is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         
-        console.log("=== Desplegando Mock USDC ===");
-        console.log("Direccion del desplegador:", deployerAddress);
+        console2.log("=== Desplegando Mock USDC ===");
+        console2.log("Direccion del desplegador:", deployerAddress);
         
         vm.startBroadcast(deployerPrivateKey);
         
@@ -31,8 +32,8 @@ contract DeployMockUSDC is Script {
         
         vm.stopBroadcast();
         
-        console.log("Mock USDC desplegado en:", address(mockUSDC));
-        console.log("Suministro inicial:", INITIAL_SUPPLY / 10**USDC_DECIMALS, "USDC");
+        console2.log("Mock USDC desplegado en:", address(mockUSDC));
+        console2.log("Suministro inicial:", INITIAL_SUPPLY / 10**USDC_DECIMALS, "USDC");
         
         // Guardar la dirección en una variable de entorno para uso posterior
         vm.setEnv("MOCK_USDC_ADDRESS", vm.toString(address(mockUSDC)));

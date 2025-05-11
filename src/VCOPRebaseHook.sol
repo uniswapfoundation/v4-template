@@ -12,6 +12,7 @@ import {Currency} from "v4-core/src/types/Currency.sol";
 
 import {VCOPRebased} from "src/VCOPRebased.sol";
 import {VCOPOracle} from "src/VCOPOracle.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
 /**
  * @title VCOPRebaseHook
@@ -44,6 +45,11 @@ contract VCOPRebaseHook is BaseHook {
     
     // Evento emitido cuando se actualiza el intervalo de rebase
     event RebaseIntervalUpdated(uint256 oldInterval, uint256 newInterval);
+    
+    // Nuevos eventos para seguimiento detallado - actualizado el tipo a PoolId
+    event SwapDetected(address caller, PoolId poolId);
+    event VCOPPoolIdentified(PoolId poolId, bool isToken0);
+    event RebaseEvaluated(uint256 currentTime, uint256 lastRebaseTime, uint256 rebaseInterval, bool willRebase);
 
     constructor(
         IPoolManager _poolManager, 
@@ -57,6 +63,11 @@ contract VCOPRebaseHook is BaseHook {
         vcopCurrency = _vcopCurrency;
         stablecoinCurrency = _stablecoinCurrency;
         lastRebaseTime = block.timestamp;
+        
+        console.log("VCOPRebaseHook inicializado");
+        console.log("Direccion VCOP:", address(_vcop));
+        console.log("Direccion Oracle:", address(_oracle));
+        console.log("Intervalo inicial de rebase:", rebaseInterval);
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
@@ -88,6 +99,8 @@ contract VCOPRebaseHook is BaseHook {
         uint256 oldInterval = rebaseInterval;
         rebaseInterval = newInterval;
         
+        console.log("Intervalo de rebase cambiado de", oldInterval, "a", newInterval);
+        
         emit RebaseIntervalUpdated(oldInterval, newInterval);
     }
     
@@ -98,13 +111,23 @@ contract VCOPRebaseHook is BaseHook {
     function executeRebase() public returns (uint256) {
         require(block.timestamp >= lastRebaseTime + rebaseInterval, "Rebase too soon");
         
+        console.log("-------- EJECUTANDO REBASE --------");
+        console.log("Timestamp actual:", block.timestamp);
+        console.log("Ultimo rebase:", lastRebaseTime);
+        console.log("Intervalo minimo:", rebaseInterval);
+        
         // Obtener la tasa VCOP/COP del oráculo
         uint256 vcopToCopRate = oracle.getVcopToCopRate();
+        console.log("Tasa VCOP/COP del oraculo:", vcopToCopRate);
+        
         uint256 newSupply = vcop.rebase(vcopToCopRate);
+        console.log("Nuevo suministro despues del rebase:", newSupply);
         
         lastRebaseTime = block.timestamp;
+        console.log("Timestamp de ultimo rebase actualizado a:", lastRebaseTime);
         
         emit RebaseExecuted(vcopToCopRate, newSupply);
+        console.log("-------- REBASE COMPLETADO --------");
         
         return newSupply;
     }
@@ -113,7 +136,12 @@ contract VCOPRebaseHook is BaseHook {
      * @dev Verifica si el pool incluye el token VCOP
      */
     function _isVCOPPool(PoolKey calldata key) internal view returns (bool) {
-        return key.currency0 == vcopCurrency || key.currency1 == vcopCurrency;
+        bool isVCOPInPool = key.currency0 == vcopCurrency || key.currency1 == vcopCurrency;
+        if (isVCOPInPool) {
+            console.log("Pool VCOP identificado");
+            console.log("VCOP es token0:", key.currency0 == vcopCurrency);
+        }
+        return isVCOPInPool;
     }
     
     /**
@@ -121,16 +149,37 @@ contract VCOPRebaseHook is BaseHook {
      * Si el pool incluye VCOP y ha pasado suficiente tiempo, ejecuta un rebase
      */
     function _afterSwap(
-        address,
+        address caller,
         PoolKey calldata key,
         IPoolManager.SwapParams calldata,
         BalanceDelta,
         bytes calldata
     ) internal override returns (bytes4, int128) {
-        if (_isVCOPPool(key) && block.timestamp >= lastRebaseTime + rebaseInterval) {
+        console.log("======== HOOK AFTERSWAP ACTIVADO ========");
+        console.log("Direccion del iniciador:", caller);
+        console.log("Pool ID:", uint256(keccak256(abi.encode(key))));
+        
+        PoolId poolId = key.toId();
+        emit SwapDetected(caller, poolId);
+        
+        bool isVCOPPool = _isVCOPPool(key);
+        bool timeElapsed = block.timestamp >= lastRebaseTime + rebaseInterval;
+        
+        console.log("Es pool VCOP?:", isVCOPPool);
+        console.log("Tiempo suficiente para rebase?:", timeElapsed);
+        
+        emit VCOPPoolIdentified(poolId, key.currency0 == vcopCurrency);
+        emit RebaseEvaluated(block.timestamp, lastRebaseTime, rebaseInterval, isVCOPPool && timeElapsed);
+        
+        if (isVCOPPool && timeElapsed) {
             // Ejecutar rebase si es necesario
+            console.log("Condiciones para rebase cumplidas, ejecutando rebase...");
             executeRebase();
+        } else {
+            console.log("No se cumplen condiciones para rebase, ignorando");
         }
+        
+        console.log("======== HOOK AFTERSWAP COMPLETADO ========");
         
         return (BaseHook.afterSwap.selector, 0);
     }
