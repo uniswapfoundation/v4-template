@@ -151,4 +151,62 @@ Una vez desplegado, puedes:
 
 ## Seguridad
 
-Este código es experimental y no está auditado. No se recomienda su uso en producción. 
+Este código es experimental y no está auditado. No se recomienda su uso en producción.
+
+## Configuración
+
+1. Asegúrate de tener instalado Foundry:
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+2. Clona este repositorio:
+```bash
+git clone https://github.com/tu-usuario/VCOPstablecoinUniswapv4.git
+cd VCOPstablecoinUniswapv4
+```
+
+3. Instala las dependencias:
+```bash
+forge install
+```
+
+4. Configura las variables de entorno en el archivo `.env`:
+```
+PRIVATE_KEY=tu_clave_privada
+RPC_URL=https://sepolia.base.org
+```
+
+## Scripts
+
+### Realizar swap de VCOP a USDC
+
+Para realizar un swap de VCOP a USDC en Base Sepolia:
+
+1. Asegúrate de que tu cuenta tiene suficientes tokens VCOP.
+2. Ejecuta el siguiente comando:
+
+```bash
+# Cargar variables de entorno y ejecutar el script
+source .env
+forge script script/SwapVCOP.s.sol:SwapVCOPScript --rpc-url base-sepolia --private-key $PRIVATE_KEY --broadcast
+```
+
+El script está configurado para vender 49,000 VCOP por USDC. Si necesitas cambiar la cantidad, modifica la constante `SWAP_AMOUNT` en el archivo `script/SwapVCOP.s.sol`.
+
+### Nota importante
+
+- El script asume que VCOP tiene 6 decimales.
+- Asegúrate de que la cuenta asociada a tu clave privada tiene suficientes tokens VCOP para realizar el swap.
+- El script utiliza el PoolSwapTest contract de Uniswap V4 en Base Sepolia.
+
+## Contratos usados
+
+- PoolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
+- Universal Router: 0x492E6456D9528771018DeB9E87ef7750EF184104
+- Position Manager: 0x4B2C77d209D3405F41a037Ec6c77F7F5b8e2ca80
+- PoolSwapTest: 0x8B5bcC363ddE2614281aD875bad385E0A785D3B9
+- VCOP Token: 0xd16Ee99c7EA2B30c13c3dC298EADEE00B870BBCC
+- USDC Token: 0xE7a4113a8a497DD72D29F35E188eEd7403e8B2E8
+- VCOP Rebase Hook: 0x866bf94370e8A7C9cDeAFb592C2ac62903e30040 
