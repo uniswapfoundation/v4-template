@@ -13,11 +13,11 @@ if [ -f .env ]; then
     source .env
 fi
 
-# Hardcodear las direcciones del último despliegue conocido
-VCOP_ADDRESS="0x5C624B7d9160655Aca8Ea4031F81E2a8aF851Add"
-ORACLE_ADDRESS="0x3bb3BF4d9Ff26Ab3D1844d7ff13aA90206A00ef8"
-HOOK_ADDRESS="0x11d96c8bfEcdBE06C683CC0935c12D6bf0DB0040"
-MOCK_USDC_ADDRESS="0x356338EB7Ded4A356964806e23BCA4bBBeA3dC82"
+# Direcciones del último despliegue
+VCOP_ADDRESS="0xd16Ee99c7EA2B30c13c3dC298EADEE00B870BBCC"
+ORACLE_ADDRESS="0xa75399067378e21b5F418b8bAB1F2075dF63FDB4"
+HOOK_ADDRESS="0x866bf94370e8A7C9cDeAFb592C2ac62903e30040"
+MOCK_USDC_ADDRESS="0xE7a4113a8a497DD72D29F35E188eEd7403e8B2E8"
 # Dirección del PoolManager en Base Sepolia
 POOL_MANAGER_ADDRESS="0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408"
 
@@ -40,7 +40,7 @@ forge verify-contract --chain-id 84532 \
     --watch \
     --etherscan-api-key $ETHERSCAN_API_KEY \
     $VCOP_ADDRESS src/VCOPRebased.sol:VCOPRebased \
-    --constructor-args $(cast abi-encode "constructor(uint256)" 100000000000000000000000000)
+    --constructor-args $(cast abi-encode "constructor(uint256)" 100000000000000)
 
 # Verificar VCOP Oracle
 echo "Verificando VCOP Oracle..."
@@ -49,7 +49,7 @@ forge verify-contract --chain-id 84532 \
     --watch \
     --etherscan-api-key $ETHERSCAN_API_KEY \
     $ORACLE_ADDRESS src/VCOPOracle.sol:VCOPOracle \
-    --constructor-args $(cast abi-encode "constructor(uint256)" 4200000000000000000000)
+    --constructor-args $(cast abi-encode "constructor(uint256)" 4200000000)
 
 # Verificar VCOP Rebase Hook
 echo "Verificando VCOP Rebase Hook..."

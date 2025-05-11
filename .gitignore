@@ -16,3 +16,4 @@ docs/
 
 # Node modules
 node_modules/
+lib/universal-router

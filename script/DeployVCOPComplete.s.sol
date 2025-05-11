@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-// Para ejecutar este script sin verificación de Etherscan:
+// Para ejecutar este script sin verificacion de Etherscan:
 // forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url https://sepolia.base.org --no-verify
 
 import {Script, console} from "forge-std/Script.sol";
@@ -41,19 +41,21 @@ contract DeployVCOPComplete is Script {
     // Parametros configurables para el pool
     uint24 lpFee = 3000; // 0.30%
     int24 tickSpacing = 60;
-    // Para una relación 1:4200, usamos un precio inicial que refleje esa proporción
-    // Para simplificar, usaremos un precio inicial 1:1 y luego ajustaremos con los swaps
-    uint160 startingPrice = 79228162514264337593543950336; // sqrt(1) * 2^96
-    
-    // Configuracion para la posicion de liquidez inicial
-    uint256 vcopLiquidity = 42_000_000 * 1e18; // 42 millones de VCOP
-    uint256 stablecoinLiquidity = 10_000 * 1e6; // 10,000 USDC (equivalente a 42M VCOP a tasa 1:4200)
-    // Usar ticks más cercanos al 0 según documentación
-    int24 tickLower = -60; // -60 es múltiplo del tickSpacing de 60
-    int24 tickUpper = 60;  // 60 es múltiplo del tickSpacing de 60
     
     // Tasa inicial USD/COP (4200 COP = 1 USD)
-    uint256 initialUsdToCopRate = 4200e18;
+    uint256 initialUsdToCopRate = 4200e6; // Ahora con 6 decimales
+    
+    // Para una relacion 1:4200, usamos un precio inicial adecuado
+    // La relacion 1:4200 significa 4200 VCOP = 1 USDC
+    uint160 startingPrice;
+    
+    // Configuracion para la posicion de liquidez inicial
+    uint256 vcopLiquidity = 42_000_000 * 1e6; // 42 millones de VCOP (con 6 decimales)
+    uint256 stablecoinLiquidity = 10_000 * 1e6; // 10,000 USDC (equivalente a 42M VCOP a tasa 1:4200)
+    
+    // Usar ticks mas amplios para acomodar la relacion 1:4200
+    int24 tickLower;
+    int24 tickUpper;
     
     // API Key dummy para evitar errores de verificacion
     string constant DUMMY_API_KEY = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
@@ -95,14 +97,14 @@ contract DeployVCOPComplete is Script {
         vm.startBroadcast(deployerPrivateKey);
         
         // Despliegue inicial de VCOP con un suministro de 100,000,000 tokens
-        VCOPRebased vcop = new VCOPRebased(100_000_000 * 1e18);
+        VCOPRebased vcop = new VCOPRebased(100_000_000 * 1e6); // 100M con 6 decimales
         
-        // Despliegue del oráculo con tasa inicial de 4200 COP = 1 USD
+        // Despliegue del oraculo con tasa inicial de 4200 COP = 1 USD
         VCOPOracle oracle = new VCOPOracle(initialUsdToCopRate);
         
         console.log("VCOP desplegado en:", address(vcop));
         console.log("Oracle desplegado en:", address(oracle));
-        console.log("Tasa inicial USD/COP:", initialUsdToCopRate / 1e18);
+        console.log("Tasa inicial USD/COP:", initialUsdToCopRate / 1e6);
         
         vm.stopBroadcast();
         
@@ -137,11 +139,41 @@ contract DeployVCOPComplete is Script {
             currency0 = vcopCurrency;
             currency1 = usdcCurrency;
             vcopIsToken0 = true;
+            
+            // Si VCOP es token0, entonces para una relacion de 4200 VCOP = 1 USDC
+            // El precio debe ser bajo (1/4200)
+            // Log base 1.0001 de (1/4200) ≈ -83
+            int24 targetTick = -83000;
+            startingPrice = TickMath.getSqrtPriceAtTick(targetTick);
+            
+            // Para VCOP/USDC, ampliamos el rango de ticks para acomodar la relacion
+            tickLower = targetTick - 6000; // Rango amplio por debajo
+            tickUpper = targetTick + 6000; // Rango amplio por encima
+            
         } else {
             currency0 = usdcCurrency;
             currency1 = vcopCurrency;
             vcopIsToken0 = false;
+            
+            // Si USDC es token0, entonces para una relacion de 4200 VCOP = 1 USDC
+            // El precio debe ser alto (4200)
+            // Log base 1.0001 de 4200 ≈ 83
+            int24 targetTick = 83000;
+            startingPrice = TickMath.getSqrtPriceAtTick(targetTick);
+            
+            // Para USDC/VCOP, ampliamos el rango de ticks para acomodar la relacion
+            tickLower = targetTick - 6000; // Rango amplio por debajo
+            tickUpper = targetTick + 6000; // Rango amplio por encima
         }
+        
+        // Ajustar los ticks para que sean multiplos del tickSpacing
+        tickLower = (tickLower / tickSpacing) * tickSpacing;
+        tickUpper = (tickUpper / tickSpacing) * tickSpacing;
+        
+        console.log("VCOP es token0:", vcopIsToken0);
+        console.log("Precio inicial:", uint256(startingPrice));
+        console.log("Tick inferior:", tickLower);
+        console.log("Tick superior:", tickUpper);
         
         // Crear la estructura PoolKey
         PoolKey memory poolKey = PoolKey({
@@ -158,6 +190,9 @@ contract DeployVCOPComplete is Script {
         uint256 amount0Max = vcopIsToken0 ? vcopLiquidity : stablecoinLiquidity;
         uint256 amount1Max = vcopIsToken0 ? stablecoinLiquidity : vcopLiquidity;
         
+        console.log("Cantidad maxima token0:", amount0Max);
+        console.log("Cantidad maxima token1:", amount1Max);
+        
         // Calcular la liquidez
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(
             startingPrice,
@@ -166,6 +201,8 @@ contract DeployVCOPComplete is Script {
             amount0Max,
             amount1Max
         );
+        
+        console.log("Liquidez calculada:", uint256(liquidity));
         
         // Preparar parametros de multicall
         bytes[] memory params = new bytes[](2);
@@ -202,6 +239,13 @@ contract DeployVCOPComplete is Script {
         
         // Ejecutar multicall para crear pool y anadir liquidez
         positionManager.multicall(params);
+        
+        // Verificar balances finales
+        uint256 vcopBalanceDeployer = vcop.balanceOf(deployerAddress);
+        uint256 usdcBalanceDeployer = usdc.balanceOf(deployerAddress);
+        
+        console.log("Balance final VCOP del desplegador:", vcopBalanceDeployer);
+        console.log("Balance final USDC del desplegador:", usdcBalanceDeployer);
         
         console.log("Pool creado y liquidez inicial anadida con exito");
         
