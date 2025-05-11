@@ -1,84 +1,128 @@
-# VCOP Stablecoin Algorítmica con Hooks de Uniswap v4
+# VCOP Stablecoin con Uniswap v4
 
-Este proyecto implementa una stablecoin algorítmica llamada VCOP utilizando Hooks de Uniswap v4 para mantener automáticamente su precio cercano a $1 USD a través de un mecanismo de rebase.
+Una stablecoin algorítmica basada en mecanismo de rebase y pools de Uniswap v4.
 
 ## Descripción
 
-VCOP es una stablecoin algorítmica que utiliza un mecanismo de rebase inspirado en protocolos como Ampleforth. El sistema ajusta automáticamente el suministro total de tokens VCOP basándose en las desviaciones de precio:
+VCOP es una stablecoin que utiliza un mecanismo de rebase para mantener su precio objetivo de 1 USD. El sistema integra:
 
-- Si VCOP > $1.05: Se ejecuta un rebase positivo (expansión del suministro)
-- Si VCOP < $0.95: Se ejecuta un rebase negativo (contracción del suministro)
-- Si $0.95 ≤ VCOP ≤ $1.05: No se realiza ningún rebase
+- Token VCOP con mecanismo de rebase
+- Oráculo de precio
+- Hook de Uniswap v4 para automatizar rebases
+- Pool de liquidez en Uniswap v4
 
-El sistema aprovecha los hooks de Uniswap v4 para monitorear el precio después de cada swap y ejecutar rebases cuando sea necesario.
+## Requisitos
 
-## Componentes Principales
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- Node.js y npm
+- ETH en Base Sepolia para pagar gas
+- USDC en Base Sepolia para añadir liquidez
 
-El sistema consta de los siguientes componentes:
-
-1. **VCOPRebased.sol**: Implementación de la stablecoin con mecanismo de rebase. Utiliza un sistema de "gons" para rastrear balances de manera proporcional durante los rebases.
-
-2. **VCOPOracle.sol**: Oráculo que proporciona el precio de referencia para VCOP. En un entorno de producción, se reemplazaría por un oráculo descentralizado como Chainlink.
-
-3. **VCOPRebaseHook.sol**: Hook de Uniswap v4 que monitorea los swaps y ejecuta rebases automáticamente cuando es necesario.
-
-4. **Scripts de Despliegue**: Scripts para desplegar la stablecoin y sus componentes en diferentes entornos.
-
-## Algoritmo de Rebase
-
-El algoritmo de rebase funciona de la siguiente manera:
-
-1. Después de cada swap en un pool que incluya VCOP, el hook verifica si el tiempo mínimo entre rebases ha pasado.
-2. Si es el momento adecuado, el hook consulta el oráculo para obtener el precio actual de VCOP.
-3. Si el precio está fuera del rango objetivo, se ejecuta un rebase:
-   - Expansión: Si el precio es alto, se aumenta el suministro en un porcentaje fijo.
-   - Contracción: Si el precio es bajo, se reduce el suministro en un porcentaje fijo.
-4. Los balances de todos los usuarios se ajustan proporcionalmente.
-
-## Configuración del Proyecto
-
-### Requisitos
-
-- [Foundry](https://github.com/foundry-rs/foundry)
-- [Node.js](https://nodejs.org/) (opcional)
-
-### Instalación
+## Instalación
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/tuusuario/VCOPstablecoin.git
-cd VCOPstablecoin
+git clone <repositorio>
+cd vcop_test
 
 # Instalar dependencias
 forge install
 ```
 
-### Compilación
+## Flujo de Despliegue
 
-```bash
-forge build
+El despliegue puede realizarse en un entorno local o en la red Base Sepolia.
+
+### Opción 1: Despliegue en Base Sepolia
+
+#### 1. Configuración del archivo .env
+
+El archivo `.env` ya está configurado con las direcciones oficiales de los contratos de Uniswap v4 en Base Sepolia. Solo necesitas actualizar tu clave privada:
+
+```
+# Reemplaza con tu clave privada real (debe incluir el prefijo 0x)
+PRIVATE_KEY=0xtu_clave_privada_aqui
+
+# Base Sepolia RPC URL
+RPC_URL=https://sepolia.base.org
+
+# Direcciones oficiales de Uniswap v4 en Base Sepolia (ChainID: 84532)
+POOL_MANAGER_ADDRESS=0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
+POSITION_MANAGER_ADDRESS=0x4b2c77d209d3405f41a037ec6c77f7f5b8e2ca80
+
+# USDC en Base Sepolia
+USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 ```
 
-### Tests
+#### 2. Obtener USDC en Base Sepolia
+
+Antes de desplegar, asegúrate de tener suficiente USDC en Base Sepolia para añadir liquidez inicial. El script está configurado para utilizar 10,000 USDC.
+
+#### 3. Desplegar el Sistema VCOP Completo
+
+Ejecuta el script de despliegue completo:
 
 ```bash
-forge test
+# Usar la opción --via-ir para resolver posibles errores "stack too deep"
+forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url $RPC_URL
 ```
 
-### Despliegue
+Este script realiza el proceso de despliegue en tres pasos:
 
-Para desplegar en una red de producción:
+1. **Paso 1**: Despliega el token VCOP y el Oráculo
+2. **Paso 2**: Usa HookMiner para encontrar y desplegar el hook con una dirección válida para Uniswap v4
+3. **Paso 3**: Crea el pool VCOP/USDC y añade liquidez inicial
+
+Los contratos desplegados y sus direcciones se mostrarán en la salida del script.
+
+### Opción 2: Entorno Local con Anvil
+
+Para pruebas locales, puedes seguir utilizando Anvil:
+
+#### 1. Iniciar nodo local
 
 ```bash
-forge script script/DeployVCOP.s.sol:DeployVCOP --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
+anvil
 ```
 
-Para desplegar en un entorno de desarrollo local:
+#### 2. Desplegar Contratos Base de Uniswap v4
 
 ```bash
-forge script script/DeployVCOP.s.sol:DeployVCOPDev --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
+forge script script/Anvil.s.sol --broadcast --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-## Licencia
+#### 3. Ejecutar el despliegue completo
 
-Este proyecto está licenciado bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles. 
+```bash
+forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+```
+
+## ¿Por qué necesitamos HookMiner?
+
+En Uniswap v4, los hooks deben tener direcciones especiales que codifican los permisos que utilizan. HookMiner encuentra una "salt" para desplegar el contrato mediante CREATE2 en una dirección que tiene los bits correctos, lo que permite que Uniswap v4 valide qué hooks están habilitados.
+
+## Contratos Principales
+
+- `VCOPRebased.sol`: Token principal con mecanismo de rebase
+- `VCOPOracle.sol`: Oráculo de precio (mock para fines de prueba)
+- `VCOPRebaseHook.sol`: Hook de Uniswap v4 que ejecuta rebases automáticamente
+
+## Pruebas
+
+Para ejecutar las pruebas:
+
+```bash
+forge test -vv
+```
+
+## Interactuar con el Sistema
+
+Una vez desplegado, puedes:
+
+1. Modificar el precio en el oráculo para desencadenar rebases
+2. Realizar swaps en el pool para probar el hook
+3. Verificar cambios en el suministro total tras rebases
+
+## Seguridad
+
+Este código es experimental y no está auditado. No se recomienda su uso en producción. 
