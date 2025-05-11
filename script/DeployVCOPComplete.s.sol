@@ -22,13 +22,15 @@ import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {VCOPRebased} from "../src/VCOPRebased.sol";
 import {VCOPOracle} from "../src/VCOPOracle.sol";
 import {DeployVCOPRebaseHook} from "./DeployVCOPRebaseHook.s.sol";
+import {DeployMockUSDC} from "./DeployMockUSDC.s.sol";
 
 /**
  * @title DeployVCOPComplete
  * @notice Script para desplegar el sistema VCOP completo en multiples pasos:
- * 1. Desplegar VCOP y Oracle
- * 2. Desplegar Hook (usando HookMiner)
- * 3. Crear pool y anadir liquidez
+ * 1. Desplegar USDC Simulado
+ * 2. Desplegar VCOP y Oracle
+ * 3. Desplegar Hook (usando HookMiner)
+ * 4. Crear pool y anadir liquidez
  */
 contract DeployVCOPComplete is Script {
     using CurrencyLibrary for Currency;
@@ -36,19 +38,22 @@ contract DeployVCOPComplete is Script {
     // Constantes de Uniswap V4 - Direcciones oficiales de Base Sepolia
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     
-    // Direccion de USDC en Base Sepolia
-    address constant USDC_ADDRESS = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
-    
     // Parametros configurables para el pool
     uint24 lpFee = 3000; // 0.30%
     int24 tickSpacing = 60;
+    // Para una relación 1:4200, usamos un precio inicial que refleje esa proporción
+    // Para simplificar, usaremos un precio inicial 1:1 y luego ajustaremos con los swaps
     uint160 startingPrice = 79228162514264337593543950336; // sqrt(1) * 2^96
     
     // Configuracion para la posicion de liquidez inicial
-    uint256 vcopLiquidity = 50 * 1e18; // 50 VCOP
-    uint256 stablecoinLiquidity = 50 * 1e6; // 50 USDC (6 decimales)
-    int24 tickLower = -600;
-    int24 tickUpper = 600;
+    uint256 vcopLiquidity = 42_000_000 * 1e18; // 42 millones de VCOP
+    uint256 stablecoinLiquidity = 10_000 * 1e6; // 10,000 USDC (equivalente a 42M VCOP a tasa 1:4200)
+    // Usar ticks más cercanos al 0 según documentación
+    int24 tickLower = -60; // -60 es múltiplo del tickSpacing de 60
+    int24 tickUpper = 60;  // 60 es múltiplo del tickSpacing de 60
+    
+    // Tasa inicial USD/COP (4200 COP = 1 USD)
+    uint256 initialUsdToCopRate = 4200e18;
     
     // API Key dummy para evitar errores de verificacion
     string constant DUMMY_API_KEY = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
@@ -66,38 +71,47 @@ contract DeployVCOPComplete is Script {
         console.log("Verificando red y saldos...");
         console.log("Direccion del desplegador:", deployerAddress);
         
-        // Referencia al USDC real en Base Sepolia
-        IERC20 usdc = IERC20(USDC_ADDRESS);
+        // === PASO 1: Desplegar USDC simulado ===
+        console.log("=== PASO 1: Desplegando USDC Simulado ===");
+        
+        // Desplegar el USDC simulado
+        DeployMockUSDC usdcDeployer = new DeployMockUSDC();
+        address usdcAddress = usdcDeployer.run();
+        
+        // Verificar el despliegue
+        IERC20 usdc = IERC20(usdcAddress);
         uint256 usdcBalance = usdc.balanceOf(deployerAddress);
+        console.log("Direccion de USDC simulado:", usdcAddress);
         console.log("Saldo USDC del desplegador:", usdcBalance);
         
         // Comprobar si hay suficiente USDC antes de empezar
-        require(usdcBalance >= stablecoinLiquidity, "Insuficiente USDC para agregar liquidez. Obtener USDC en faucet de Base Sepolia.");
+        require(usdcBalance >= stablecoinLiquidity, "Insuficiente USDC para agregar liquidez.");
         
         // Referencias a contratos externos de Uniswap
         IPoolManager poolManager = IPoolManager(poolManagerAddress);
         PositionManager positionManager = PositionManager(payable(positionManagerAddress));
         
-        console.log("=== PASO 1: Desplegando VCOP y Oracle ===");
+        console.log("=== PASO 2: Desplegando VCOP y Oracle ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Despliegue inicial de VCOP con un suministro de 1,000,000 tokens
-        VCOPRebased vcop = new VCOPRebased(1_000_000 * 1e18);
+        // Despliegue inicial de VCOP con un suministro de 100,000,000 tokens
+        VCOPRebased vcop = new VCOPRebased(100_000_000 * 1e18);
         
-        // Despliegue del oraculo con precio inicial de 1 USD
-        VCOPOracle oracle = new VCOPOracle(1e18);
+        // Despliegue del oráculo con tasa inicial de 4200 COP = 1 USD
+        VCOPOracle oracle = new VCOPOracle(initialUsdToCopRate);
         
         console.log("VCOP desplegado en:", address(vcop));
         console.log("Oracle desplegado en:", address(oracle));
+        console.log("Tasa inicial USD/COP:", initialUsdToCopRate / 1e18);
         
         vm.stopBroadcast();
         
         // Guardar direcciones para el siguiente script
         vm.setEnv("VCOP_ADDRESS", vm.toString(address(vcop)));
         vm.setEnv("ORACLE_ADDRESS", vm.toString(address(oracle)));
-        vm.setEnv("USDC_ADDRESS", vm.toString(USDC_ADDRESS));
+        vm.setEnv("USDC_ADDRESS", vm.toString(usdcAddress));
         
-        console.log("=== PASO 2: Desplegando Hook con HookMiner ===");
+        console.log("=== PASO 3: Desplegando Hook con HookMiner ===");
         
         // Ejecutar el script para desplegar el hook
         DeployVCOPRebaseHook hookDeployer = new DeployVCOPRebaseHook();
@@ -107,19 +121,19 @@ contract DeployVCOPComplete is Script {
         address hookAddress = vm.envOr("HOOK_ADDRESS", address(0));
         require(hookAddress != address(0), "Hook address not set");
         
-        console.log("=== PASO 3: Creando Pool y anadiendo liquidez ===");
+        console.log("=== PASO 4: Creando Pool y anadiendo liquidez ===");
         vm.startBroadcast(deployerPrivateKey);
         
         // Crear Currency para VCOP y USDC
         Currency vcopCurrency = Currency.wrap(address(vcop));
-        Currency usdcCurrency = Currency.wrap(USDC_ADDRESS);
+        Currency usdcCurrency = Currency.wrap(usdcAddress);
         
         // Asegurar que las monedas esten en orden correcto (menor direccion primero)
         Currency currency0;
         Currency currency1;
         bool vcopIsToken0;
         
-        if (address(vcop) < USDC_ADDRESS) {
+        if (address(vcop) < usdcAddress) {
             currency0 = vcopCurrency;
             currency1 = usdcCurrency;
             vcopIsToken0 = true;
@@ -184,7 +198,7 @@ contract DeployVCOPComplete is Script {
         );
         
         // Aprobar los tokens para que PositionManager pueda usarlos
-        _approveTokens(address(vcop), USDC_ADDRESS, address(positionManager));
+        _approveTokens(address(vcop), usdcAddress, address(positionManager));
         
         // Ejecutar multicall para crear pool y anadir liquidez
         positionManager.multicall(params);
