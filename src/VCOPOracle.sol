@@ -5,73 +5,120 @@ import {Ownable} from "v4-core/lib/openzeppelin-contracts/contracts/access/Ownab
 
 /**
  * @title VCOPOracle
- * @notice Oráculo mock simple para simular la entrega del precio de VCOP
+ * @notice Oráculo para proveer precio de VCOP en relación al peso colombiano (COP) y dólar (USD)
+ * @dev Usa 6 decimales para mantener consistencia con VCOP y USDC
  */
 contract VCOPOracle is Ownable {
-    // Precio actual de VCOP en USD (con 18 decimales)
-    // 1 USD = 1e18
-    uint256 private _price = 1e18;
+    // Precio del dólar en pesos colombianos (con 6 decimales)
+    // 4200 COP = 1 USD, entonces 4200e6
+    uint256 private _usdToCopRate = 4200e6;
+    
+    // Factor de conversión VCOP a COP (con 6 decimales)
+    // 1 VCOP = 1 COP inicialmente, entonces 1e6
+    uint256 private _vcopToCopRate = 1e6;
 
-    // Evento emitido cuando se actualiza el precio
-    event PriceUpdated(uint256 oldPrice, uint256 newPrice);
+    // Eventos emitidos cuando se actualizan los precios
+    event UsdToCopRateUpdated(uint256 oldRate, uint256 newRate);
+    event VcopToCopRateUpdated(uint256 oldRate, uint256 newRate);
 
     /**
-     * @dev Constructor que inicializa el oráculo con un precio inicial
-     * @param initialPrice El precio inicial (en formato 18 decimales)
+     * @dev Constructor que inicializa el oráculo con tasas iniciales
+     * @param initialUsdToCopRate La tasa inicial USD/COP (en formato 6 decimales)
      */
-    constructor(uint256 initialPrice) Ownable(msg.sender) {
-        if (initialPrice > 0) {
-            _price = initialPrice;
+    constructor(uint256 initialUsdToCopRate) Ownable(msg.sender) {
+        if (initialUsdToCopRate > 0) {
+            _usdToCopRate = initialUsdToCopRate;
         }
     }
 
     /**
-     * @dev Obtiene el precio actual de VCOP
-     * @return El precio actual en formato de 18 decimales
+     * @dev Obtiene la tasa de cambio USD a COP
+     * @return La tasa en formato de 6 decimales (ej: 4200e6 para 4200 COP por 1 USD)
+     */
+    function getUsdToCopRate() external view returns (uint256) {
+        return _usdToCopRate;
+    }
+
+    /**
+     * @dev Obtiene la tasa de cambio VCOP a COP
+     * @return La tasa en formato de 6 decimales (ej: 1e6 para 1:1)
+     */
+    function getVcopToCopRate() external view returns (uint256) {
+        return _vcopToCopRate;
+    }
+    
+    /**
+     * @dev Obtiene el precio de VCOP en USD
+     * @return El precio en formato de 6 decimales
+     */
+    function getVcopToUsdPrice() external view returns (uint256) {
+        // VCOP/USD = (VCOP/COP) * (COP/USD) = (VCOP/COP) / (USD/COP)
+        return (_vcopToCopRate * 1e6) / _usdToCopRate;
+    }
+    
+    /**
+     * @dev Obtiene el precio de VCOP para el mecanismo de rebase
+     * Este método se mantiene compatible con el sistema de rebase existente
+     * @return El precio en formato de 6 decimales
      */
     function getPrice() external view returns (uint256) {
-        return _price;
+        // Para mantener compatibilidad con el sistema de rebase existente
+        // Devolvemos la relación VCOP/COP que idealmente es 1:1
+        return _vcopToCopRate;
     }
 
     /**
-     * @dev Actualiza el precio manualmente (solo el propietario)
-     * @param newPrice El nuevo precio a establecer (en formato 18 decimales)
+     * @dev Actualiza la tasa USD a COP manualmente (solo el propietario)
+     * @param newRate La nueva tasa a establecer (en formato 6 decimales)
      */
-    function setPrice(uint256 newPrice) external onlyOwner {
-        require(newPrice > 0, "Price must be greater than zero");
+    function setUsdToCopRate(uint256 newRate) external onlyOwner {
+        require(newRate > 0, "Rate must be greater than zero");
         
-        uint256 oldPrice = _price;
-        _price = newPrice;
+        uint256 oldRate = _usdToCopRate;
+        _usdToCopRate = newRate;
         
-        emit PriceUpdated(oldPrice, newPrice);
+        emit UsdToCopRateUpdated(oldRate, newRate);
+    }
+    
+    /**
+     * @dev Actualiza la tasa VCOP a COP manualmente (solo el propietario)
+     * @param newRate La nueva tasa a establecer (en formato 6 decimales)
+     */
+    function setVcopToCopRate(uint256 newRate) external onlyOwner {
+        require(newRate > 0, "Rate must be greater than zero");
+        
+        uint256 oldRate = _vcopToCopRate;
+        _vcopToCopRate = newRate;
+        
+        emit VcopToCopRateUpdated(oldRate, newRate);
     }
 
     /**
-     * @dev Simula un aumento de precio por un porcentaje específico
-     * @param percentage El porcentaje de aumento (con 18 decimales, ej: 5% = 5e16)
+     * @dev Simula un aumento de la tasa USD/COP por un porcentaje específico
+     * @param percentage El porcentaje de aumento (con 6 decimales, ej: 5% = 5e4)
      */
-    function simulatePriceIncrease(uint256 percentage) external onlyOwner {
+    function simulateUsdToCopRateIncrease(uint256 percentage) external onlyOwner {
         require(percentage > 0, "Percentage must be greater than zero");
         
-        uint256 oldPrice = _price;
-        uint256 increase = (_price * percentage) / 1e18;
-        _price += increase;
+        uint256 oldRate = _usdToCopRate;
+        uint256 increase = (_usdToCopRate * percentage) / 1e6;
+        _usdToCopRate += increase;
         
-        emit PriceUpdated(oldPrice, _price);
+        emit UsdToCopRateUpdated(oldRate, _usdToCopRate);
     }
 
     /**
-     * @dev Simula una disminución de precio por un porcentaje específico
-     * @param percentage El porcentaje de disminución (con 18 decimales, ej: 5% = 5e16)
+     * @dev Simula una disminución de la tasa USD/COP por un porcentaje específico
+     * @param percentage El porcentaje de disminución (con 6 decimales, ej: 5% = 5e4)
      */
-    function simulatePriceDecrease(uint256 percentage) external onlyOwner {
+    function simulateUsdToCopRateDecrease(uint256 percentage) external onlyOwner {
         require(percentage > 0, "Percentage must be greater than zero");
-        require(percentage < 1e18, "Percentage must be less than 100%");
+        require(percentage < 1e6, "Percentage must be less than 100%");
         
-        uint256 oldPrice = _price;
-        uint256 decrease = (_price * percentage) / 1e18;
-        _price -= decrease;
+        uint256 oldRate = _usdToCopRate;
+        uint256 decrease = (_usdToCopRate * percentage) / 1e6;
+        _usdToCopRate -= decrease;
         
-        emit PriceUpdated(oldPrice, _price);
+        emit UsdToCopRateUpdated(oldRate, _usdToCopRate);
     }
 } 

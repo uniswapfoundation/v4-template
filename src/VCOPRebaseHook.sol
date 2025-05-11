@@ -16,6 +16,7 @@ import {VCOPOracle} from "src/VCOPOracle.sol";
 /**
  * @title VCOPRebaseHook
  * @notice Hook de Uniswap v4 que monitorea el precio de VCOP y ejecuta rebases automáticos
+ * para mantener la paridad 1:1 con el peso colombiano (COP)
  */
 contract VCOPRebaseHook is BaseHook {
     using PoolIdLibrary for PoolKey;
@@ -39,7 +40,7 @@ contract VCOPRebaseHook is BaseHook {
     Currency public stablecoinCurrency;
     
     // Evento emitido cuando se ejecuta un rebase
-    event RebaseExecuted(uint256 price, uint256 newTotalSupply);
+    event RebaseExecuted(uint256 vcopToCopRate, uint256 newTotalSupply);
     
     // Evento emitido cuando se actualiza el intervalo de rebase
     event RebaseIntervalUpdated(uint256 oldInterval, uint256 newInterval);
@@ -97,12 +98,13 @@ contract VCOPRebaseHook is BaseHook {
     function executeRebase() public returns (uint256) {
         require(block.timestamp >= lastRebaseTime + rebaseInterval, "Rebase too soon");
         
-        uint256 price = oracle.getPrice();
-        uint256 newSupply = vcop.rebase(price);
+        // Obtener la tasa VCOP/COP del oráculo
+        uint256 vcopToCopRate = oracle.getVcopToCopRate();
+        uint256 newSupply = vcop.rebase(vcopToCopRate);
         
         lastRebaseTime = block.timestamp;
         
-        emit RebaseExecuted(price, newSupply);
+        emit RebaseExecuted(vcopToCopRate, newSupply);
         
         return newSupply;
     }

@@ -7,7 +7,8 @@ import {Ownable} from "v4-core/lib/openzeppelin-contracts/contracts/access/Ownab
 /**
  * @title VCOPRebased
  * @notice Implementación de una stablecoin algorítmica que utiliza mecanismo de rebase
- * para mantener su precio cercano a $1
+ * para mantener su precio cercano a 1 COP (peso colombiano)
+ * @dev Este token usa 6 decimales para mantener compatibilidad con USDC
  */
 contract VCOPRebased is ERC20, Ownable {
     // Eventos
@@ -19,11 +20,12 @@ contract VCOPRebased is ERC20, Ownable {
         uint256 rebasePercentageDown
     );
 
-    // Parámetros de rebase
-    uint256 public rebaseThresholdUp = 105e16; // 1.05 USD
-    uint256 public rebaseThresholdDown = 95e16; // 0.95 USD
-    uint256 public rebasePercentageUp = 1e16; // 1% de expansión
-    uint256 public rebasePercentageDown = 1e16; // 1% de contracción
+    // Parámetros de rebase - Ahora basados en la relación VCOP/COP
+    // Los umbrales están en términos de la relación VCOP/COP donde 1:1 es el ideal (1e6)
+    uint256 public rebaseThresholdUp = 105e4; // 1.05 COP por VCOP
+    uint256 public rebaseThresholdDown = 95e4; // 0.95 COP por VCOP
+    uint256 public rebasePercentageUp = 1e4; // 1% de expansión
+    uint256 public rebasePercentageDown = 1e4; // 1% de contracción
 
     // Contador de rebases
     uint256 public epoch = 0;
@@ -49,7 +51,7 @@ contract VCOPRebased is ERC20, Ownable {
 
     /**
      * @dev Constructor que inicializa el token con el suministro inicial y su dueño
-     * @param initialSupply El suministro inicial del token
+     * @param initialSupply El suministro inicial del token (en unidades con 6 decimales)
      */
     constructor(uint256 initialSupply) ERC20("VCOP Stablecoin", "VCOP") Ownable(msg.sender) {
         _gonsSupply = INITIAL_GONS_SUPPLY;
@@ -61,6 +63,13 @@ contract VCOPRebased is ERC20, Ownable {
         rebasers[msg.sender] = true;
         
         emit Transfer(address(0), msg.sender, initialSupply);
+    }
+
+    /**
+     * @dev Sobrecarga la función decimals para devolver 6 en lugar de 18 (valor predeterminado de ERC20)
+     */
+    function decimals() public pure override returns (uint8) {
+        return 6;
     }
 
     /**
@@ -97,23 +106,23 @@ contract VCOPRebased is ERC20, Ownable {
 
     /**
      * @dev Ejecuta un rebase basado en el precio actual
-     * @param price El precio actual del token (en formato 18 decimales, ej: 1 USD = 1e18)
+     * @param vcopToCopRate La tasa actual VCOP/COP (en formato 6 decimales, ej: 1 COP = 1e6)
      * @return El nuevo suministro total después del rebase
      */
-    function rebase(uint256 price) external returns (uint256) {
+    function rebase(uint256 vcopToCopRate) external returns (uint256) {
         require(rebasers[msg.sender], "Not authorized to rebase");
         
         uint256 newTotalSupply = _totalSupply;
         
-        if (price >= rebaseThresholdUp) {
-            // Expansión (rebase positivo)
+        if (vcopToCopRate >= rebaseThresholdUp) {
+            // Expansión (rebase positivo) - VCOP vale más que 1 COP
             uint256 factor = rebasePercentageUp;
-            uint256 supplyDelta = (_totalSupply * factor) / 1e18;
+            uint256 supplyDelta = (_totalSupply * factor) / 1e6;
             newTotalSupply = _totalSupply + supplyDelta;
-        } else if (price <= rebaseThresholdDown) {
-            // Contracción (rebase negativo)
+        } else if (vcopToCopRate <= rebaseThresholdDown) {
+            // Contracción (rebase negativo) - VCOP vale menos que 1 COP
             uint256 factor = rebasePercentageDown;
-            uint256 supplyDelta = (_totalSupply * factor) / 1e18;
+            uint256 supplyDelta = (_totalSupply * factor) / 1e6;
             newTotalSupply = _totalSupply - supplyDelta;
         } else {
             // No rebase si el precio está dentro del rango aceptable
