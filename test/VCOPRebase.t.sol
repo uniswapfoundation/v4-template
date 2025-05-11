@@ -35,7 +35,7 @@ contract MockVCOPRebaseHook {
     Currency public stablecoinCurrency;
     
     // Evento emitido cuando se ejecuta un rebase
-    event RebaseExecuted(uint256 price, uint256 newTotalSupply);
+    event RebaseExecuted(uint256 vcopToCopRate, uint256 newTotalSupply);
     
     // Evento emitido cuando se actualiza el intervalo de rebase
     event RebaseIntervalUpdated(uint256 oldInterval, uint256 newInterval);
@@ -74,12 +74,12 @@ contract MockVCOPRebaseHook {
     function executeRebase() public returns (uint256) {
         require(block.timestamp >= lastRebaseTime + rebaseInterval, "Rebase too soon");
         
-        uint256 price = oracle.getPrice();
-        uint256 newSupply = vcop.rebase(price);
+        uint256 vcopToCopRate = oracle.getVcopToCopRate();
+        uint256 newSupply = vcop.rebase(vcopToCopRate);
         
         lastRebaseTime = block.timestamp;
         
-        emit RebaseExecuted(price, newSupply);
+        emit RebaseExecuted(vcopToCopRate, newSupply);
         
         return newSupply;
     }
@@ -88,12 +88,12 @@ contract MockVCOPRebaseHook {
      * @dev Solo para testing - Ejecuta un rebase ignorando el intervalo
      */
     function forceRebase() public returns (uint256) {
-        uint256 price = oracle.getPrice();
-        uint256 newSupply = vcop.rebase(price);
+        uint256 vcopToCopRate = oracle.getVcopToCopRate();
+        uint256 newSupply = vcop.rebase(vcopToCopRate);
         
         lastRebaseTime = block.timestamp;
         
-        emit RebaseExecuted(price, newSupply);
+        emit RebaseExecuted(vcopToCopRate, newSupply);
         
         return newSupply;
     }
@@ -114,9 +114,9 @@ contract VCOPRebaseTest is Test {
     address public user1 = address(2);
     address public user2 = address(3);
     
-    // Constantes
-    uint256 public initialVCOPSupply = 1_000_000 * 1e18;
-    uint256 public initialUserBalance = 10_000 * 1e18;
+    // Constantes - ahora con 6 decimales
+    uint256 public initialVCOPSupply = 1_000_000 * 1e6;
+    uint256 public initialUserBalance = 10_000 * 1e6;
     
     function setUp() public {
         // Establecer un timestamp de bloque inicial para determinismo
@@ -137,8 +137,8 @@ contract VCOPRebaseTest is Test {
         // Desplegar VCOP token
         vcop = new VCOPRebased(initialVCOPSupply);
         
-        // Desplegar Oracle
-        oracle = new VCOPOracle(1e18); // Precio inicial: 1 USD
+        // Desplegar Oracle con tasa inicial de 1:1 (1e6 = 1 COP)
+        oracle = new VCOPOracle(1e6);
         
         // Para propósitos de testing, desplegamos el hook mock
         hook = new MockVCOPRebaseHook(
@@ -159,12 +159,12 @@ contract VCOPRebaseTest is Test {
         vm.stopPrank();
     }
     
-    function testInitialState() public {
+    function testInitialState() public view {
         assertEq(vcop.totalSupply(), initialVCOPSupply);
         assertEq(vcop.balanceOf(deployer), initialVCOPSupply - (initialUserBalance * 2));
         assertEq(vcop.balanceOf(user1), initialUserBalance);
         assertEq(vcop.balanceOf(user2), initialUserBalance);
-        assertEq(oracle.getPrice(), 1e18);
+        assertEq(oracle.getVcopToCopRate(), 1e6);
     }
     
     function testPositiveRebase() public {
@@ -175,20 +175,20 @@ contract VCOPRebaseTest is Test {
         // Avanzar el tiempo suficiente para permitir el rebase
         vm.warp(block.timestamp + 2 hours);
         
-        // Aumentar precio en 10% (a 1.10 USD)
+        // Aumentar la tasa a 1.10 COP por VCOP (10% por encima del ideal)
         vm.prank(deployer);
-        oracle.setPrice(11e17);
+        oracle.setVcopToCopRate(11e5);
         
         // Ejecutar rebase
         vm.prank(deployer);
         hook.forceRebase(); // Uso de forceRebase para testing
         
         // El suministro debería haber aumentado ~1% (rebasePercentageUp)
-        uint256 expectedNewSupply = initialSupply + ((initialSupply * 1e16) / 1e18);
+        uint256 expectedNewSupply = initialSupply + ((initialSupply * 1e4) / 1e6);
         assertApproxEqRel(vcop.totalSupply(), expectedNewSupply, 0.01e18); // 1% de tolerancia
         
         // Los balances deberían escalar proporcionalmente
-        uint256 expectedUser1Balance = initialUser1Balance + ((initialUser1Balance * 1e16) / 1e18);
+        uint256 expectedUser1Balance = initialUser1Balance + ((initialUser1Balance * 1e4) / 1e6);
         assertApproxEqRel(vcop.balanceOf(user1), expectedUser1Balance, 0.01e18);
     }
     
@@ -200,20 +200,20 @@ contract VCOPRebaseTest is Test {
         // Avanzar el tiempo suficiente para permitir el rebase
         vm.warp(block.timestamp + 2 hours);
         
-        // Disminuir precio en 10% (a 0.90 USD)
+        // Disminuir la tasa a 0.90 COP por VCOP (10% por debajo del ideal)
         vm.prank(deployer);
-        oracle.setPrice(9e17);
+        oracle.setVcopToCopRate(9e5);
         
         // Ejecutar rebase
         vm.prank(deployer);
         hook.forceRebase(); // Uso de forceRebase para testing
         
         // El suministro debería haber disminuido ~1% (rebasePercentageDown)
-        uint256 expectedNewSupply = initialSupply - ((initialSupply * 1e16) / 1e18);
+        uint256 expectedNewSupply = initialSupply - ((initialSupply * 1e4) / 1e6);
         assertApproxEqRel(vcop.totalSupply(), expectedNewSupply, 0.01e18); // 1% de tolerancia
         
         // Los balances deberían escalar proporcionalmente
-        uint256 expectedUser1Balance = initialUser1Balance - ((initialUser1Balance * 1e16) / 1e18);
+        uint256 expectedUser1Balance = initialUser1Balance - ((initialUser1Balance * 1e4) / 1e6);
         assertApproxEqRel(vcop.balanceOf(user1), expectedUser1Balance, 0.01e18);
     }
     
@@ -224,15 +224,15 @@ contract VCOPRebaseTest is Test {
         // Avanzar el tiempo suficiente para permitir el rebase
         vm.warp(block.timestamp + 2 hours);
         
-        // Cambiar precio a 1.02 USD (dentro del umbral)
+        // Cambiar tasa a 1.02 COP por VCOP (dentro del umbral)
         vm.prank(deployer);
-        oracle.setPrice(102e16);
+        oracle.setVcopToCopRate(102e4);
         
         // Ejecutar rebase
         vm.prank(deployer);
         hook.forceRebase(); // Uso de forceRebase para testing
         
-        // El suministro no debería cambiar (precio dentro del umbral)
+        // El suministro no debería cambiar (tasa dentro del umbral)
         assertEq(vcop.totalSupply(), initialSupply);
     }
     
@@ -240,9 +240,9 @@ contract VCOPRebaseTest is Test {
         // Avanzar el tiempo suficiente para permitir el rebase inicial
         vm.warp(block.timestamp + 2 hours);
         
-        // Cambiar precio a 1.10 USD
+        // Cambiar tasa a 1.10 COP por VCOP
         vm.prank(deployer);
-        oracle.setPrice(11e17);
+        oracle.setVcopToCopRate(11e5);
         
         // Ejecutar primer rebase
         vm.prank(deployer);

@@ -17,9 +17,9 @@ contract VCOPRebaseSimpleTest is Test {
     address public user1 = address(2);
     address public user2 = address(3);
     
-    // Constantes
-    uint256 public initialVCOPSupply = 1_000_000 * 1e18;
-    uint256 public initialUserBalance = 10_000 * 1e18;
+    // Constantes - ahora con 6 decimales
+    uint256 public initialVCOPSupply = 1_000_000 * 1e6;
+    uint256 public initialUserBalance = 10_000 * 1e6;
     
     function setUp() public {
         // Cambiar a deployer
@@ -28,8 +28,8 @@ contract VCOPRebaseSimpleTest is Test {
         // Desplegar VCOP token
         vcop = new VCOPRebased(initialVCOPSupply);
         
-        // Desplegar Oracle
-        oracle = new VCOPOracle(1e18); // Precio inicial: 1 USD
+        // Desplegar Oracle con tasa inicial de 1:1 (1e6 = 1 COP)
+        oracle = new VCOPOracle(1e6);
         
         // Autorizar a deployer para ejecutar rebases
         vcop.setRebaser(deployer, true);
@@ -46,7 +46,7 @@ contract VCOPRebaseSimpleTest is Test {
         assertEq(vcop.balanceOf(deployer), initialVCOPSupply - (initialUserBalance * 2));
         assertEq(vcop.balanceOf(user1), initialUserBalance);
         assertEq(vcop.balanceOf(user2), initialUserBalance);
-        assertEq(oracle.getPrice(), 1e18);
+        assertEq(oracle.getVcopToCopRate(), 1e6);
     }
     
     function testPositiveRebase() public {
@@ -54,20 +54,24 @@ contract VCOPRebaseSimpleTest is Test {
         uint256 initialSupply = vcop.totalSupply();
         uint256 initialUser1Balance = vcop.balanceOf(user1);
         
-        // Aumentar precio en 10% (a 1.10 USD)
+        // Aumentar la tasa a 1.10 COP por VCOP (10% por encima del ideal)
         vm.prank(deployer);
-        oracle.setPrice(11e17);
+        oracle.setVcopToCopRate(11e5);
+        
+        // Asegurar que deployer tiene permisos antes del rebase
+        vm.startPrank(deployer);
+        vcop.setRebaser(deployer, true);
         
         // Ejecutar rebase directamente como deployer
-        vm.prank(deployer);
-        vcop.rebase(oracle.getPrice());
+        vcop.rebase(oracle.getVcopToCopRate());
+        vm.stopPrank();
         
         // El suministro debería haber aumentado ~1% (rebasePercentageUp)
-        uint256 expectedNewSupply = initialSupply + ((initialSupply * 1e16) / 1e18);
+        uint256 expectedNewSupply = initialSupply + ((initialSupply * 1e4) / 1e6);
         assertApproxEqRel(vcop.totalSupply(), expectedNewSupply, 0.01e18); // 1% de tolerancia
         
         // Los balances deberían escalar proporcionalmente
-        uint256 expectedUser1Balance = initialUser1Balance + ((initialUser1Balance * 1e16) / 1e18);
+        uint256 expectedUser1Balance = initialUser1Balance + ((initialUser1Balance * 1e4) / 1e6);
         assertApproxEqRel(vcop.balanceOf(user1), expectedUser1Balance, 0.01e18);
     }
     
@@ -76,20 +80,24 @@ contract VCOPRebaseSimpleTest is Test {
         uint256 initialSupply = vcop.totalSupply();
         uint256 initialUser1Balance = vcop.balanceOf(user1);
         
-        // Disminuir precio en 10% (a 0.90 USD)
+        // Disminuir la tasa a 0.90 COP por VCOP (10% por debajo del ideal)
         vm.prank(deployer);
-        oracle.setPrice(9e17);
+        oracle.setVcopToCopRate(9e5);
+        
+        // Asegurar que deployer tiene permisos antes del rebase
+        vm.startPrank(deployer);
+        vcop.setRebaser(deployer, true);
         
         // Ejecutar rebase
-        vm.prank(deployer);
-        vcop.rebase(oracle.getPrice());
+        vcop.rebase(oracle.getVcopToCopRate());
+        vm.stopPrank();
         
         // El suministro debería haber disminuido ~1% (rebasePercentageDown)
-        uint256 expectedNewSupply = initialSupply - ((initialSupply * 1e16) / 1e18);
+        uint256 expectedNewSupply = initialSupply - ((initialSupply * 1e4) / 1e6);
         assertApproxEqRel(vcop.totalSupply(), expectedNewSupply, 0.01e18); // 1% de tolerancia
         
         // Los balances deberían escalar proporcionalmente
-        uint256 expectedUser1Balance = initialUser1Balance - ((initialUser1Balance * 1e16) / 1e18);
+        uint256 expectedUser1Balance = initialUser1Balance - ((initialUser1Balance * 1e4) / 1e6);
         assertApproxEqRel(vcop.balanceOf(user1), expectedUser1Balance, 0.01e18);
     }
     
@@ -97,15 +105,19 @@ contract VCOPRebaseSimpleTest is Test {
         // Precio inicial
         uint256 initialSupply = vcop.totalSupply();
         
-        // Cambiar precio a 1.02 USD (dentro del umbral)
+        // Cambiar tasa a 1.02 COP por VCOP (dentro del umbral)
         vm.prank(deployer);
-        oracle.setPrice(102e16);
+        oracle.setVcopToCopRate(102e4);
+        
+        // Asegurar que deployer tiene permisos antes del rebase
+        vm.startPrank(deployer);
+        vcop.setRebaser(deployer, true);
         
         // Ejecutar rebase
-        vm.prank(deployer);
-        vcop.rebase(oracle.getPrice());
+        vcop.rebase(oracle.getVcopToCopRate());
+        vm.stopPrank();
         
-        // El suministro no debería cambiar (precio dentro del umbral)
+        // El suministro no debería cambiar (tasa dentro del umbral)
         assertEq(vcop.totalSupply(), initialSupply);
     }
 } 
