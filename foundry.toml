@@ -60,6 +60,6 @@ base-sepolia = "https://sepolia.base.org"
 
 [etherscan]
 # Base Sepolia Testnet (compatible con Base Goerli)
-base-sepolia = { key = "${ETHERSCAN_API_KEY}", chain = 84532 }
+base-sepolia = { key = "IS3DBRSG4KAU2T8BS54ECSD2TKSIT9T9CI", chain = 84532 }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
