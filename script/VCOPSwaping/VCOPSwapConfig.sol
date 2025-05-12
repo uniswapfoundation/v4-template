@@ -13,7 +13,7 @@ contract VCOPSwapConfig {
     // Cantidad a intercambiar (con 6 decimales)
     // Si COMPRAR_VCOP = true: cantidad de USDC a gastar
     // Si COMPRAR_VCOP = false: cantidad de VCOP a vender
-    uint256 private constant _CANTIDAD = 4000000 * 10**6; // 100 USDC o 100 VCOP
+    uint256 private constant _CANTIDAD = 12000000 * 10**6; // 100 USDC o 100 VCOP
     
     // OPCIONAL: Slippage máximo (porcentaje * 100), por defecto ilimitado
     // Ejemplo: 50 = 0.5%, 100 = 1%, 1000 = 10%

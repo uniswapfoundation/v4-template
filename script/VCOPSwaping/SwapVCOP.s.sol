@@ -17,15 +17,15 @@ contract SwapVCOPScript is Script {
     uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_PRICE - 1;
 
     // VCOP Token address - ACTUALIZADO
-    address public constant VCOP_ADDRESS = 0x736830eBa7754e5b05242eca783Fd4b6BA6d77Ad;
+    address public constant VCOP_ADDRESS = 0x077052d6eD0C7b798288B3B50981b73C9Ae6aa3c;
     // USDC Token address - ACTUALIZADO
-    address public constant USDC_ADDRESS = 0xDcD12D26aE3E3e1985F8cAeC1548B29bd649567E;
+    address public constant USDC_ADDRESS = 0x6C4541a1bd01c7560cfBF17b37ead0D2ee60139A;
     // VCOP Rebase Hook - ACTUALIZADO
-    address public constant HOOK_ADDRESS = 0x2499b757519Bb317E80d9006761e4eaA7A468040;
+    address public constant HOOK_ADDRESS = 0x262884ef8370529339e25747B42C796F2299C040;
     // Price Calculator - ACTUALIZADO
-    address public constant PRICE_CALCULATOR_ADDRESS = 0xb7D39079EEFeB754947970B7F86d4c1a18e4b1D9;
+    address public constant PRICE_CALCULATOR_ADDRESS = 0x82489b5488F1458B598b9535D8830b8513EeF9ac;
     // Oracle - ACTUALIZADO
-    address public constant ORACLE_ADDRESS = 0x00cc0A1F3E618dFb177C701781Db39aFd53Ce7aF;
+    address public constant ORACLE_ADDRESS = 0xE9ca56289BF11143737f7F6BBA570b2e5612108c;
     
     // Base Sepolia deployed contracts
     address public constant POOL_MANAGER = 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408;

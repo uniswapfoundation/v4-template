@@ -157,18 +157,6 @@ contract VCOPRebased is ERC20, Ownable {
             console.log("Nuevo supply total:", newTotalSupply);
             
             emit RebaseExpansion(_totalSupply, newTotalSupply, factor);
-        } else if (vcopToCopRate <= rebaseThresholdDown) {
-            // Contracción (rebase negativo) - VCOP vale menos que 1 COP
-            uint256 factor = rebasePercentageDown;
-            uint256 supplyDelta = (_totalSupply * factor) / 1e6;
-            newTotalSupply = _totalSupply - supplyDelta;
-            
-            console.log("REBASE NEGATIVO (Contraccion)");
-            console.log("Factor de rebase:", factor);
-            console.log("Reduccion de supply:", supplyDelta);
-            console.log("Nuevo supply total:", newTotalSupply);
-            
-            emit RebaseContraction(_totalSupply, newTotalSupply, factor);
         } else {
             // No rebase si el precio está dentro del rango aceptable
             console.log("REBASE OMITIDO - Precio dentro del rango aceptable");
