@@ -17,11 +17,15 @@ contract SwapVCOPScript is Script {
     uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_PRICE - 1;
 
     // VCOP Token address - ACTUALIZADO
-    address public constant VCOP_ADDRESS = 0x70370F8507f0c40D5Ed3222F669B0727FFF8C12c;
+    address public constant VCOP_ADDRESS = 0x23d4741bFcd9F7560ac37ACeECddfCdC35A1994f;
     // USDC Token address - ACTUALIZADO
-    address public constant USDC_ADDRESS = 0xAE919425E485C6101E391091350E3f0304749574;
+    address public constant USDC_ADDRESS = 0xC30ae597EA9d1C917D227C563C3a62E238D2fD40;
     // VCOP Rebase Hook - ACTUALIZADO
-    address public constant HOOK_ADDRESS = 0x1E70FbbF7A9ADcD550BaeE80E58B244EcdFF0040;
+    address public constant HOOK_ADDRESS = 0x90C2ab6887ae73f481E442b2B2Da1F0C54760040;
+    // Price Calculator - ACTUALIZADO
+    address public constant PRICE_CALCULATOR_ADDRESS = 0x340C20A4625DF3C7B3Bc5857b4f841C524Ff8b9D;
+    // Oracle - ACTUALIZADO
+    address public constant ORACLE_ADDRESS = 0xaCfe7a7b680110F4F5c7F289f8F2C0fb9a30D22d;
     
     // Base Sepolia deployed contracts
     address public constant POOL_MANAGER = 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408;
@@ -41,8 +45,16 @@ contract SwapVCOPScript is Script {
         uint256 cantidad = config.CANTIDAD();
         uint16 slippageMax = config.SLIPPAGE_MAX();
         
+        // Obtener la dirección del deployer
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerAddress = vm.addr(deployerPrivateKey);
+        
         console.log("Modo:", comprarVCOP ? "Comprar VCOP con USDC" : "Vender VCOP por USDC");
         console.log("Cantidad:", cantidad / 10**6, "tokens");
+        console.log("Direccion del deployer:", deployerAddress);
+        console.log("VCOP Address:", VCOP_ADDRESS);
+        console.log("USDC Address:", USDC_ADDRESS);
+        console.log("Hook Address:", HOOK_ADDRESS);
         
         // Create pool key
         PoolKey memory pool = PoolKey({
@@ -55,8 +67,14 @@ contract SwapVCOPScript is Script {
 
         IERC20 vcopToken = IERC20(VCOP_ADDRESS);
         IERC20 usdcToken = IERC20(USDC_ADDRESS);
+        
+        // Mostrar balances iniciales
+        uint256 vcopBalanceInicial = vcopToken.balanceOf(deployerAddress);
+        uint256 usdcBalanceInicial = usdcToken.balanceOf(deployerAddress);
+        console.log("Balance VCOP inicial:", vcopBalanceInicial / 10**6);
+        console.log("Balance USDC inicial:", usdcBalanceInicial / 10**6);
 
-        vm.startBroadcast();
+        vm.startBroadcast(deployerPrivateKey);
         
         // Definir dirección del swap:
         // - Si compramos VCOP: USDC (token1) a VCOP (token0) -> zeroForOne = false
@@ -88,9 +106,23 @@ contract SwapVCOPScript is Script {
         vm.stopBroadcast();
 
         // Log balances after swap
-        uint256 vcopBalance = vcopToken.balanceOf(msg.sender);
-        uint256 usdcBalance = usdcToken.balanceOf(msg.sender);
-        console.log("VCOP Balance:", vcopBalance / 10**6);
-        console.log("USDC Balance:", usdcBalance / 10**6);
+        uint256 vcopBalance = vcopToken.balanceOf(deployerAddress);
+        uint256 usdcBalance = usdcToken.balanceOf(deployerAddress);
+        
+        console.log("VCOP Balance final:", vcopBalance / 10**6);
+        console.log("USDC Balance final:", usdcBalance / 10**6);
+        
+        // Calcular cambios evitando underflow
+        if (vcopBalance > vcopBalanceInicial) {
+            console.log("Cambio en VCOP:", (vcopBalance - vcopBalanceInicial) / 10**6);
+        } else {
+            console.log("Cambio en VCOP: -", (vcopBalanceInicial - vcopBalance) / 10**6);
+        }
+        
+        if (usdcBalance > usdcBalanceInicial) {
+            console.log("Cambio en USDC:", (usdcBalance - usdcBalanceInicial) / 10**6);
+        } else {
+            console.log("Cambio en USDC: -", (usdcBalanceInicial - usdcBalance) / 10**6);
+        }
     }
 } 

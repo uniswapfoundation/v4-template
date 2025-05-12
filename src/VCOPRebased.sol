@@ -28,10 +28,12 @@ contract VCOPRebased is ERC20, Ownable {
 
     // Parámetros de rebase - Ahora basados en la relación VCOP/COP
     // Los umbrales están en términos de la relación VCOP/COP donde 1:1 es el ideal (1e6)
-    uint256 public rebaseThresholdUp = 105e4; // 1.05 COP por VCOP
-    uint256 public rebaseThresholdDown = 95e4; // 0.95 COP por VCOP
-    uint256 public rebasePercentageUp = 1e4; // 1% de expansión
-    uint256 public rebasePercentageDown = 1e4; // 1% de contracción
+    // 1.05 significa que 1 VCOP vale 1.05 COP (precio alto, requiere contracción)
+    uint256 public rebaseThresholdUp = 1050000; // 1.05 COP por VCOP con 6 decimales
+    // 0.95 significa que 1 VCOP vale 0.95 COP (precio bajo, requiere expansión)
+    uint256 public rebaseThresholdDown = 950000; // 0.95 COP por VCOP con 6 decimales
+    uint256 public rebasePercentageUp = 1e4; // 1% de expansión (con 6 decimales)
+    uint256 public rebasePercentageDown = 1e4; // 1% de contracción (con 6 decimales)
 
     // Contador de rebases
     uint256 public epoch = 0;
@@ -131,8 +133,20 @@ contract VCOPRebased is ERC20, Ownable {
         
         emit RebaseInitiated(msg.sender, vcopToCopRate);
         
-        if (vcopToCopRate >= rebaseThresholdUp) {
-            // Expansión (rebase positivo) - VCOP vale más que 1 COP
+        if (vcopToCopRate > rebaseThresholdUp) {
+            // Contracción (rebase negativo) - VCOP vale más que 1.05 COP
+            uint256 factor = rebasePercentageDown;
+            uint256 supplyDelta = (_totalSupply * factor) / 1e6;
+            newTotalSupply = _totalSupply - supplyDelta;
+            
+            console.log("REBASE NEGATIVO (Contraccion)");
+            console.log("Factor de rebase:", factor);
+            console.log("Reduccion de supply:", supplyDelta);
+            console.log("Nuevo supply total:", newTotalSupply);
+            
+            emit RebaseContraction(_totalSupply, newTotalSupply, factor);
+        } else if (vcopToCopRate < rebaseThresholdDown) {
+            // Expansión (rebase positivo) - VCOP vale menos que 0.95 COP
             uint256 factor = rebasePercentageUp;
             uint256 supplyDelta = (_totalSupply * factor) / 1e6;
             newTotalSupply = _totalSupply + supplyDelta;

@@ -22,6 +22,7 @@ import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 
 import {VCOPRebased} from "../src/VCOPRebased.sol";
 import {VCOPOracle} from "../src/VCOPOracle.sol";
+import {VCOPPriceCalculator} from "../src/VCOPPriceCalculator.sol";
 import {DeployVCOPRebaseHook} from "./DeployVCOPRebaseHook.s.sol";
 import {DeployMockUSDC} from "./DeployMockUSDC.s.sol";
 
@@ -31,7 +32,8 @@ import {DeployMockUSDC} from "./DeployMockUSDC.s.sol";
  * 1. Desplegar USDC Simulado
  * 2. Desplegar VCOP y Oracle
  * 3. Desplegar Hook (usando HookMiner)
- * 4. Crear pool y anadir liquidez
+ * 4. Desplegar el calculador de precios
+ * 5. Crear pool y anadir liquidez
  */
 contract DeployVCOPComplete is Script {
     using CurrencyLibrary for Currency;
@@ -143,7 +145,38 @@ contract DeployVCOPComplete is Script {
         address hookAddress = vm.envOr("HOOK_ADDRESS", address(0));
         require(hookAddress != address(0), "Hook address not set");
         
-        console.logString("=== PASO 4: Creando Pool y anadiendo liquidez ===");
+        console.logString("=== PASO 4: Desplegando Calculador de Precios ===");
+        vm.startBroadcast(deployerPrivateKey);
+        
+        // Desplegar el calculador de precios
+        VCOPPriceCalculator priceCalculator = new VCOPPriceCalculator(
+            poolManagerAddress,
+            address(vcop),
+            usdcAddress,
+            lpFee,
+            tickSpacing,
+            hookAddress,
+            initialUsdToCopRate
+        );
+        
+        console.logString("Calculador de precios desplegado en:");
+        console.logAddress(address(priceCalculator));
+        
+        // Configurar el calculador en el oráculo
+        oracle.setPriceCalculator(address(priceCalculator));
+        console.logString("Calculador de precios configurado en el oraculo");
+        
+        // Verificar paridad 1:1 entre VCOP y COP
+        bool isAtParity = oracle.isVcopAtParity();
+        console.logString("VCOP esta en paridad 1:1 con COP?");
+        console.logBool(isAtParity);
+        
+        vm.stopBroadcast();
+        
+        // Guardar dirección del calculador de precios para futuro uso
+        vm.setEnv("PRICE_CALCULATOR_ADDRESS", vm.toString(address(priceCalculator)));
+        
+        console.logString("=== PASO 5: Creando Pool y anadiendo liquidez ===");
         console.logString("Liquidez USDC a agregar:"); 
         console.logUint(stablecoinLiquidity / 1e6); 
         console.logString("USDC");
@@ -286,6 +319,30 @@ contract DeployVCOPComplete is Script {
         console.logUint(usdcBalanceDeployer);
         
         console.logString("Pool creado y liquidez inicial anadida con exito");
+        
+        // === PASO 6: Actualizar el hook con la direccion del oracle
+        // El hook necesita el oráculo para los rebalanceos
+        console.logString("=== PASO 6: Verificando precios del pool creado ===");
+        
+        // Verificar los precios usando el calculador de manera segura
+        try priceCalculator.calculateAllPrices() returns (
+            uint256 vcopToUsdPrice, 
+            uint256 vcopToCopPrice, 
+            int24 currentTick, 
+            bool parityStatus
+        ) {
+            console.logString("Precio VCOP/USDC calculado:");
+            console.logUint(vcopToUsdPrice / 1e6);
+            console.logString("Precio VCOP/COP calculado:");
+            console.logUint(vcopToCopPrice / 1e6);
+            console.logString("Tick actual del pool:");
+            console.logInt(currentTick);
+            console.logString("VCOP en paridad 1:1 con COP?");
+            console.logBool(parityStatus);
+        } catch {
+            console.logString("No se pudieron calcular todos los precios. El pool necesita tiempo para inicializarse completamente.");
+            console.logString("Esto es normal justo despues de crear el pool. Intente verificar los precios mas tarde.");
+        }
         
         vm.stopBroadcast();
     }
