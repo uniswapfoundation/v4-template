@@ -1,12 +1,17 @@
 #!/bin/bash
 
-# Direcciones y parámetros para el pool VCOP-USDC
-export POOL_MANAGER_ADDRESS=0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
-export CURRENCY0_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
-export CURRENCY1_ADDRESS=0x9654e816C592b9794a6c20F97019C952BD69E1B0
-export FEE=3000
-export TICK_SPACING=60
-export HOOK_ADDRESS=0x4eB4B9f731ECCaB556f3516550dd4A68fc3b0040
+# Script para leer el precio actual del pool VCOP-USDC en Base Sepolia
+# Este script ejecuta TestPoolPrice.s.sol para obtener información detallada
+# del precio actual de VCOP en relación a USDC y COP
 
-# Ejecutar el script de Forge
-forge script script/ReadPoolState.sol:ReadPoolState --rpc-url https://sepolia.base.org -vvv 
+echo "Leyendo precio actual del pool VCOP-USDC en Base Sepolia..."
+echo ""
+
+# RPC_URL puede ser tomado del .env o usar directamente Base Sepolia
+RPC_URL=${RPC_URL:-https://sepolia.base.org}
+
+# Ejecutar script con forge
+forge script script/TestPoolPrice.s.sol --rpc-url $RPC_URL
+
+echo ""
+echo "Lectura completada." 

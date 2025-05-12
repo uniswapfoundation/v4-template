@@ -9,3 +9,4 @@ forge script script/SimpleDeploy.sol:SimpleDeploy --via-ir --broadcast --fork-ur
 
 echo "======== Ejecutando prueba simplificada ========"
 forge script script/SimpleTest.sol:SimpleTest --via-ir --broadcast --fork-url $RPC_URL -vvv
+forge script script/SimpleTest.sol:SimpleTest --via-ir --broadcast --fork-url $RPC_URL -vvv

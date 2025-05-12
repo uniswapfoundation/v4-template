@@ -2,7 +2,13 @@
 pragma solidity ^0.8.24;
 
 import {Ownable} from "v4-core/lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-import {console2 as console} from "forge-std/console2.sol"; // Usar console2 en lugar de console
+import {console2 as console} from "forge-std/console2.sol";
+import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
+import {PoolKey} from "v4-core/src/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
+import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
+import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
+import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 
 /**
  * @title VCOPOracle
@@ -10,6 +16,25 @@ import {console2 as console} from "forge-std/console2.sol"; // Usar console2 en 
  * @dev Usa 6 decimales para mantener consistencia con VCOP y USDC
  */
 contract VCOPOracle is Ownable {
+    using PoolIdLibrary for PoolKey;
+    using StateLibrary for IPoolManager;
+    using CurrencyLibrary for Currency;
+
+    // Pool Manager de Uniswap v4
+    IPoolManager public immutable poolManager;
+    
+    // Direcciones de los tokens para la pool
+    address public immutable vcopAddress;
+    address public immutable usdcAddress;
+    
+    // Parámetros del pool
+    uint24 public immutable fee;
+    int24 public immutable tickSpacing;
+    address public immutable hookAddress;
+    
+    // Indica si VCOP es token0 en el pool
+    bool public isVCOPToken0;
+    
     // Precio del dólar en pesos colombianos (con 6 decimales)
     // 4200 COP = 1 USD, entonces 4200e6
     uint256 private _usdToCopRate = 4200e6;
@@ -25,18 +50,123 @@ contract VCOPOracle is Ownable {
     // Nuevos eventos para seguimiento detallado
     event PriceRequested(address requester, string rateType);
     event PriceProvided(address requester, string rateType, uint256 rate);
+    event PoolPriceUpdated(uint256 sqrtPriceX96, uint256 price);
 
     /**
-     * @dev Constructor que inicializa el oráculo con tasas iniciales
+     * @dev Constructor que inicializa el oráculo con tasas iniciales y configuración del pool
      * @param initialUsdToCopRate La tasa inicial USD/COP (en formato 6 decimales)
+     * @param _poolManager Dirección del PoolManager de Uniswap v4
+     * @param _vcopAddress Dirección del token VCOP
+     * @param _usdcAddress Dirección del token USDC
+     * @param _fee Fee del pool (ej: 3000 para 0.3%)
+     * @param _tickSpacing Espaciado de ticks del pool
+     * @param _hookAddress Dirección del hook
      */
-    constructor(uint256 initialUsdToCopRate) Ownable(msg.sender) {
+    constructor(
+        uint256 initialUsdToCopRate,
+        address _poolManager,
+        address _vcopAddress,
+        address _usdcAddress,
+        uint24 _fee,
+        int24 _tickSpacing,
+        address _hookAddress
+    ) Ownable(msg.sender) {
         if (initialUsdToCopRate > 0) {
             _usdToCopRate = initialUsdToCopRate;
         }
-        console.log("VCOPOracle inicializado");
+        
+        poolManager = IPoolManager(_poolManager);
+        vcopAddress = _vcopAddress;
+        usdcAddress = _usdcAddress;
+        fee = _fee;
+        tickSpacing = _tickSpacing;
+        hookAddress = _hookAddress;
+        
+        // Determinar si VCOP es token0 o token1 (ordenamiento lexicográfico)
+        isVCOPToken0 = uint160(_vcopAddress) < uint160(_usdcAddress);
+        
+        console.log("VCOPOracle inicializado con Uniswap v4");
         console.log("Tasa inicial USD/COP:", _usdToCopRate);
         console.log("Tasa inicial VCOP/COP:", _vcopToCopRate);
+        console.log("VCOP es token0:", isVCOPToken0);
+    }
+    
+    /**
+     * @dev Crea la estructura PoolKey para el pool VCOP-USDC
+     */
+    function _createPoolKey() internal view returns (PoolKey memory) {
+        Currency currency0;
+        Currency currency1;
+        
+        // Asignar tokens según el orden correcto
+        if (isVCOPToken0) {
+            currency0 = Currency.wrap(vcopAddress);
+            currency1 = Currency.wrap(usdcAddress);
+        } else {
+            currency0 = Currency.wrap(usdcAddress);
+            currency1 = Currency.wrap(vcopAddress);
+        }
+        
+        return PoolKey({
+            currency0: currency0,
+            currency1: currency1,
+            fee: fee,
+            tickSpacing: tickSpacing,
+            hooks: IHooks(hookAddress)
+        });
+    }
+    
+    /**
+     * @dev Obtiene el precio VCOP/USDC directamente del pool de Uniswap v4
+     * @return El precio VCOP/USDC en formato de 6 decimales
+     */
+    function getVcopToUsdPriceFromPool() public view returns (uint256) {
+        PoolKey memory poolKey = _createPoolKey();
+        PoolId poolId = poolKey.toId();
+        
+        // Obtener sqrtPriceX96 del pool
+        (uint160 sqrtPriceX96, , , ) = poolManager.getSlot0(poolId);
+        
+        // Calcular precio a partir de sqrtPriceX96
+        // El precio en Uniswap v4 es token1/token0, por lo que dependiendo
+        // de si VCOP es token0 o token1, debemos hacer cálculos diferentes
+        uint256 price;
+        
+        if (isVCOPToken0) {
+            // Si VCOP es token0, el precio es 1/price (USDC/VCOP)
+            // price = token1/token0 = USDC/VCOP
+            // Calculamos primero USDC/VCOP y luego hacemos la inversión
+            price = (uint256(sqrtPriceX96) * uint256(sqrtPriceX96) * 1e6) >> 192;
+            price = (1e12 * 1e6) / price; // Invertir y ajustar a 6 decimales (1e6)
+        } else {
+            // Si VCOP es token1, el precio es price (VCOP/USDC)
+            // price = token1/token0 = VCOP/USDC
+            price = (uint256(sqrtPriceX96) * uint256(sqrtPriceX96) * 1e6) >> 192;
+        }
+        
+        return price;
+    }
+
+    /**
+     * @dev Actualiza las tasas de cambio basado en los precios reales del pool
+     */
+    function updateRatesFromPool() public returns (uint256, uint256) {
+        // Obtener el precio VCOP/USDC del pool
+        uint256 vcopToUsdPrice = getVcopToUsdPriceFromPool();
+        
+        // Actualizar _vcopToCopRate basado en el precio obtenido
+        // VCOP/COP = VCOP/USD * USD/COP
+        uint256 oldVcopToCopRate = _vcopToCopRate;
+        _vcopToCopRate = (vcopToUsdPrice * _usdToCopRate) / 1e6;
+        
+        console.log("Actualizando tasas desde pool Uniswap v4");
+        console.log("Precio VCOP/USD del pool:", vcopToUsdPrice);
+        console.log("Tasa USD/COP actual:", _usdToCopRate);
+        console.log("Nueva tasa VCOP/COP calculada:", _vcopToCopRate);
+        
+        emit VcopToCopRateUpdated(oldVcopToCopRate, _vcopToCopRate);
+        
+        return (_vcopToCopRate, vcopToUsdPrice);
     }
 
     /**
@@ -54,10 +184,13 @@ contract VCOPOracle is Ownable {
     }
 
     /**
-     * @dev Obtiene la tasa de cambio VCOP a COP
+     * @dev Obtiene la tasa de cambio VCOP a COP, actualizándola primero desde el pool
      * @return La tasa en formato de 6 decimales (ej: 1e6 para 1:1)
      */
     function getVcopToCopRate() external returns (uint256) {
+        // Actualizar tasas desde el pool antes de devolver el valor
+        updateRatesFromPool();
+        
         console.log("Consulta de tasa VCOP/COP por:", msg.sender);
         console.log("Tasa VCOP/COP actual:", _vcopToCopRate);
         
@@ -68,17 +201,14 @@ contract VCOPOracle is Ownable {
     }
     
     /**
-     * @dev Obtiene el precio de VCOP en USD
+     * @dev Obtiene el precio de VCOP en USD directamente desde el pool
      * @return El precio en formato de 6 decimales
      */
     function getVcopToUsdPrice() external returns (uint256) {
-        // VCOP/USD = (VCOP/COP) * (COP/USD) = (VCOP/COP) / (USD/COP)
-        uint256 vcopToUsdPrice = (_vcopToCopRate * 1e6) / _usdToCopRate;
+        uint256 vcopToUsdPrice = getVcopToUsdPriceFromPool();
         
         console.log("Consulta de precio VCOP/USD por:", msg.sender);
-        console.log("Usando tasa VCOP/COP:", _vcopToCopRate);
-        console.log("Usando tasa USD/COP:", _usdToCopRate);
-        console.log("Precio VCOP/USD calculado:", vcopToUsdPrice);
+        console.log("Precio VCOP/USD del pool:", vcopToUsdPrice);
         
         emit PriceRequested(msg.sender, "VCOP/USD");
         emit PriceProvided(msg.sender, "VCOP/USD", vcopToUsdPrice);
@@ -92,10 +222,11 @@ contract VCOPOracle is Ownable {
      * @return El precio en formato de 6 decimales
      */
     function getPrice() external returns (uint256) {
-        // Para mantener compatibilidad con el sistema de rebase existente
-        // Devolvemos la relación VCOP/COP que idealmente es 1:1
+        // Actualizar tasas desde el pool antes de devolver el valor
+        updateRatesFromPool();
+        
         console.log("Consulta de precio para rebase por:", msg.sender);
-        console.log("Devolviendo tasa VCOP/COP:", _vcopToCopRate);
+        console.log("Tasa VCOP/COP actualizada:", _vcopToCopRate);
         
         emit PriceRequested(msg.sender, "REBASE");
         emit PriceProvided(msg.sender, "REBASE", _vcopToCopRate);
@@ -118,63 +249,5 @@ contract VCOPOracle is Ownable {
         console.log("Nueva tasa:", newRate);
         
         emit UsdToCopRateUpdated(oldRate, newRate);
-    }
-    
-    /**
-     * @dev Actualiza la tasa VCOP a COP manualmente (solo el propietario)
-     * @param newRate La nueva tasa a establecer (en formato 6 decimales)
-     */
-    function setVcopToCopRate(uint256 newRate) external onlyOwner {
-        require(newRate > 0, "Rate must be greater than zero");
-        
-        uint256 oldRate = _vcopToCopRate;
-        _vcopToCopRate = newRate;
-        
-        console.log("Tasa VCOP/COP actualizada por:", msg.sender);
-        console.log("Tasa anterior:", oldRate);
-        console.log("Nueva tasa:", newRate);
-        
-        emit VcopToCopRateUpdated(oldRate, newRate);
-    }
-
-    /**
-     * @dev Simula un aumento de la tasa USD/COP por un porcentaje específico
-     * @param percentage El porcentaje de aumento (con 6 decimales, ej: 5% = 5e4)
-     */
-    function simulateUsdToCopRateIncrease(uint256 percentage) external onlyOwner {
-        require(percentage > 0, "Percentage must be greater than zero");
-        
-        uint256 oldRate = _usdToCopRate;
-        uint256 increase = (_usdToCopRate * percentage) / 1e6;
-        _usdToCopRate += increase;
-        
-        console.log("Simulacion de aumento USD/COP por:", msg.sender);
-        console.log("Porcentaje de aumento:", percentage);
-        console.log("Tasa anterior:", oldRate);
-        console.log("Nueva tasa:", _usdToCopRate);
-        console.log("Incremento absoluto:", increase);
-        
-        emit UsdToCopRateUpdated(oldRate, _usdToCopRate);
-    }
-
-    /**
-     * @dev Simula una disminución de la tasa USD/COP por un porcentaje específico
-     * @param percentage El porcentaje de disminución (con 6 decimales, ej: 5% = 5e4)
-     */
-    function simulateUsdToCopRateDecrease(uint256 percentage) external onlyOwner {
-        require(percentage > 0, "Percentage must be greater than zero");
-        require(percentage < 1e6, "Percentage must be less than 100%");
-        
-        uint256 oldRate = _usdToCopRate;
-        uint256 decrease = (_usdToCopRate * percentage) / 1e6;
-        _usdToCopRate -= decrease;
-        
-        console.log("Simulacion de disminucion USD/COP por:", msg.sender);
-        console.log("Porcentaje de disminucion:", percentage);
-        console.log("Tasa anterior:", oldRate);
-        console.log("Nueva tasa:", _usdToCopRate);
-        console.log("Decremento absoluto:", decrease);
-        
-        emit UsdToCopRateUpdated(oldRate, _usdToCopRate);
     }
 } 

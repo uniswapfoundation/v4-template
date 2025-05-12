@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 // forge script script/DeployVCOPComplete.fixed.sol:DeployVCOPComplete --via-ir --broadcast --fork-url https://sepolia.base.org
 
 import {Script} from "forge-std/Script.sol";
-import "forge-std/Test.sol"; // Importar Test en lugar de console2 directamente
+import {console} from "forge-std/console.sol"; // Import console, not console2
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {Currency} from "v4-core/src/types/Currency.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
@@ -74,11 +74,12 @@ contract DeployVCOPComplete is Script {
         address positionManagerAddress = vm.envAddress("POSITION_MANAGER_ADDRESS");
         
         // Verificar la red y saldos
-        Test.log("Verificando red y saldos...");
-        Test.log("Direccion del desplegador:", deployerAddress);
+        console.logString("Verificando red y saldos...");
+        console.logString("Direccion del desplegador:"); 
+        console.logAddress(deployerAddress);
         
         // === PASO 1: Desplegar USDC simulado ===
-        Test.log("=== PASO 1: Desplegando USDC Simulado ===");
+        console.logString("=== PASO 1: Desplegando USDC Simulado ===");
         
         // Desplegar el USDC simulado
         DeployMockUSDC usdcDeployer = new DeployMockUSDC();
@@ -87,8 +88,10 @@ contract DeployVCOPComplete is Script {
         // Verificar el despliegue
         IERC20 usdc = IERC20(usdcAddress);
         uint256 usdcBalance = usdc.balanceOf(deployerAddress);
-        Test.log("Direccion de USDC simulado:", usdcAddress);
-        Test.log("Saldo USDC del desplegador:", usdcBalance);
+        console.logString("Direccion de USDC simulado:"); 
+        console.logAddress(usdcAddress);
+        console.logString("Saldo USDC del desplegador:"); 
+        console.logUint(usdcBalance);
         
         // Comprobar si hay suficiente USDC antes de empezar
         require(usdcBalance >= stablecoinLiquidity, "Insuficiente USDC para agregar liquidez.");
@@ -97,19 +100,31 @@ contract DeployVCOPComplete is Script {
         IPoolManager poolManager = IPoolManager(poolManagerAddress);
         PositionManager positionManager = PositionManager(payable(positionManagerAddress));
         
-        Test.log("=== PASO 2: Desplegando VCOP y Oracle ===");
+        console.logString("=== PASO 2: Desplegando VCOP y Oracle ===");
         vm.startBroadcast(deployerPrivateKey);
         
         // Despliegue inicial de VCOP con un suministro de 1,000,000,000 tokens (ACTUALIZADO)
         VCOPRebased vcop = new VCOPRebased(1_000_000_000 * 1e6); // 1000M con 6 decimales
         
         // Despliegue del oraculo con tasa inicial de 4200 COP = 1 USD
-        VCOPOracle oracle = new VCOPOracle(initialUsdToCopRate);
+        VCOPOracle oracle = new VCOPOracle(
+            initialUsdToCopRate,
+            poolManagerAddress,
+            address(vcop),
+            usdcAddress,
+            lpFee,
+            tickSpacing,
+            address(0)
+        );
         
-        Test.log("VCOP desplegado en:", address(vcop));
-        Test.log("Oracle desplegado en:", address(oracle));
-        Test.log("Tasa inicial USD/COP:", initialUsdToCopRate / 1e6);
-        Test.log("Suministro inicial de VCOP:", 1_000_000_000);
+        console.logString("VCOP desplegado en:"); 
+        console.logAddress(address(vcop));
+        console.logString("Oracle desplegado en:"); 
+        console.logAddress(address(oracle));
+        console.logString("Tasa inicial USD/COP:");
+        console.logUint(initialUsdToCopRate / 1e6);
+        console.logString("Suministro inicial de VCOP:");
+        console.logUint(1_000_000_000);
         
         vm.stopBroadcast();
         
@@ -118,7 +133,7 @@ contract DeployVCOPComplete is Script {
         vm.setEnv("ORACLE_ADDRESS", vm.toString(address(oracle)));
         vm.setEnv("USDC_ADDRESS", vm.toString(usdcAddress));
         
-        Test.log("=== PASO 3: Desplegando Hook con HookMiner ===");
+        console.logString("=== PASO 3: Desplegando Hook con HookMiner ===");
         
         // Ejecutar el script para desplegar el hook
         DeployVCOPRebaseHook hookDeployer = new DeployVCOPRebaseHook();
@@ -128,10 +143,15 @@ contract DeployVCOPComplete is Script {
         address hookAddress = vm.envOr("HOOK_ADDRESS", address(0));
         require(hookAddress != address(0), "Hook address not set");
         
-        Test.log("=== PASO 4: Creando Pool y anadiendo liquidez ===");
-        Test.log("Liquidez USDC a agregar:", stablecoinLiquidity / 1e6, "USDC");
-        Test.log("Liquidez VCOP a agregar:", vcopLiquidity / 1e6, "VCOP");
-        Test.log("Ratio VCOP/USDC:", vcopLiquidity / stablecoinLiquidity);
+        console.logString("=== PASO 4: Creando Pool y anadiendo liquidez ===");
+        console.logString("Liquidez USDC a agregar:"); 
+        console.logUint(stablecoinLiquidity / 1e6); 
+        console.logString("USDC");
+        console.logString("Liquidez VCOP a agregar:"); 
+        console.logUint(vcopLiquidity / 1e6); 
+        console.logString("VCOP");
+        console.logString("Ratio VCOP/USDC:"); 
+        console.logUint(vcopLiquidity / stablecoinLiquidity);
         
         vm.startBroadcast(deployerPrivateKey);
         
@@ -179,10 +199,14 @@ contract DeployVCOPComplete is Script {
         tickLower = (tickLower / tickSpacing) * tickSpacing;
         tickUpper = (tickUpper / tickSpacing) * tickSpacing;
         
-        Test.log("VCOP es token0:", vcopIsToken0);
-        Test.log("Precio inicial:", uint256(startingPrice));
-        Test.log("Tick inferior:", tickLower);
-        Test.log("Tick superior:", tickUpper);
+        console.logString("VCOP es token0:");
+        console.logBool(vcopIsToken0);
+        console.logString("Precio inicial:");
+        console.logUint(uint256(startingPrice));
+        console.logString("Tick inferior:");
+        console.logInt(tickLower);
+        console.logString("Tick superior:");
+        console.logInt(tickUpper);
         
         // Crear la estructura PoolKey
         PoolKey memory poolKey = PoolKey({
@@ -199,8 +223,10 @@ contract DeployVCOPComplete is Script {
         uint256 amount0Max = vcopIsToken0 ? vcopLiquidity : stablecoinLiquidity;
         uint256 amount1Max = vcopIsToken0 ? stablecoinLiquidity : vcopLiquidity;
         
-        Test.log("Cantidad maxima token0:", amount0Max);
-        Test.log("Cantidad maxima token1:", amount1Max);
+        console.logString("Cantidad maxima token0:");
+        console.logUint(amount0Max);
+        console.logString("Cantidad maxima token1:");
+        console.logUint(amount1Max);
         
         // Calcular la liquidez
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(
@@ -211,7 +237,8 @@ contract DeployVCOPComplete is Script {
             amount1Max
         );
         
-        Test.log("Liquidez calculada:", uint256(liquidity));
+        console.logString("Liquidez calculada:");
+        console.logUint(uint256(liquidity));
         
         // Preparar parametros de multicall
         bytes[] memory params = new bytes[](2);
@@ -253,10 +280,12 @@ contract DeployVCOPComplete is Script {
         uint256 vcopBalanceDeployer = vcop.balanceOf(deployerAddress);
         uint256 usdcBalanceDeployer = usdc.balanceOf(deployerAddress);
         
-        Test.log("Balance final VCOP del desplegador:", vcopBalanceDeployer);
-        Test.log("Balance final USDC del desplegador:", usdcBalanceDeployer);
+        console.logString("Balance final VCOP del desplegador:");
+        console.logUint(vcopBalanceDeployer);
+        console.logString("Balance final USDC del desplegador:");
+        console.logUint(usdcBalanceDeployer);
         
-        Test.log("Pool creado y liquidez inicial anadida con exito");
+        console.logString("Pool creado y liquidez inicial anadida con exito");
         
         vm.stopBroadcast();
     }

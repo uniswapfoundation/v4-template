@@ -119,9 +119,41 @@ forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broad
 | `MintVCOPToWallet.s.sol` | Minta tokens VCOP a una dirección específica |
 | `ReadPoolState.sol` | Lee el estado del pool de Uniswap v4 |
 | `ReadVCOPPoolState.s.sol` | Lee el estado específico del pool VCOP/USDC |
+| `TestPoolPrice.s.sol` | Lee directamente el precio del pool VCOP/USDC en Base Sepolia |
 | `Anvil.s.sol` | Configura el entorno local de Anvil |
 
 Los scripts antiguos y ejemplos se han movido a la carpeta `script/archive`.
+
+## Ejecutar Scripts Útiles
+
+### Consultar Precio del Pool
+
+Para obtener el precio actual de VCOP/USDC directamente del pool en Base Sepolia, ejecuta:
+
+```bash
+forge script script/TestPoolPrice.s.sol --rpc-url https://sepolia.base.org
+```
+
+Este script muestra información detallada como:
+- Si VCOP es token0 o token1 en el pool
+- El precio raw (token1/token0)
+- El precio VCOP/USDC (equivalencia con dólar)
+- El precio VCOP/COP (equivalencia con peso colombiano)
+
+### Realizar swap de VCOP a USDC
+
+Para realizar un swap de VCOP a USDC en Base Sepolia:
+
+1. Asegúrate de que tu cuenta tiene suficientes tokens VCOP.
+2. Ejecuta el siguiente comando:
+
+```bash
+# Cargar variables de entorno y ejecutar el script
+source .env
+forge script script/SwapVCOP.s.sol:SwapVCOPScript --rpc-url base-sepolia --private-key $PRIVATE_KEY --broadcast
+```
+
+El script está configurado para vender 49,000 VCOP por USDC. Si necesitas cambiar la cantidad, modifica la constante `SWAP_AMOUNT` en el archivo `script/SwapVCOP.s.sol`.
 
 ## ¿Por qué necesitamos HookMiner?
 
@@ -177,23 +209,6 @@ forge install
 PRIVATE_KEY=tu_clave_privada
 RPC_URL=https://sepolia.base.org
 ```
-
-## Scripts
-
-### Realizar swap de VCOP a USDC
-
-Para realizar un swap de VCOP a USDC en Base Sepolia:
-
-1. Asegúrate de que tu cuenta tiene suficientes tokens VCOP.
-2. Ejecuta el siguiente comando:
-
-```bash
-# Cargar variables de entorno y ejecutar el script
-source .env
-forge script script/SwapVCOP.s.sol:SwapVCOPScript --rpc-url base-sepolia --private-key $PRIVATE_KEY --broadcast
-```
-
-El script está configurado para vender 49,000 VCOP por USDC. Si necesitas cambiar la cantidad, modifica la constante `SWAP_AMOUNT` en el archivo `script/SwapVCOP.s.sol`.
 
 ### Nota importante
 

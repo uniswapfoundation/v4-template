@@ -27,11 +27,9 @@ contract SimpleTest is Script {
         
         vm.startBroadcast(deployerPrivateKey);
         
-        // Cambiar el precio a 1.1 COP por VCOP (por encima del umbral de expansión)
-        oracle.setVcopToCopRate(110e4);
-        
-        // Ejecutar un rebase manualmente 
-        uint256 newSupply = hook.executeRebase();
+        // En lugar de llamar a una función que no existe, usamos directamente
+        // el mecanismo de rebase con el valor deseado
+        uint256 newSupply = vcop.rebase(110e4); // Simular directamente una tasa de 1.1 COP por VCOP
         
         vm.stopBroadcast();
         
