@@ -18,7 +18,7 @@ contract ReadPoolState is Script {
     using StateLibrary for IPoolManager;
     using CurrencyLibrary for Currency;
 
-    function run() public {
+    function run() public view {
         // Direcciones de contratos y tokens
         address POOL_MANAGER_ADDRESS = vm.envAddress("POOL_MANAGER_ADDRESS");
         address CURRENCY0_ADDRESS = vm.envAddress("CURRENCY0_ADDRESS");

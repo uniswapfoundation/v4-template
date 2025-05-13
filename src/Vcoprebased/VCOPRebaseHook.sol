@@ -10,8 +10,8 @@ import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {Currency} from "v4-core/src/types/Currency.sol";
 
-import {VCOPRebased} from "src/VCOPRebased.sol";
-import {VCOPOracle} from "src/VCOPOracle.sol";
+import {VCOPRebased} from "./VCOPRebased.sol";
+import {VCOPOracle} from "./VCOPOracle.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
 /**
