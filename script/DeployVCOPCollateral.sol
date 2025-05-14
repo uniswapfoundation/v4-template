@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-// Para ejecutar este script sin verificacion de Etherscan:
+// To run this script without Etherscan verification:
 // forge script script/DeployVCOPCollateral.sol:DeployVCOPCollateral --via-ir --broadcast --fork-url https://sepolia.base.org
 
 import {Script} from "forge-std/Script.sol";
@@ -31,115 +31,115 @@ import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 
 /**
  * @title DeployVCOPCollateral
- * @notice Script para desplegar el sistema VCOP colateralizado en multiples pasos:
- * 1. Desplegar USDC Simulado
- * 2. Desplegar VCOP Colateralizado
- * 3. Desplegar Oracle y Calculador de Precios
- * 4. Desplegar Hook (usando HookMiner)
- * 5. Desplegar Collateral Manager
- * 6. Configurar colaterales y permisos
- * 7. Crear pool y añadir liquidez
- * 8. Provisionar liquidez al sistema colateral
+ * @notice Script to deploy the VCOP collateralized system in multiple steps:
+ * 1. Deploy Simulated USDC
+ * 2. Deploy Collateralized VCOP
+ * 3. Deploy Oracle and Price Calculator
+ * 4. Deploy Hook (using HookMiner)
+ * 5. Deploy Collateral Manager
+ * 6. Configure collaterals and permissions
+ * 7. Create pool and add liquidity
+ * 8. Provision liquidity to the collateral system
  */
 contract DeployVCOPCollateral is Script {
     using CurrencyLibrary for Currency;
 
-    // Constantes de Uniswap V4 - Direcciones oficiales de Base Sepolia
+    // Uniswap V4 Constants - Official addresses for Base Sepolia
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     
-    // Parametros configurables para el pool
+    // Configurable parameters for the pool
     uint24 lpFee = 3000; // 0.30%
     int24 tickSpacing = 60;
     
-    // Tasa inicial USD/COP (4200 COP = 1 USD)
-    uint256 initialUsdToCopRate = 4200e6; // Con 6 decimales
+    // Initial USD/COP rate (4200 COP = 1 USD)
+    uint256 initialUsdToCopRate = 4200e6; // With 6 decimals
     
-    // Para una relacion 1:4200, usamos un precio inicial adecuado
+    // For a 1:4200 ratio, we use an appropriate initial price
     uint160 startingPrice;
     
-    // Configuración para la posición de liquidez inicial
+    // Configuration for initial liquidity position
     uint256 stablecoinLiquidity = 100_000 * 1e6;  // 100,000 USDC
     uint256 vcopLiquidity = 420_000_000 * 1e6;    // 420,000,000 VCOP (ratio 4200:1)
     
-    // Configuración para el PSM (Peg Stability Module)
-    uint256 psmUsdcFunding = 100_000 * 1e6;      // 100,000 USDC para el PSM
-    uint256 psmVcopFunding = 420_000_000 * 1e6;  // 420,000,000 VCOP para el PSM
+    // Configuration for PSM (Peg Stability Module)
+    uint256 psmUsdcFunding = 100_000 * 1e6;      // 100,000 USDC for PSM
+    uint256 psmVcopFunding = 420_000_000 * 1e6;  // 420,000,000 VCOP for PSM
     uint256 psmFee = 1000;                       // 0.1% fee (base 1e6)
     
-    // Parámetros de colateralización
+    // Collateralization parameters
     uint256 collateralRatio = 1500000;           // 150% (1.5 * 1e6)
     uint256 liquidationThreshold = 1200000;      // 120% (1.2 * 1e6)
     uint256 mintFee = 1000;                      // 0.1% (1e6 basis)
     uint256 burnFee = 1000;                      // 0.1% (1e6 basis)
     
-    // Ticks para el rango de liquidez
+    // Ticks for liquidity range
     int24 tickLower;
     int24 tickUpper;
     
-    // API Key dummy para evitar errores de verificacion
+    // Dummy API Key to avoid verification errors
     string constant DUMMY_API_KEY = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
 
-    // Direcciones internas
+    // Internal addresses
     address treasuryAddress;
 
     function run() public {
-        // Establecer una clave de API dummy para Etherscan
+        // Set a dummy API key for Etherscan
         vm.setEnv("ETHERSCAN_API_KEY", DUMMY_API_KEY);
         
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        // Si se proporciona una clave privada específica para el hook owner, usarla
+        // If a specific private key for the hook owner is provided, use it
         uint256 hookOwnerPrivateKey = vm.envOr("HOOK_OWNER_PRIVATE_KEY", deployerPrivateKey);
         address deployerAddress = vm.addr(deployerPrivateKey);
         address poolManagerAddress = vm.envAddress("POOL_MANAGER_ADDRESS");
         address positionManagerAddress = vm.envAddress("POSITION_MANAGER_ADDRESS");
         
-        // Usar el deployer como treasury inicialmente (se podría cambiar después)
+        // Use the deployer as treasury initially (could be changed later)
         treasuryAddress = deployerAddress;
         
-        // Verificar la red y saldos
-        console.logString("Verificando red y saldos...");
-        console.logString("Direccion del desplegador:"); 
+        // Verify network and balances
+        console.logString("Verifying network and balances...");
+        console.logString("Deployer address:"); 
         console.logAddress(deployerAddress);
         
-        // === PASO 1: Desplegar USDC simulado ===
-        console.logString("=== PASO 1: Desplegando USDC Simulado ===");
+        // === STEP 1: Deploy Simulated USDC ===
+        console.logString("=== STEP 1: Deploying Simulated USDC ===");
         
-        // Desplegar el USDC simulado
+        // Deploy the simulated USDC
         DeployMockUSDC usdcDeployer = new DeployMockUSDC();
         address usdcAddress = usdcDeployer.run();
         
-        // Verificar el despliegue
+        // Verify deployment
         IERC20 usdc = IERC20(usdcAddress);
         uint256 usdcBalance = usdc.balanceOf(deployerAddress);
-        console.logString("Direccion de USDC simulado:"); 
+        console.logString("Simulated USDC address:"); 
         console.logAddress(usdcAddress);
-        console.logString("Saldo USDC del desplegador:"); 
+        console.logString("Deployer's USDC balance:"); 
         console.logUint(usdcBalance);
         
-        // Comprobar si hay suficiente USDC antes de empezar
-        require(usdcBalance >= stablecoinLiquidity + psmUsdcFunding, "Insuficiente USDC para el sistema completo.");
+        // Check if there's enough USDC before starting
+        require(usdcBalance >= stablecoinLiquidity + psmUsdcFunding, "Insufficient USDC for the complete system.");
         
-        // Referencias a contratos externos de Uniswap
+        // References to external Uniswap contracts
         IPoolManager poolManager = IPoolManager(poolManagerAddress);
         PositionManager positionManager = PositionManager(payable(positionManagerAddress));
         
-        // === PASO 2: Desplegar VCOP Colateralizado ===
-        console.logString("=== PASO 2: Desplegando VCOP Colateralizado ===");
+        // === STEP 2: Deploy Collateralized VCOP ===
+        console.logString("=== STEP 2: Deploying Collateralized VCOP ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Despliegue de VCOP Colateralizado
+        // Deploy Collateralized VCOP
         VCOPCollateralized vcop = new VCOPCollateralized();
         
-        console.logString("VCOP Colateralizado desplegado en:"); 
+        console.logString("Collateralized VCOP deployed at:"); 
         console.logAddress(address(vcop));
         
         vm.stopBroadcast();
         
-        // === PASO 3: Desplegar Oracle y Calculador de Precios ===
-        console.logString("=== PASO 3: Desplegando Oracle y Calculador de Precios ===");
+        // === STEP 3: Deploy Oracle and Price Calculator ===
+        console.logString("=== STEP 3: Deploying Oracle and Price Calculator ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Despliegue del oráculo con tasa inicial de 4200 COP = 1 USD
+        // Deploy oracle with initial rate of 4200 COP = 1 USD
         VCOPOracle oracle = new VCOPOracle(
             initialUsdToCopRate,
             poolManagerAddress,
@@ -147,106 +147,106 @@ contract DeployVCOPCollateral is Script {
             usdcAddress,
             lpFee,
             tickSpacing,
-            address(0) // Hook se configurará después
+            address(0) // Hook will be configured later
         );
         
-        console.logString("Oracle desplegado en:"); 
+        console.logString("Oracle deployed at:"); 
         console.logAddress(address(oracle));
-        console.logString("Tasa inicial USD/COP:");
+        console.logString("Initial USD/COP rate:");
         console.logUint(initialUsdToCopRate / 1e6);
         
         vm.stopBroadcast();
         
-        // Guardar direcciones para el siguiente script
+        // Save addresses for the next script
         vm.setEnv("VCOP_ADDRESS", vm.toString(address(vcop)));
         vm.setEnv("ORACLE_ADDRESS", vm.toString(address(oracle)));
         vm.setEnv("USDC_ADDRESS", vm.toString(usdcAddress));
         
-        // === PASO 5: Desplegar VCOPCollateralManager ===
-        console.logString("=== PASO 5: Desplegando Collateral Manager ===");
+        // === STEP 5: Deploy VCOPCollateralManager ===
+        console.logString("=== STEP 5: Deploying Collateral Manager ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Desplegar el gestor de colateral
+        // Deploy the collateral manager
         VCOPCollateralManager collateralManager = new VCOPCollateralManager(
             address(vcop),
             address(oracle)
         );
         
-        console.logString("Collateral Manager desplegado en:");
+        console.logString("Collateral Manager deployed at:");
         console.logAddress(address(collateralManager));
         
         vm.stopBroadcast();
         
-        // Guardar dirección del manager para que el hook pueda usarla durante el despliegue
+        // Save manager address so the hook can use it during deployment
         vm.setEnv("COLLATERAL_MANAGER_ADDRESS", vm.toString(address(collateralManager)));
         
-        // === PASO 4: Desplegar Hook con script especializado ===
-        console.logString("=== PASO 4: Desplegando Hook con script especializado ===");
+        // === STEP 4: Deploy Hook with specialized script ===
+        console.logString("=== STEP 4: Deploying Hook with specialized script ===");
         
-        // Ejecutar el script específico para desplegar el hook
+        // Run the specific script to deploy the hook
         DeployVCOPCollateralHook hookDeployer = new DeployVCOPCollateralHook();
         address hookAddress = hookDeployer.run();
         
-        // Obtener la referencia al hook desplegado
+        // Get reference to deployed hook
         VCOPCollateralHook hook = VCOPCollateralHook(hookAddress);
         
-        console.logString("Hook desplegado en:");
+        console.logString("Hook deployed at:");
         console.logAddress(address(hook));
         
-        // Guardar dirección del hook para futuros scripts
+        // Save hook address for future scripts
         vm.setEnv("HOOK_ADDRESS", vm.toString(address(hook)));
         
-        // === PASO 6: Configurar Referencias Cruzadas ===
-        console.logString("=== PASO 6: Configurando Referencias Cruzadas ===");
+        // === STEP 6: Configure Cross-References ===
+        console.logString("=== STEP 6: Configuring Cross-References ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Verificar el propietario actual del hook
+        // Verify current hook owner
         address hookOwner;
         try hook.owner() returns (address currentOwner) {
             hookOwner = currentOwner;
-            console.logString("Owner actual del hook:");
+            console.logString("Current hook owner:");
             console.logAddress(hookOwner);
             
-            // Transferir la propiedad al deployer si es necesario
+            // Transfer ownership to deployer if necessary
             if (hookOwner != deployerAddress) {
-                console.logString("Transfiriendo propiedad del hook al deployer...");
+                console.logString("Transferring hook ownership to deployer...");
                 
-                // Primero necesitamos transmitir desde la dirección del owner actual
+                // First we need to broadcast from the current owner's address
                 vm.stopBroadcast();
                 vm.startBroadcast(hookOwnerPrivateKey);
                 
-                // Transferir propiedad al deployer
+                // Transfer ownership to deployer
                 hook.transferOwnership(deployerAddress);
-                console.logString("Propiedad transferida al deployer");
+                console.logString("Ownership transferred to deployer");
                 
-                // Volver al deployer
+                // Return to deployer
                 vm.stopBroadcast();
                 vm.startBroadcast(deployerPrivateKey);
             }
         } catch {
-            console.logString("No se pudo obtener el owner del hook, posiblemente no es Ownable");
+            console.logString("Could not get hook owner, possibly not Ownable");
         }
         
-        // 1. Configurar el hook para que reconozca al collateralManager (si no se hizo en el constructor)
+        // 1. Configure the hook to recognize the collateralManager (if not done in the constructor)
         if (hook.collateralManagerAddress() == address(0)) {
             try hook.setCollateralManager(address(collateralManager)) {
-                console.logString("CollateralManager asignado al hook exitosamente");
+                console.logString("CollateralManager assigned to hook successfully");
             } catch (bytes memory errorData) {
-                console.logString("Error al asignar CollateralManager al hook:");
+                console.logString("Error assigning CollateralManager to hook:");
                 console.logBytes(errorData);
             }
         } else {
-            console.logString("Hook ya tiene CollateralManager configurado:");
+            console.logString("Hook already has CollateralManager configured:");
             console.logAddress(hook.collateralManagerAddress());
         }
         
-        // 2. Configurar el collateralManager para que reconozca al hook
+        // 2. Configure the collateralManager to recognize the hook
         collateralManager.setPSMHook(address(hook));
         
         // 3. Token -> Manager
         vcop.setCollateralManager(address(collateralManager));
         
-        // 4. Permisos de mint/burn al manager
+        // 4. Mint/burn permissions to manager
         vcop.setMinter(address(collateralManager), true);
         vcop.setBurner(address(collateralManager), true);
         
@@ -255,24 +255,24 @@ contract DeployVCOPCollateral is Script {
         
         vm.stopBroadcast();
         
-        // === PASO 7: Configurar Colaterales y Permisos ===
-        console.logString("=== PASO 7: Configurando Colaterales y Permisos ===");
+        // === STEP 7: Configure Collaterals and Permissions ===
+        console.logString("=== STEP 7: Configuring Collaterals and Permissions ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Configurar USDC como colateral
+        // Configure USDC as collateral
         collateralManager.configureCollateral(
             usdcAddress,
             collateralRatio, // 150%
             mintFee,         // 0.1%
             burnFee,         // 0.1%
             liquidationThreshold, // 120%
-            true // activo
+            true // active
         );
         
-        // Registrar identificador para despliegue automatizado
+        // Register identifier for automated deployment
         collateralManager.registerTokenIdentifier(usdcAddress, "USDC");
         
-        // Actualizar calculador de precios con dirección del hook
+        // Update price calculator with hook address
         VCOPPriceCalculator priceCalculator = new VCOPPriceCalculator(
             poolManagerAddress,
             address(vcop),
@@ -285,33 +285,33 @@ contract DeployVCOPCollateral is Script {
         
         oracle.setPriceCalculator(address(priceCalculator));
         
-        console.logString("Colateral USDC configurado con ratio:");
+        console.logString("USDC collateral configured with ratio:");
         console.logUint(collateralRatio);
-        console.logString("Threshold de liquidacion:");
+        console.logString("Liquidation threshold:");
         console.logUint(liquidationThreshold);
-        console.logString("Calculador de precios actualizado en:");
+        console.logString("Price calculator updated at:");
         console.logAddress(address(priceCalculator));
         
         vm.stopBroadcast();
         
-        // === PASO 8: Crear Pool y Añadir Liquidez ===
-        console.logString("=== PASO 8: Creando Pool y agregando liquidez ===");
-        console.logString("Liquidez USDC a agregar:"); 
+        // === STEP 8: Create Pool and Add Liquidity ===
+        console.logString("=== STEP 8: Creating Pool and adding liquidity ===");
+        console.logString("USDC liquidity to add:"); 
         console.logUint(stablecoinLiquidity / 1e6); 
         console.logString("USDC");
-        console.logString("Liquidez VCOP a agregar:"); 
+        console.logString("VCOP liquidity to add:"); 
         console.logUint(vcopLiquidity / 1e6); 
         console.logString("VCOP");
-        console.logString("Ratio VCOP/USDC:"); 
+        console.logString("VCOP/USDC ratio:"); 
         console.logUint(vcopLiquidity / stablecoinLiquidity);
         
         vm.startBroadcast(deployerPrivateKey);
         
-        // Crear Currency para VCOP y USDC
+        // Create Currency for VCOP and USDC
         Currency vcopCurrency = Currency.wrap(address(vcop));
         Currency usdcCurrency = Currency.wrap(usdcAddress);
         
-        // Asegurar que las monedas estén en orden correcto (menor dirección primero)
+        // Ensure currencies are in correct order (lower address first)
         Currency currency0;
         Currency currency1;
         bool vcopIsToken0;
@@ -321,12 +321,12 @@ contract DeployVCOPCollateral is Script {
             currency1 = usdcCurrency;
             vcopIsToken0 = true;
             
-            // Si VCOP es token0, entonces para una relación de 4200 VCOP = 1 USDC
-            // El precio debe ser bajo (1/4200)
+            // If VCOP is token0, then for a ratio of 4200 VCOP = 1 USDC
+            // The price must be low (1/4200)
             int24 targetTick = -83000;
             startingPrice = TickMath.getSqrtPriceAtTick(targetTick);
             
-            // Para VCOP/USDC, ampliamos el rango de ticks
+            // For VCOP/USDC, we widen the tick range
             tickLower = targetTick - 6000; 
             tickUpper = targetTick + 6000;
             
@@ -335,30 +335,30 @@ contract DeployVCOPCollateral is Script {
             currency1 = vcopCurrency;
             vcopIsToken0 = false;
             
-            // Si USDC es token0, entonces para una relación de 4200 VCOP = 1 USDC
-            // El precio debe ser alto (4200)
+            // If USDC is token0, then for a ratio of 4200 VCOP = 1 USDC
+            // The price must be high (4200)
             int24 targetTick = 83000;
             startingPrice = TickMath.getSqrtPriceAtTick(targetTick);
             
-            // Para USDC/VCOP, ampliamos el rango de ticks
+            // For USDC/VCOP, we widen the tick range
             tickLower = targetTick - 6000;
             tickUpper = targetTick + 6000;
         }
         
-        // Ajustar los ticks para que sean múltiplos del tickSpacing
+        // Adjust ticks to be multiples of tickSpacing
         tickLower = (tickLower / tickSpacing) * tickSpacing;
         tickUpper = (tickUpper / tickSpacing) * tickSpacing;
         
-        console.logString("VCOP es token0:");
+        console.logString("VCOP is token0:");
         console.logBool(vcopIsToken0);
-        console.logString("Precio inicial:");
+        console.logString("Initial price:");
         console.logUint(uint256(startingPrice));
-        console.logString("Tick inferior:");
+        console.logString("Lower tick:");
         console.logInt(tickLower);
-        console.logString("Tick superior:");
+        console.logString("Upper tick:");
         console.logInt(tickUpper);
         
-        // Crear la estructura PoolKey
+        // Create the PoolKey structure
         PoolKey memory poolKey = PoolKey({
             currency0: currency0,
             currency1: currency1,
@@ -369,19 +369,19 @@ contract DeployVCOPCollateral is Script {
         
         bytes memory hookData = new bytes(0);
         
-        // Preparar cantidades para liquidez inicial
+        // Prepare amounts for initial liquidity
         uint256 amount0Max = vcopIsToken0 ? vcopLiquidity : stablecoinLiquidity;
         uint256 amount1Max = vcopIsToken0 ? stablecoinLiquidity : vcopLiquidity;
         
-        console.logString("Cantidad maxima token0:");
+        console.logString("Maximum token0 amount:");
         console.logUint(amount0Max);
-        console.logString("Cantidad maxima token1:");
+        console.logString("Maximum token1 amount:");
         console.logUint(amount1Max);
         
-        // Mint VCOP para el deployer para añadir liquidez
+        // Mint VCOP for the deployer to add liquidity
         vcop.mint(deployerAddress, vcopLiquidity);
         
-        // Calcular la liquidez
+        // Calculate liquidity
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(
             startingPrice,
             TickMath.getSqrtPriceAtTick(tickLower),
@@ -390,13 +390,13 @@ contract DeployVCOPCollateral is Script {
             amount1Max
         );
         
-        console.logString("Liquidez calculada:");
+        console.logString("Calculated liquidity:");
         console.logUint(uint256(liquidity));
         
-        // Preparar parámetros de multicall
+        // Prepare multicall parameters
         bytes[] memory params = new bytes[](2);
         
-        // Inicializar pool
+        // Initialize pool
         params[0] = abi.encodeWithSelector(
             positionManager.initializePool.selector, 
             poolKey, 
@@ -404,7 +404,7 @@ contract DeployVCOPCollateral is Script {
             hookData
         );
         
-        // Preparar los parámetros para añadir liquidez
+        // Prepare parameters to add liquidity
         (bytes memory actions, bytes[] memory mintParams) = _mintLiquidityParams(
             poolKey, 
             tickLower, 
@@ -416,115 +416,115 @@ contract DeployVCOPCollateral is Script {
             hookData
         );
         
-        // Añadir liquidez
+        // Add liquidity
         params[1] = abi.encodeWithSelector(
             positionManager.modifyLiquidities.selector, 
             abi.encode(actions, mintParams), 
             block.timestamp + 60
         );
         
-        // Aprobar los tokens para que PositionManager pueda usarlos
+        // Approve tokens so PositionManager can use them
         _approveTokens(address(vcop), usdcAddress, address(positionManager));
         
-        // Ejecutar multicall para crear pool y añadir liquidez
+        // Execute multicall to create pool and add liquidity
         positionManager.multicall(params);
         
-        // Verificar balances después de añadir liquidez
+        // Verify balances after adding liquidity
         uint256 vcopBalanceDeployer = vcop.balanceOf(deployerAddress);
         uint256 usdcBalanceDeployer = usdc.balanceOf(deployerAddress);
         
-        console.logString("Balance VCOP del desplegador despues de agregar liquidez:");
+        console.logString("Deployer's VCOP balance after adding liquidity:");
         console.logUint(vcopBalanceDeployer);
-        console.logString("Balance USDC del desplegador despues de agregar liquidez:");
+        console.logString("Deployer's USDC balance after adding liquidity:");
         console.logUint(usdcBalanceDeployer);
         
-        console.logString("Pool creado y liquidez inicial agregada con exito");
+        console.logString("Pool created and initial liquidity added successfully");
         
         vm.stopBroadcast();
         
-        // === PASO 9: Provisionar Liquidez al Sistema Colateral ===
-        console.logString("=== PASO 9: Provisionando Liquidez al Sistema Colateral ===");
+        // === STEP 9: Provision Liquidity to the Collateral System ===
+        console.logString("=== STEP 9: Provisioning Liquidity to the Collateral System ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Transferir USDC al collateralManager para el PSM
+        // Transfer USDC to collateralManager for PSM
         usdc.transfer(address(collateralManager), psmUsdcFunding);
         
-        // Mint VCOP al collateralManager para el PSM
+        // Mint VCOP to collateralManager for PSM
         vcop.mint(address(collateralManager), psmVcopFunding);
         
-        // Activar el módulo PSM en el collateralManager
+        // Activate the PSM module in collateralManager
         collateralManager.setPSMReserveStatus(usdcAddress, true);
         
-        // Verificar nuevamente el propietario del hook
+        // Verify hook owner again
         try hook.owner() returns (address currentOwner) {
-            console.logString("Owner actual del hook en paso 9:");
+            console.logString("Current hook owner in step 9:");
             console.logAddress(currentOwner);
             
             if (currentOwner != deployerAddress) {
-                console.logString("ADVERTENCIA: Hook no pertenece al deployer");
-                // No podemos usar HOOK_OWNER_PRIVATE_KEY aqui porque ya usamos el PSM
-                // Reportar el problema para que se solucione manualmente
+                console.logString("WARNING: Hook does not belong to the deployer");
+                // We can't use HOOK_OWNER_PRIVATE_KEY here because we already used the PSM
+                // Report the issue so it can be fixed manually
             }
         } catch {
-            console.logString("No se pudo verificar el propietario del hook");
+            console.logString("Could not verify the hook owner");
         }
         
-        // Verificar que el hook tenga permisos adecuados
-        // Asegurar que el hook reconozca al manager
+        // Verify that the hook has appropriate permissions
+        // Ensure the hook recognizes the manager
         try hook.collateralManagerAddress() returns (address currentManager) {
-            console.logString("CollateralManager actual del hook:");
+            console.logString("Current CollateralManager in the hook:");
             console.logAddress(currentManager);
             
             if (currentManager != address(collateralManager)) {
-                console.logString("Intentando actualizar el CollateralManager en el hook...");
+                console.logString("Trying to update the CollateralManager in the hook...");
                 try hook.setCollateralManager(address(collateralManager)) {
-                    console.logString("CollateralManager actualizado en el hook exitosamente");
+                    console.logString("CollateralManager updated in the hook successfully");
                 } catch (bytes memory errorData) {
-                    console.logString("Error al actualizar CollateralManager en el hook:");
+                    console.logString("Error updating CollateralManager in the hook:");
                     console.logBytes(errorData);
-                    console.logString("Esto puede deberse a un problema de permisos");
+                    console.logString("This may be due to a permissions issue");
                 }
             } else {
-                console.logString("Hook ya tiene el CollateralManager configurado correctamente");
+                console.logString("Hook already has the CollateralManager configured correctly");
             }
         } catch {
-            console.logString("No se pudo verificar el CollateralManager en el hook");
+            console.logString("Could not verify the CollateralManager in the hook");
         }
         
-        // Configurar PSM en el hook
+        // Configure PSM in the hook
         try hook.updatePSMParameters(
             psmFee, 
-            psmVcopFunding / 10 // Limitar operaciones individuales al 10% del fondo
+            psmVcopFunding / 10 // Limit individual operations to 10% of the fund
         ) {
-            console.logString("Parametros de PSM actualizados exitosamente");
+            console.logString("PSM parameters updated successfully");
         } catch (bytes memory errorData) {
-            console.logString("Error actualizando parametros de PSM:");
+            console.logString("Error updating PSM parameters:");
             console.logBytes(errorData);
             
-            // En caso de error, verificar el owner del hook
+            // In case of error, verify the hook owner
             try hook.owner() returns (address hookOwner) {
-                console.logString("Owner del hook:");
+                console.logString("Hook owner:");
                 console.logAddress(hookOwner);
                 
                 console.logString("Deployer address:");
                 console.logAddress(deployerAddress);
                 
                 if (hookOwner != deployerAddress) {
-                    console.logString("El propietario del hook no es el deployer. Esto debe corregirse manualmente.");
+                    console.logString("The hook owner is not the deployer. This must be fixed manually.");
                 }
             } catch {
-                console.logString("No se pudo obtener el owner del hook");
+                console.logString("Could not get the hook owner");
             }
         }
         
-        console.logString("Liquidez provisionada al PSM:");
-        console.logString("USDC en PSM:");
+        console.logString("Liquidity provisioned to PSM:");
+        console.logString("USDC in PSM:");
         console.logUint(psmUsdcFunding / 1e6);
-        console.logString("VCOP en PSM:");
+        console.logString("VCOP in PSM:");
         console.logUint(psmVcopFunding / 1e6);
         
-        // Verificar precios y paridad
-        console.logString("=== Verificacion Final de Precios ===");
+        // Verify prices and parity
+        console.logString("=== Final Price Verification ===");
         
         try priceCalculator.calculateAllPrices() returns (
             uint256 vcopToUsdPrice, 
@@ -532,44 +532,44 @@ contract DeployVCOPCollateral is Script {
             int24 currentTick, 
             bool parityStatus
         ) {
-            console.logString("Precio VCOP/USDC calculado:");
+            console.logString("Calculated VCOP/USDC price:");
             console.logUint(vcopToUsdPrice / 1e6);
-            console.logString("Precio VCOP/COP calculado:");
+            console.logString("Calculated VCOP/COP price:");
             console.logUint(vcopToCopPrice / 1e6);
-            console.logString("Tick actual del pool:");
+            console.logString("Current pool tick:");
             console.logInt(currentTick);
-            console.logString("VCOP en paridad 1:1 con COP?");
+            console.logString("Is VCOP at 1:1 parity with COP?");
             console.logBool(parityStatus);
         } catch {
-            console.logString("No se pudieron calcular todos los precios. El pool necesita tiempo para inicializarse completamente.");
+            console.logString("Could not calculate all prices. The pool needs time to fully initialize.");
         }
         
-        // Crear una posición de prueba con colateral
-        console.logString("=== Creando Posicion de Prueba ===");
+        // Create a test position with collateral
+        console.logString("=== Creating Test Position ===");
         
-        // Aprobar USDC para el collateralManager
+        // Approve USDC for collateralManager
         uint256 testCollateralAmount = 1000 * 1e6; // 1000 USDC
         usdc.approve(address(collateralManager), testCollateralAmount);
         
-        // Calcular VCOP máximo para este colateral
+        // Calculate maximum VCOP for this collateral
         uint256 maxVcop = collateralManager.getMaxVCOPforCollateral(usdcAddress, testCollateralAmount);
-        console.logString("VCOP maximo para 1000 USDC de colateral:");
+        console.logString("Maximum VCOP for 1000 USDC collateral:");
         console.logUint(maxVcop / 1e6);
         
-        // Crear posición
+        // Create position
         collateralManager.createPosition(usdcAddress, testCollateralAmount, maxVcop);
         
-        // Verificar VCOP recibido
+        // Verify VCOP received
         uint256 vcopBalanceAfter = vcop.balanceOf(deployerAddress);
-        console.logString("VCOP recibido por colateralizacion:");
+        console.logString("VCOP received from collateralization:");
         console.logUint((vcopBalanceAfter - vcopBalanceDeployer) / 1e6);
         
-        console.logString("Sistema VCOP Colateralizado desplegado con exito!");
+        console.logString("VCOP Collateralized System deployed successfully!");
         
         vm.stopBroadcast();
     }
     
-    // Función auxiliar para codificar los parámetros de mint de liquidez
+    // Helper function to encode mint liquidity parameters
     function _mintLiquidityParams(
         PoolKey memory poolKey,
         int24 _tickLower,
@@ -588,13 +588,13 @@ contract DeployVCOPCollateral is Script {
         return (actions, params);
     }
     
-    // Aprobar los tokens para Permit2 y PositionManager
+    // Approve tokens for Permit2 and PositionManager
     function _approveTokens(address vcopAddress, address usdcAddress, address positionManagerAddress) internal {
-        // Aprobar VCOP
+        // Approve VCOP
         IERC20(vcopAddress).approve(address(PERMIT2), type(uint256).max);
         PERMIT2.approve(vcopAddress, positionManagerAddress, type(uint160).max, type(uint48).max);
         
-        // Aprobar USDC
+        // Approve USDC
         IERC20(usdcAddress).approve(address(PERMIT2), type(uint256).max);
         PERMIT2.approve(usdcAddress, positionManagerAddress, type(uint160).max, type(uint48).max);
     }

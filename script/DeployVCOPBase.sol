@@ -12,15 +12,15 @@ import {DeployMockUSDC} from "./DeployMockUSDC.s.sol";
 
 /**
  * @title DeployVCOPBase
- * @notice Script para desplegar los contratos base del sistema VCOP
- * @dev Para ejecutar: forge script script/DeployVCOPBase.sol:DeployVCOPBase --via-ir --broadcast --fork-url https://sepolia.base.org
+ * @notice Script to deploy the base contracts of the VCOP system
+ * @dev To run: forge script script/DeployVCOPBase.sol:DeployVCOPBase --via-ir --broadcast --fork-url https://sepolia.base.org
  */
 contract DeployVCOPBase is Script {
-    // API Key dummy para evitar errores de verificacion
+    // Dummy API Key to avoid verification errors
     string constant DUMMY_API_KEY = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
     
-    // Tasa inicial USD/COP (4200 COP = 1 USD)
-    uint256 initialUsdToCopRate = 4200e6; // Con 6 decimales
+    // Initial USD/COP rate (4200 COP = 1 USD)
+    uint256 initialUsdToCopRate = 4200e6; // With 6 decimals
 
     function run() public returns (
         address usdcAddress,
@@ -28,51 +28,51 @@ contract DeployVCOPBase is Script {
         address oracleAddress,
         address collateralManagerAddress
     ) {
-        // Establecer una clave de API dummy para Etherscan
+        // Set a dummy API key for Etherscan
         vm.setEnv("ETHERSCAN_API_KEY", DUMMY_API_KEY);
         
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         address poolManagerAddress = vm.envAddress("POOL_MANAGER_ADDRESS");
         
-        console.logString("Verificando red y saldos...");
-        console.logString("Direccion del desplegador:"); 
+        console.logString("Verifying network and balances...");
+        console.logString("Deployer address:"); 
         console.logAddress(deployerAddress);
         
-        // === PASO 1: Desplegar USDC simulado ===
-        console.logString("=== PASO 1: Desplegando USDC Simulado ===");
+        // === STEP 1: Deploy Simulated USDC ===
+        console.logString("=== STEP 1: Deploying Simulated USDC ===");
         
-        // Desplegar el USDC simulado
+        // Deploy simulated USDC
         DeployMockUSDC usdcDeployer = new DeployMockUSDC();
         usdcAddress = usdcDeployer.run();
         
-        console.logString("Direccion de USDC simulado:"); 
+        console.logString("Simulated USDC address:"); 
         console.logAddress(usdcAddress);
         
-        // Guardar para el siguiente script
+        // Save for the next script
         vm.setEnv("USDC_ADDRESS", vm.toString(usdcAddress));
         
-        // === PASO 2: Desplegar VCOP Colateralizado ===
-        console.logString("=== PASO 2: Desplegando VCOP Colateralizado ===");
+        // === STEP 2: Deploy Collateralized VCOP ===
+        console.logString("=== STEP 2: Deploying Collateralized VCOP ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Despliegue de VCOP Colateralizado
+        // Deploy Collateralized VCOP
         VCOPCollateralized vcop = new VCOPCollateralized();
         vcopAddress = address(vcop);
         
-        console.logString("VCOP Colateralizado desplegado en:"); 
+        console.logString("Collateralized VCOP deployed at:"); 
         console.logAddress(vcopAddress);
         
         vm.stopBroadcast();
         
-        // Guardar para el siguiente script
+        // Save for the next script
         vm.setEnv("VCOP_ADDRESS", vm.toString(vcopAddress));
         
-        // === PASO 3: Desplegar Oracle y Calculador de Precios ===
-        console.logString("=== PASO 3: Desplegando Oracle y Calculador de Precios ===");
+        // === STEP 3: Deploy Oracle and Price Calculator ===
+        console.logString("=== STEP 3: Deploying Oracle and Price Calculator ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Despliegue del oráculo con tasa inicial
+        // Deploy oracle with initial rate
         VCOPOracle oracle = new VCOPOracle(
             initialUsdToCopRate,
             poolManagerAddress,
@@ -80,39 +80,39 @@ contract DeployVCOPBase is Script {
             usdcAddress,
             3000, // lpFee 0.3%
             60,   // tickSpacing
-            address(0) // Hook se configurará después
+            address(0) // Hook will be configured later
         );
         oracleAddress = address(oracle);
         
-        console.logString("Oracle desplegado en:"); 
+        console.logString("Oracle deployed at:"); 
         console.logAddress(oracleAddress);
         
         vm.stopBroadcast();
         
-        // Guardar para el siguiente script
+        // Save for the next script
         vm.setEnv("ORACLE_ADDRESS", vm.toString(oracleAddress));
         
-        // === PASO 4: Desplegar VCOPCollateralManager ===
-        console.logString("=== PASO 4: Desplegando Collateral Manager ===");
+        // === STEP 4: Deploy VCOPCollateralManager ===
+        console.logString("=== STEP 4: Deploying Collateral Manager ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Desplegar el gestor de colateral
+        // Deploy the collateral manager
         VCOPCollateralManager collateralManager = new VCOPCollateralManager(
             vcopAddress,
             oracleAddress
         );
         collateralManagerAddress = address(collateralManager);
         
-        console.logString("Collateral Manager desplegado en:");
+        console.logString("Collateral Manager deployed at:");
         console.logAddress(collateralManagerAddress);
         
         vm.stopBroadcast();
         
-        // Guardar para el siguiente script
+        // Save for the next script
         vm.setEnv("COLLATERAL_MANAGER_ADDRESS", vm.toString(collateralManagerAddress));
         
-        console.logString("=== Despliegue base completado exitosamente ===");
-        console.logString("Para continuar, ejecute ConfigureVCOPSystem.sol");
+        console.logString("=== Base deployment successfully completed ===");
+        console.logString("To continue, run ConfigureVCOPSystem.sol");
         
         return (usdcAddress, vcopAddress, oracleAddress, collateralManagerAddress);
     }

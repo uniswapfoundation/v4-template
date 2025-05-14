@@ -7,11 +7,11 @@ import {MockERC20} from "../src/mocks/MockERC20.sol";
 
 /**
  * @title DeployMockUSDC
- * @notice Script para desplegar un token que simula USDC para pruebas
- * Se utiliza antes del despliegue principal para crear un ambiente de prueba completo
+ * @notice Script to deploy a token that simulates USDC for testing
+ * Used before the main deployment to create a complete test environment
  */
 contract DeployMockUSDC is Script {
-    // Constantes
+    // Constants
     uint8 constant USDC_DECIMALS = 6;
     uint256 constant INITIAL_SUPPLY = 10_000_000 * 6**USDC_DECIMALS; // 10,000,000 USDC
 
@@ -19,23 +19,23 @@ contract DeployMockUSDC is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         
-        console2.log("=== Desplegando Mock USDC ===");
-        console2.log("Direccion del desplegador:", deployerAddress);
+        console2.log("=== Deploying Mock USDC ===");
+        console2.log("Deployer address:", deployerAddress);
         
         vm.startBroadcast(deployerPrivateKey);
         
-        // Desplegar el token MockUSDC con 6 decimales
+        // Deploy MockUSDC token with 6 decimals
         MockERC20 mockUSDC = new MockERC20("USD Coin", "USDC", USDC_DECIMALS);
         
-        // Acuñar suministro inicial al desplegador
+        // Mint initial supply to the deployer
         mockUSDC.mint(deployerAddress, INITIAL_SUPPLY);
         
         vm.stopBroadcast();
         
-        console2.log("Mock USDC desplegado en:", address(mockUSDC));
-        console2.log("Suministro inicial:", INITIAL_SUPPLY / 10**USDC_DECIMALS, "USDC");
+        console2.log("Mock USDC deployed at:", address(mockUSDC));
+        console2.log("Initial supply:", INITIAL_SUPPLY / 10**USDC_DECIMALS, "USDC");
         
-        // Guardar la dirección en una variable de entorno para uso posterior
+        // Save the address in an environment variable for later use
         vm.setEnv("MOCK_USDC_ADDRESS", vm.toString(address(mockUSDC)));
         
         return address(mockUSDC);

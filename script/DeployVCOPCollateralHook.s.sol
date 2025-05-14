@@ -10,12 +10,12 @@ import {Currency} from "v4-core/src/types/Currency.sol";
 
 import {VCOPCollateralHook} from "../src/VcopCollateral/VCOPCollateralHook.sol";
 
-/// @notice Script para minar y desplegar el hook VCOPCollateralHook
+/// @notice Script to mine and deploy the VCOPCollateralHook
 contract DeployVCOPCollateralHook is Script {
-    // Dirección estándar del deployer CREATE2
+    // Standard CREATE2 deployer address
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
     
-    // Direcciones hardcodeadas como fallback
+    // Hardcoded addresses as fallback
     address constant DEPLOYED_USDC_ADDRESS = 0x836C5578Dfa06EB3fCA056bdbB998433ddD12d6B;
     address constant DEPLOYED_VCOP_ADDRESS = 0x180e67aE4a941E9213425b962b06b8578B2fEf5C;
     address constant DEPLOYED_ORACLE_ADDRESS = 0x45C52AF0B64C053E0DC193369facF3c1a8718A3a;
@@ -25,98 +25,98 @@ contract DeployVCOPCollateralHook is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         
-        // Obtener direcciones usando fallback hardcodeado si la variable de entorno no está disponible
+        // Get addresses using hardcoded fallback if environment variable is not available
         address poolManagerAddress;
         try vm.envAddress("POOL_MANAGER_ADDRESS") returns (address addr) {
             poolManagerAddress = addr;
         } catch {
-            revert("POOL_MANAGER_ADDRESS no encontrada en variables de entorno");
+            revert("POOL_MANAGER_ADDRESS not found in environment variables");
         }
         
-        // Obtener VCOP address o usar hardcodeada
+        // Get VCOP address or use hardcoded one
         address vcopAddress;
         try vm.envAddress("VCOP_ADDRESS") returns (address addr) {
             if(addr != address(0)) {
                 vcopAddress = addr;
-                console2.log("VCOP address cargada de variables de entorno");
+                console2.log("VCOP address loaded from environment variables");
             } else {
                 vcopAddress = DEPLOYED_VCOP_ADDRESS;
-                console2.log("VCOP address usando valor hardcodeado");
+                console2.log("VCOP address using hardcoded value");
             }
         } catch {
             vcopAddress = DEPLOYED_VCOP_ADDRESS;
-            console2.log("VCOP address usando valor hardcodeado");
+            console2.log("VCOP address using hardcoded value");
         }
         
-        // Obtener Oracle address o usar hardcodeada
+        // Get Oracle address or use hardcoded one
         address oracleAddress;
         try vm.envAddress("ORACLE_ADDRESS") returns (address addr) {
             if(addr != address(0)) {
                 oracleAddress = addr;
-                console2.log("Oracle address cargada de variables de entorno");
+                console2.log("Oracle address loaded from environment variables");
             } else {
                 oracleAddress = DEPLOYED_ORACLE_ADDRESS;
-                console2.log("Oracle address usando valor hardcodeado");
+                console2.log("Oracle address using hardcoded value");
             }
         } catch {
             oracleAddress = DEPLOYED_ORACLE_ADDRESS;
-            console2.log("Oracle address usando valor hardcodeado");
+            console2.log("Oracle address using hardcoded value");
         }
         
-        // Obtener USDC address o usar hardcodeada
+        // Get USDC address or use hardcoded one
         address usdcAddress;
         try vm.envAddress("USDC_ADDRESS") returns (address addr) {
             if(addr != address(0)) {
                 usdcAddress = addr;
-                console2.log("USDC address cargada de variables de entorno");
+                console2.log("USDC address loaded from environment variables");
             } else {
                 usdcAddress = DEPLOYED_USDC_ADDRESS;
-                console2.log("USDC address usando valor hardcodeado");
+                console2.log("USDC address using hardcoded value");
             }
         } catch {
             usdcAddress = DEPLOYED_USDC_ADDRESS;
-            console2.log("USDC address usando valor hardcodeado");
+            console2.log("USDC address using hardcoded value");
         }
         
-        // Obtener Collateral Manager address o usar hardcodeada
+        // Get Collateral Manager address or use hardcoded one
         address collateralManagerAddress;
         try vm.envAddress("COLLATERAL_MANAGER_ADDRESS") returns (address addr) {
             if(addr != address(0)) {
                 collateralManagerAddress = addr;
-                console2.log("CollateralManager address cargada de variables de entorno");
+                console2.log("CollateralManager address loaded from environment variables");
             } else {
                 collateralManagerAddress = DEPLOYED_COLLATERAL_MANAGER_ADDRESS;
-                console2.log("CollateralManager address usando valor hardcodeado");
+                console2.log("CollateralManager address using hardcoded value");
             }
         } catch {
             collateralManagerAddress = DEPLOYED_COLLATERAL_MANAGER_ADDRESS;
-            console2.log("CollateralManager address usando valor hardcodeado");
+            console2.log("CollateralManager address using hardcoded value");
         }
         
-        // Usar deployer como treasury por defecto
+        // Use deployer as treasury by default
         address treasuryAddress = deployerAddress;
         
-        // Flags para el hook (beforeSwap, afterSwap, afterAddLiquidity)
+        // Flags for the hook (beforeSwap, afterSwap, afterAddLiquidity)
         uint160 hookFlags = uint160(
             Hooks.BEFORE_SWAP_FLAG | 
             Hooks.AFTER_SWAP_FLAG | 
             Hooks.AFTER_ADD_LIQUIDITY_FLAG
         );
         
-        // Crear Currency para VCOP y USDC
+        // Create Currency for VCOP and USDC
         Currency vcopCurrency = Currency.wrap(vcopAddress);
         Currency usdcCurrency = Currency.wrap(usdcAddress);
         
-        console2.log("Minando direccion del hook...");
+        console2.log("Mining hook address...");
         
         // Log addresses being used
-        console2.log("Usando las siguientes direcciones:");
+        console2.log("Using the following addresses:");
         console2.log("USDC:", usdcAddress);
         console2.log("VCOP:", vcopAddress);
         console2.log("Oracle:", oracleAddress);
         console2.log("CollateralManager:", collateralManagerAddress);
         
-        // Codificar argumentos del constructor
+        // Encode constructor arguments
         bytes memory constructorArgs = abi.encode(
             IPoolManager(poolManagerAddress),
             collateralManagerAddress,
@@ -127,7 +127,7 @@ contract DeployVCOPCollateralHook is Script {
             deployerAddress
         );
         
-        // Usar HookMiner para encontrar una dirección válida
+        // Use HookMiner to find a valid address
         (address hookAddress, bytes32 salt) = HookMiner.find(
             CREATE2_DEPLOYER,
             hookFlags,
@@ -135,13 +135,13 @@ contract DeployVCOPCollateralHook is Script {
             constructorArgs
         );
         
-        console2.log("Direccion encontrada:", hookAddress);
-        console2.log("Con salt:", vm.toString(salt));
+        console2.log("Address found:", hookAddress);
+        console2.log("With salt:", vm.toString(salt));
         
-        // Broadcast transaction para desplegar el hook
+        // Broadcast transaction to deploy the hook
         vm.startBroadcast(deployerPrivateKey);
         
-        // Desplegar el hook usando CREATE2 con el salt minado
+        // Deploy the hook using CREATE2 with the mined salt
         VCOPCollateralHook hook = new VCOPCollateralHook{salt: salt}(
             IPoolManager(poolManagerAddress),
             collateralManagerAddress,
@@ -152,15 +152,15 @@ contract DeployVCOPCollateralHook is Script {
             deployerAddress
         );
         
-        // Verificar que se desplegó en la dirección esperada
-        require(address(hook) == hookAddress, "Error en la direccion del hook");
+        // Verify that it was deployed at the expected address
+        require(address(hook) == hookAddress, "Error in hook address");
         
-        console2.log("VCOPCollateralHook desplegado en:", address(hook));
-        console2.log("Owner establecido como el deployer:", deployerAddress);
+        console2.log("VCOPCollateralHook deployed at:", address(hook));
+        console2.log("Owner set as the deployer:", deployerAddress);
         
         vm.stopBroadcast();
         
-        // Retornar la dirección del hook para que pueda ser usada por el script principal
+        // Return the hook address so it can be used by the main script
         return address(hook);
     }
 } 

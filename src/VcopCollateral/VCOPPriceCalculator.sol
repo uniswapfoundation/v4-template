@@ -12,37 +12,37 @@ import {console2 as console} from "forge-std/console2.sol";
 
 /**
  * @title VCOPPriceCalculator
- * @notice Contrato auxiliar para calcular precios usando la lógica de TestPoolPrice
- * @dev Usa las mismas fórmulas y métodos que en el script de test para asegurar consistencia
+ * @notice Auxiliary contract to calculate prices using TestPoolPrice logic
+ * @dev Uses the same formulas and methods as in the test script to ensure consistency
  */
 contract VCOPPriceCalculator {
     using PoolIdLibrary for PoolKey;
     using StateLibrary for IPoolManager;
     using CurrencyLibrary for Currency;
 
-    // Pool Manager de Uniswap v4
+    // Uniswap v4 Pool Manager
     IPoolManager public immutable poolManager;
     
-    // Direcciones de los tokens para la pool
+    // Token addresses for the pool
     address public immutable vcopAddress;
     address public immutable usdcAddress;
     
-    // Parámetros del pool
+    // Pool parameters
     uint24 public immutable fee;
     int24 public immutable tickSpacing;
     address public immutable hookAddress;
     
-    // Tasa USD-COP (1 USD = 4200 COP)
+    // USD-COP rate (1 USD = 4200 COP)
     uint256 public immutable usdToCopRate;
     
-    // Indica si VCOP es token0 en el pool
+    // Indicates if VCOP is token0 in the pool
     bool public isVCOPToken0;
     
-    // Eventos para seguimiento
+    // Events for tracking
     event PriceCalculated(uint256 sqrtPriceX96, int24 tick, uint256 vcopToUsdPrice, uint256 vcopToCopPrice);
 
     /**
-     * @dev Constructor que inicializa el calculador con la configuración del pool
+     * @dev Constructor that initializes the calculator with pool configuration
      */
     constructor(
         address _poolManager,
@@ -61,23 +61,23 @@ contract VCOPPriceCalculator {
         hookAddress = _hookAddress;
         usdToCopRate = _usdToCopRate;
         
-        // Determinar si VCOP es token0 o token1 (ordenamiento lexicográfico)
+        // Determine if VCOP is token0 or token1 (lexicographic ordering)
         isVCOPToken0 = uint160(_vcopAddress) < uint160(_usdcAddress);
         
-        // Log valores relevantes al inicializar
-        console.log("PriceCalculator iniciado. USD/COP rate:", _usdToCopRate);
-        console.log("USD/COP rate con 6 decimales:", _usdToCopRate);
-        console.log("VCOP es token0:", isVCOPToken0);
+        // Log relevant values at initialization
+        console.log("PriceCalculator initialized. USD/COP rate:", _usdToCopRate);
+        console.log("USD/COP rate with 6 decimals:", _usdToCopRate);
+        console.log("VCOP is token0:", isVCOPToken0);
     }
     
     /**
-     * @dev Crea la estructura PoolKey para el pool VCOP-USDC
+     * @dev Creates the PoolKey structure for the VCOP-USDC pool
      */
     function createPoolKey() public view returns (PoolKey memory) {
         Currency currency0;
         Currency currency1;
         
-        // Asignar tokens según el orden correcto
+        // Assign tokens in the correct order
         if (isVCOPToken0) {
             currency0 = Currency.wrap(vcopAddress);
             currency1 = Currency.wrap(usdcAddress);
@@ -96,25 +96,25 @@ contract VCOPPriceCalculator {
     }
     
     /**
-     * @dev Obtiene el precio VCOP/USDC desde el pool
-     * @return Precio VCOP/USDC con 6 decimales
+     * @dev Gets the VCOP/USDC price from the pool
+     * @return VCOP/USDC price with 6 decimals
      */
     function getVcopToUsdPriceFromPool() public view returns (uint256, int24) {
-        // Crear la clave del pool para consulta
+        // Create the pool key for query
         PoolKey memory poolKey = createPoolKey();
         PoolId poolId = poolKey.toId();
         
-        // Obtener sqrtPriceX96 del pool
+        // Get sqrtPriceX96 from the pool
         (uint160 sqrtPriceX96, int24 tick, , ) = poolManager.getSlot0(poolId);
         
-        // Verificar si sqrtPriceX96 es cero (pool no inicializado o error)
+        // Check if sqrtPriceX96 is zero (uninitialized pool or error)
         if (sqrtPriceX96 == 0) {
-            console.log("WARNING: sqrtPriceX96 es cero o ocurrio un error");
+            console.log("WARNING: sqrtPriceX96 is zero or an error occurred");
             return (0, 0);
         }
         
-        // Calcular el precio usando la misma lógica de TestPoolPrice
-        // Protegemos contra overflow usando unchecked y validaciones
+        // Calculate the price using the same logic as TestPoolPrice
+        // Protect against overflow using unchecked and validations
         uint256 rawPrice = 0;
         if (sqrtPriceX96 > 0) {
             uint256 sqrtPriceSquared;
@@ -128,114 +128,114 @@ contract VCOPPriceCalculator {
             }
         }
         
-        // Calcular precio VCOP/USDC
+        // Calculate VCOP/USDC price
         uint256 vcopToUsdPrice = 0;
         if (isVCOPToken0) {
-            // Si VCOP es token0, precio = 1/rawPrice
+            // If VCOP is token0, price = 1/rawPrice
             if (rawPrice > 0) {
                 unchecked {
                     vcopToUsdPrice = 1e36 / rawPrice;
                 }
             }
         } else {
-            // Si VCOP es token1, precio = rawPrice
+            // If VCOP is token1, price = rawPrice
             vcopToUsdPrice = rawPrice;
         }
         
-        // Log valores antes del ajuste de decimales
-        console.log("Raw price inicial (18 decimales):", rawPrice);
-        console.log("VCOP/USD price antes de ajuste (18 decimales):", vcopToUsdPrice);
+        // Log values before decimal adjustment
+        console.log("Initial raw price (18 decimals):", rawPrice);
+        console.log("VCOP/USD price before adjustment (18 decimals):", vcopToUsdPrice);
         
-        // Ajustar a 6 decimales (como USDC)
+        // Adjust to 6 decimals (like USDC)
         if (vcopToUsdPrice > 0) {
             vcopToUsdPrice = vcopToUsdPrice / 1e12;
         }
         
-        console.log("VCOP/USD price despues de ajuste (6 decimales):", vcopToUsdPrice);
-        console.log("Tick actual:", tick);
+        console.log("VCOP/USD price after adjustment (6 decimals):", vcopToUsdPrice);
+        console.log("Current tick:", tick);
         
         return (vcopToUsdPrice, tick);
     }
     
     /**
-     * @dev Calcula el precio VCOP/COP usando el precio VCOP/USDC y la tasa USD/COP
-     * @return Precio VCOP/COP con 6 decimales y tick actual
+     * @dev Calculates the VCOP/COP price using the VCOP/USDC price and the USD/COP rate
+     * @return VCOP/COP price with 6 decimals and current tick
      */
     function getVcopToCopPrice() public view returns (uint256, int24) {
         (uint256 vcopToUsdPrice, int24 tick) = getVcopToUsdPriceFromPool();
         
-        // Calcular precio VCOP/COP
-        // Si 1 USD = 4200 COP (usdToCopRate) y X VCOP = 1 USD (pool)
-        // Entonces 1 VCOP = 4200/X COP
+        // Calculate VCOP/COP price
+        // If 1 USD = 4200 COP (usdToCopRate) and X VCOP = 1 USD (pool)
+        // Then 1 VCOP = 4200/X COP
         uint256 vcopToCopPrice = 0;
         
-        console.log("=========== CALCULO DETALLADO VCOP/COP ===========");
-        console.log("USD/COP rate (6 decimales):", usdToCopRate);
-        console.log("VCOP/USD price (6 decimales):", vcopToUsdPrice);
+        console.log("=========== DETAILED VCOP/COP CALCULATION ===========");
+        console.log("USD/COP rate (6 decimals):", usdToCopRate);
+        console.log("VCOP/USD price (6 decimals):", vcopToUsdPrice);
         
         if (vcopToUsdPrice > 0) {
-            uint256 numerador = usdToCopRate * 1e6;
-            console.log("Numerador (usdToCopRate * 1e6):", numerador);
+            uint256 numerator = usdToCopRate * 1e6;
+            console.log("Numerator (usdToCopRate * 1e6):", numerator);
             
-            vcopToCopPrice = numerador / vcopToUsdPrice;
-            console.log("VCOP/COP = numerador / vcopToUsdPrice =", vcopToCopPrice);
+            vcopToCopPrice = numerator / vcopToUsdPrice;
+            console.log("VCOP/COP = numerator / vcopToUsdPrice =", vcopToCopPrice);
             
-            // Mostrar el cálculo como decimal para verificar
-            uint256 entero = vcopToCopPrice / 1e6;
-            uint256 fraccion = vcopToCopPrice % 1e6;
-            console.log("VCOP/COP como numero decimal:", entero, ".", fraccion);
+            // Show calculation as decimal for verification
+            uint256 integer = vcopToCopPrice / 1e6;
+            uint256 fraction = vcopToCopPrice % 1e6;
+            console.log("VCOP/COP as decimal number:", integer, ".", fraction);
         } else {
-            console.log("ADVERTENCIA: vcopToUsdPrice es cero, usando valor predeterminado");
-            // Si no podemos obtener el precio, usamos el valor predeterminado (1:1)
-            vcopToCopPrice = 1e6; // 1:1 por defecto
+            console.log("WARNING: vcopToUsdPrice is zero, using default value");
+            // If we can't get the price, use default value (1:1)
+            vcopToCopPrice = 1e6; // 1:1 by default
         }
         
-        // Verificar paridad
+        // Check parity
         uint256 toleranceLower = 990000; // 0.99 * 1e6
         uint256 toleranceUpper = 1010000; // 1.01 * 1e6
-        bool estaEnParidad = (vcopToCopPrice >= toleranceLower && vcopToCopPrice <= toleranceUpper);
+        bool isAtParity = (vcopToCopPrice >= toleranceLower && vcopToCopPrice <= toleranceUpper);
         
-        console.log("Tolerancia inferior:", toleranceLower);
-        console.log("Tolerancia superior:", toleranceUpper);
-        console.log("Esta en paridad?:", estaEnParidad);
+        console.log("Lower tolerance:", toleranceLower);
+        console.log("Upper tolerance:", toleranceUpper);
+        console.log("Is at parity?:", isAtParity);
         console.log("=================================================");
         
         return (vcopToCopPrice, tick);
     }
     
     /**
-     * @dev Calcula si el precio de VCOP está en paridad 1:1
-     * @return true si el precio VCOP/COP está en 1:1 con un margen de tolerancia
+     * @dev Calculates if the VCOP price is at 1:1 parity
+     * @return true if the VCOP/COP price is at 1:1 with a tolerance margin
      */
     function isVcopAtParity() external view returns (bool) {
         (uint256 vcopToCopPrice, ) = getVcopToCopPrice();
         
-        // Si no hay un precio válido, asumimos paridad para prevenir errores
-        // Esto es seguro durante la inicialización del sistema
+        // If there's no valid price, assume parity to prevent errors
+        // This is safe during system initialization
         if (vcopToCopPrice == 0) {
-            console.log("Precio VCOP/COP es cero, asumiendo paridad para inicializacion");
+            console.log("VCOP/COP price is zero, assuming parity for initialization");
             return true;
         }
         
-        // 1e6 es la representación de 1 COP con 6 decimales
-        // Consideramos una tolerancia del 1%
+        // 1e6 is the representation of 1 COP with 6 decimals
+        // Consider a 1% tolerance
         uint256 toleranceLower = 990000; // 0.99 * 1e6
         uint256 toleranceUpper = 1010000; // 1.01 * 1e6
         
-        bool enParidad = (vcopToCopPrice >= toleranceLower && vcopToCopPrice <= toleranceUpper);
+        bool atParity = (vcopToCopPrice >= toleranceLower && vcopToCopPrice <= toleranceUpper);
         
-        console.log("VCOP/COP rate para verificar paridad:", vcopToCopPrice);
-        console.log("Esta en paridad 1:1? (990000-1010000):", enParidad);
+        console.log("VCOP/COP rate to check parity:", vcopToCopPrice);
+        console.log("Is at 1:1 parity? (990000-1010000):", atParity);
         
-        return enParidad;
+        return atParity;
     }
     
     /**
-     * @dev Calcula todos los precios relevantes para el oráculo
-     * @return vcopToUsdPrice Precio VCOP/USDC con 6 decimales
-     * @return vcopToCopPrice Precio VCOP/COP con 6 decimales
-     * @return currentTick Tick actual del pool
-     * @return isAtParity Indica si VCOP está en paridad 1:1 con COP
+     * @dev Calculates all relevant prices for the oracle
+     * @return vcopToUsdPrice VCOP/USDC price with 6 decimals
+     * @return vcopToCopPrice VCOP/COP price with 6 decimals
+     * @return currentTick Current pool tick
+     * @return isAtParity Indicates if VCOP is at 1:1 parity with COP
      */
     function calculateAllPrices() external view returns (
         uint256 vcopToUsdPrice,
@@ -243,40 +243,40 @@ contract VCOPPriceCalculator {
         int24 currentTick,
         bool isAtParity
     ) {
-        // Obtener precios
+        // Get prices
         (vcopToUsdPrice, currentTick) = getVcopToUsdPriceFromPool();
         
-        // Si estamos en inicialización, usar valores seguros por defecto
+        // If we're in initialization, use safe default values
         if (vcopToUsdPrice == 0) {
-            vcopToCopPrice = 1e6; // 1:1 por defecto
-            isAtParity = true; // Asumimos paridad durante inicialización
+            vcopToCopPrice = 1e6; // 1:1 by default
+            isAtParity = true; // Assume parity during initialization
             
-            // Logs detallados
-            console.log("Resultados del calculo completo (inicializacion):");
-            console.log("VCOP/USD price: 0 (no disponible aun)");
-            console.log("VCOP/COP price: 1000000 (valor predeterminado)");
+            // Detailed logs
+            console.log("Results of complete calculation (initialization):");
+            console.log("VCOP/USD price: 0 (not available yet)");
+            console.log("VCOP/COP price: 1000000 (default value)");
             console.log("Tick:", currentTick);
-            console.log("En paridad?: true (asumido para inicializacion)");
+            console.log("At parity?: true (assumed for initialization)");
             
             return (vcopToUsdPrice, vcopToCopPrice, currentTick, isAtParity);
         }
         
-        // Calcular VCOP/COP si tenemos un precio válido
-        uint256 numerador = usdToCopRate * 1e6;
-        vcopToCopPrice = numerador / vcopToUsdPrice;
+        // Calculate VCOP/COP if we have a valid price
+        uint256 numerator = usdToCopRate * 1e6;
+        vcopToCopPrice = numerator / vcopToUsdPrice;
         
-        // Determinar si está en paridad
+        // Determine if it's at parity
         uint256 toleranceLower = 990000; // 0.99 * 1e6
         uint256 toleranceUpper = 1010000; // 1.01 * 1e6
         isAtParity = (vcopToCopPrice >= toleranceLower && vcopToCopPrice <= toleranceUpper);
         
-        // Logs detallados
-        console.log("Resultados del calculo completo:");
+        // Detailed logs
+        console.log("Results of complete calculation:");
         console.log("VCOP/USD price:", vcopToUsdPrice);
         console.log("VCOP/COP price:", vcopToCopPrice);
         console.log("Tick:", currentTick);
-        console.log("En paridad?:", isAtParity);
+        console.log("At parity?:", isAtParity);
         
         return (vcopToUsdPrice, vcopToCopPrice, currentTick, isAtParity);
     }
-} 
+}
