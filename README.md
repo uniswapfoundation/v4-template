@@ -1,227 +1,228 @@
-# VCOP Stablecoin con Uniswap v4
+# VCOP Stablecoin with Uniswap v4
 
-Una stablecoin algorítmica basada en mecanismo de rebase y pools de Uniswap v4.
+A collateralized stablecoin backed by USDC (or other ERC-20 tokens) with a Peg Stability Module (PSM) operating through a Uniswap v4 hook.
 
-## Descripción
+## Description
 
-VCOP es una stablecoin que utiliza un mecanismo de rebase para mantener su precio objetivo de 1 USD. El sistema integra:
+VCOP is a collateralized stablecoin that maintains its target peg of 1 COP thanks to a collateral-based Peg Stability Module (PSM) and automatic monitoring via a Uniswap v4 hook. The system integrates:
 
-- Token VCOP con mecanismo de rebase
-- Oráculo de precio
-- Hook de Uniswap v4 para automatizar rebases
-- Pool de liquidez en Uniswap v4
+- VCOP collateralized token with 6 decimals (`VCOPCollateralized.sol`)
+- Price oracle for VCOP/COP and USD/COP rates (`VCOPOracle.sol`)
+- Collateral manager and PSM module (`VCOPCollateralManager.sol`)
+- Uniswap v4 hook that implements the PSM and monitors large swaps (`VCOPCollateralHook.sol`)
+- VCOP/USDC pool on Uniswap v4
+- Auxiliary price calculator for the oracle (`VCOPPriceCalculator.sol`)
 
-## Requisitos
+## Requirements
 
 - [Foundry](https://book.getfoundry.sh/getting-started/installation)
-- Node.js y npm
-- ETH en Base Sepolia para pagar gas
-- USDC en Base Sepolia para añadir liquidez
+- Node.js and npm
+- ETH on Base Sepolia for gas fees
+- USDC on Base Sepolia to add liquidity
 
-## Instalación
+## Installation
 
 ```bash
-# Clonar el repositorio
+# Clone the repository
 git clone <repositorio>
-cd vcop_test
+cd VCOPstablecoinUniswapv4
 
-# Instalar dependencias
+# Install dependencies
 forge install
 ```
 
-## Flujo de Despliegue
+## Deployment Flow
 
-El despliegue puede realizarse en un entorno local o en la red Base Sepolia.
+Deployment can be done in a local environment or on the Base Sepolia network.
 
-### Opción 1: Despliegue en Base Sepolia
+### Option 1: Deployment on Base Sepolia
 
-#### 1. Configuración del archivo .env
+#### 1. Setting up the .env file
 
-El archivo `.env` ya está configurado con las direcciones oficiales de los contratos de Uniswap v4 en Base Sepolia. Solo necesitas actualizar tu clave privada:
+The `.env` file is already configured with the official Uniswap v4 contract addresses on Base Sepolia. You only need to update your private key:
 
 ```
-# Reemplaza con tu clave privada real (debe incluir el prefijo 0x)
+# Replace with your actual private key (must include 0x prefix)
 PRIVATE_KEY=0xtu_clave_privada_aqui
 
 # Base Sepolia RPC URL
 RPC_URL=https://sepolia.base.org
 
-# Direcciones oficiales de Uniswap v4 en Base Sepolia (ChainID: 84532)
+# Official Uniswap v4 addresses on Base Sepolia (ChainID: 84532)
 POOL_MANAGER_ADDRESS=0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
 POSITION_MANAGER_ADDRESS=0x4b2c77d209d3405f41a037ec6c77f7f5b8e2ca80
 
-# USDC en Base Sepolia
+# USDC on Base Sepolia
 USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 ```
 
-#### 2. Obtener USDC en Base Sepolia
+#### 2. Get USDC on Base Sepolia
 
-Antes de desplegar, asegúrate de tener suficiente USDC en Base Sepolia para añadir liquidez inicial. El script está configurado para utilizar 50 USDC.
+Before deploying, make sure you have enough USDC on Base Sepolia to add initial liquidity. The script is configured to use 50 USDC.
 
-#### 3. Desplegar el Sistema VCOP Completo
+#### 3. Deploy the Complete VCOP System
 
-Ejecuta el script de despliegue completo:
+Run the complete deployment script:
 
 ```bash
-# Usar la opción --via-ir para resolver posibles errores "stack too deep"
+# Use the --via-ir option to resolve potential "stack too deep" errors
 forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url base-sepolia
 ```
 
-Este script realiza el proceso de despliegue en tres pasos:
+This script performs the deployment process in three steps:
 
-1. **Paso 1**: Despliega el token VCOP y el Oráculo
-2. **Paso 2**: Usa HookMiner para encontrar y desplegar el hook con una dirección válida para Uniswap v4
-3. **Paso 3**: Crea el pool VCOP/USDC y añade liquidez inicial
+1. **Step 1**: Deploys the VCOP token and the Oracle
+2. **Step 2**: Uses HookMiner to find and deploy the hook with a valid address for Uniswap v4
+3. **Step 3**: Creates the VCOP/USDC pool and adds initial liquidity
 
-Los contratos desplegados y sus direcciones se mostrarán en la salida del script.
+The deployed contracts and their addresses will be displayed in the script output.
 
-#### 4. Verificar Contratos en BaseScan Sepolia
+#### 4. Verify Contracts on BaseScan Sepolia
 
-Puedes verificar automáticamente los contratos desplegados usando el script incluido:
+You can automatically verify the deployed contracts using the included script:
 
 ```bash
 ./verify-contracts.sh
 ```
 
-El script verifica:
+The script verifies:
 - VCOP Token
 - VCOP Oracle
-- VCOP Rebase Hook
+- VCOP Collateral Hook
 
-### Opción 2: Entorno Local con Anvil
+### Option 2: Secure Two-Phase Deployment
 
-Para pruebas locales, puedes seguir utilizando Anvil:
+If you prefer a more controlled deployment flow, split the operation into two scripts:
 
-#### 1. Iniciar nodo local
-
-```bash
-anvil
-```
-
-#### 2. Desplegar Contratos Base de Uniswap v4
+1. **Deploy base contracts** (token, oracle and manager):
 
 ```bash
-forge script script/Anvil.s.sol --broadcast --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+forge script script/DeployVCOPBase.sol:DeployVCOPBase --via-ir --broadcast --rpc-url https://sepolia.base.org
 ```
 
-#### 3. Ejecutar el despliegue completo
+2. **Configure the complete system** (hook, PSM, pool and liquidity):
 
 ```bash
-forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+forge script script/ConfigureVCOPSystem.sol:ConfigureVCOPSystem --via-ir --broadcast --rpc-url https://sepolia.base.org
 ```
 
-## Scripts Principales
+This division provides:
 
-| Script | Descripción |
+- Enhanced security by limiting required permissions in each phase.
+- Easier recovery; if something fails in the second part, you don't need to redeploy the base contracts.
+- Clearer code with separated responsibilities.
+
+## Main Scripts
+
+| Script | Description |
 |--------|-------------|
-| `DeployVCOPComplete.s.sol` | Script principal para desplegar todo el sistema VCOP |
-| `DeployVCOPRebaseHook.s.sol` | Script auxiliar para desplegar el hook de rebase |
-| `MintVCOPToWallet.s.sol` | Minta tokens VCOP a una dirección específica |
-| `ReadPoolState.sol` | Lee el estado del pool de Uniswap v4 |
-| `ReadVCOPPoolState.s.sol` | Lee el estado específico del pool VCOP/USDC |
-| `TestPoolPrice.s.sol` | Lee directamente el precio del pool VCOP/USDC en Base Sepolia |
-| `Anvil.s.sol` | Configura el entorno local de Anvil |
+| `DeployVCOPBase.sol` | Deploys the base contracts (Token, Oracle, Manager) |
+| `ConfigureVCOPSystem.sol` | Configures hook, collaterals, pool and liquidity |
+| `DeployVCOPCollateralHook.s.sol` | Deploys only the hook (modular deployment) |
+| 
 
-Los scripts antiguos y ejemplos se han movido a la carpeta `script/archive`.
 
-## Ejecutar Scripts Útiles
+Old scripts and examples have been moved to the `script/archive` folder.
 
-### Consultar Precio del Pool
+## Running Utility Scripts
 
-Para obtener el precio actual de VCOP/USDC directamente del pool en Base Sepolia, ejecuta:
+### Query Pool Price
+
+To get the current VCOP/USDC price directly from the pool on Base Sepolia, run:
 
 ```bash
 forge script script/TestPoolPrice.s.sol --rpc-url https://sepolia.base.org
 ```
 
-Este script muestra información detallada como:
-- Si VCOP es token0 o token1 en el pool
-- El precio raw (token1/token0)
-- El precio VCOP/USDC (equivalencia con dólar)
-- El precio VCOP/COP (equivalencia con peso colombiano)
+This script shows detailed information such as:
+- Whether VCOP is token0 or token1 in the pool
+- The raw price (token1/token0)
+- The VCOP/USDC price (dollar equivalent)
+- The VCOP/COP price (Colombian peso equivalent)
 
-### Realizar swap de VCOP a USDC
+### Swap VCOP to USDC
 
-Para realizar un swap de VCOP a USDC en Base Sepolia:
+To perform a swap from VCOP to USDC on Base Sepolia:
 
-1. Asegúrate de que tu cuenta tiene suficientes tokens VCOP.
-2. Ejecuta el siguiente comando:
+1. Make sure your account has enough VCOP tokens.
+2. Run the following command:
 
 ```bash
-# Cargar variables de entorno y ejecutar el script
+# Load environment variables and run the script
 source .env
 forge script script/SwapVCOP.s.sol:SwapVCOPScript --rpc-url base-sepolia --private-key $PRIVATE_KEY --broadcast
 ```
 
-El script está configurado para vender 49,000 VCOP por USDC. Si necesitas cambiar la cantidad, modifica la constante `SWAP_AMOUNT` en el archivo `script/SwapVCOP.s.sol`.
+The script is configured to sell 49,000 VCOP for USDC. If you need to change the amount, modify the `SWAP_AMOUNT` constant in the file `script/SwapVCOP.s.sol`.
 
-## ¿Por qué necesitamos HookMiner?
+## Why do we need HookMiner?
 
-En Uniswap v4, los hooks deben tener direcciones especiales que codifican los permisos que utilizan. HookMiner encuentra una "salt" para desplegar el contrato mediante CREATE2 en una dirección que tiene los bits correctos, lo que permite que Uniswap v4 valide qué hooks están habilitados.
+In Uniswap v4, hooks must have special addresses that encode the permissions they use. HookMiner finds a "salt" to deploy the contract using CREATE2 to an address that has the correct bits, allowing Uniswap v4 to validate which hooks are enabled.
 
-## Contratos Principales
+## Main Contracts
 
-- `VCOPRebased.sol`: Token principal con mecanismo de rebase
-- `VCOPOracle.sol`: Oráculo de precio (mock para fines de prueba)
-- `VCOPRebaseHook.sol`: Hook de Uniswap v4 que ejecuta rebases automáticamente
+- `VCOPCollateralized.sol`: Collateralized stablecoin token
+- `VCOPOracle.sol`: Price oracle for VCOP/COP & USD/COP rates
+- `VCOPCollateralManager.sol`: Collateral manager and PSM reserves
+- `VCOPCollateralHook.sol`: Uniswap v4 hook implementing the PSM
 
-## Pruebas
+## Tests
 
-Para ejecutar las pruebas:
+To run the tests:
 
 ```bash
 forge test -vv
 ```
 
-## Interactuar con el Sistema
+## Interacting with the System
 
-Una vez desplegado, puedes:
+Once deployed, you can:
 
-1. Modificar el precio en el oráculo para desencadenar rebases
-2. Realizar swaps en el pool para probar el hook
-3. Verificar cambios en el suministro total tras rebases
+1. Manually adjust the USD/COP rate in the `VCOPOracle` or run `updateRatesFromPool()` to force synchronization.
+2. Make large swaps in the VCOP/USDC pool and observe how the hook executes automatic stabilization operations.
+3. Use the public functions of `VCOPCollateralManager` to query PSM reserves and stability statistics.
 
-## Seguridad
+## Security
 
-Este código es experimental y no está auditado. No se recomienda su uso en producción.
+This code is experimental and has not been audited. It is not recommended for production use.
 
-## Configuración
+## Setup
 
-1. Asegúrate de tener instalado Foundry:
+1. Make sure you have Foundry installed:
 ```bash
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 ```
 
-2. Clona este repositorio:
+2. Clone this repository:
 ```bash
 git clone https://github.com/tu-usuario/VCOPstablecoinUniswapv4.git
 cd VCOPstablecoinUniswapv4
 ```
 
-3. Instala las dependencias:
+3. Install dependencies:
 ```bash
 forge install
 ```
 
-4. Configura las variables de entorno en el archivo `.env`:
+4. Configure environment variables in the `.env` file:
 ```
-PRIVATE_KEY=tu_clave_privada
+PRIVATE_KEY=your_private_key
 RPC_URL=https://sepolia.base.org
 ```
 
-### Nota importante
+### Important Note
 
-- El script asume que VCOP tiene 6 decimales.
-- Asegúrate de que la cuenta asociada a tu clave privada tiene suficientes tokens VCOP para realizar el swap.
-- El script utiliza el PoolSwapTest contract de Uniswap V4 en Base Sepolia.
+- The script assumes VCOP has 6 decimals.
+- Make sure the account associated with your private key has enough VCOP tokens to perform the swap.
+- The script uses the PoolSwapTest contract from Uniswap V4 on Base Sepolia.
 
-## Contratos usados
+## Contracts Used
 
 - PoolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
 - Universal Router: 0x492E6456D9528771018DeB9E87ef7750EF184104
 - Position Manager: 0x4B2C77d209D3405F41a037Ec6c77F7F5b8e2ca80
 - PoolSwapTest: 0x8B5bcC363ddE2614281aD875bad385E0A785D3B9
-- VCOP Token: 0xd16Ee99c7EA2B30c13c3dC298EADEE00B870BBCC
-- USDC Token: 0xE7a4113a8a497DD72D29F35E188eEd7403e8B2E8
-- VCOP Rebase Hook: 0x866bf94370e8A7C9cDeAFb592C2ac62903e30040 
+- VCOP Token: 0x7aa903a5fEe8F484575D5B8c43f5516504D29306
+- USDC Token: 0xF1A811E804b01A113fCE804f2b1C98bE25Ff8557
+- VCOP Collateral Hook: 0xe63037ccc7ae9D980f2DFA26D2C37a92937DC4c0 

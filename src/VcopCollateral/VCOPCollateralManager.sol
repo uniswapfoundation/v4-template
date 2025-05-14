@@ -31,9 +31,22 @@ contract VCOPCollateralManager is Ownable {
         bool active;
     }
     
+    // PSM (Peg Stability Module) configuration
+    struct PSMReserve {
+        uint256 collateralAmount;
+        uint256 vcopAmount;
+        bool active;
+    }
+    
     // Supported collateral assets
     mapping(address => CollateralAsset) public collaterals;
     address[] public collateralList;
+    
+    // PSM reserves by collateral token
+    mapping(address => PSMReserve) public psmReserves;
+    
+    // Address of PSM hook authorized to manage PSM reserves
+    address public psmHookAddress;
     
     // Token identifiers for automated deployment
     mapping(address => string) public tokenIdentifiers;
@@ -52,6 +65,10 @@ contract VCOPCollateralManager is Ownable {
     // Fee collector
     address public feeCollector;
     
+    // PSM stats
+    uint256 public lastPSMOperationTimestamp;
+    uint256 public totalPSMSwapsCount;
+    
     // Events
     event CollateralAdded(address token, uint256 ratio);
     event CollateralRemoved(address token);
@@ -62,10 +79,24 @@ contract VCOPCollateralManager is Ownable {
     event VCOPMinted(address user, uint256 amount);
     event VCOPBurned(address user, uint256 amount);
     
+    // PSM events
+    event PSMReserveAdded(address token, uint256 amount);
+    event PSMReserveRemoved(address token, uint256 amount);
+    event PSMCollateralTransferred(address to, address token, uint256 amount);
+    event PSMStatusChanged(address token, bool active);
+    
     constructor(address _vcop, address _oracle) Ownable(msg.sender) {
         vcop = VCOPCollateralized(_vcop);
         oracle = VCOPOracle(_oracle);
         feeCollector = msg.sender;
+    }
+    
+    /**
+     * @dev Sets the PSM hook address
+     */
+    function setPSMHook(address _psmHook) external onlyOwner {
+        require(_psmHook != address(0), "Zero address not allowed");
+        psmHookAddress = _psmHook;
     }
     
     /**
@@ -105,6 +136,141 @@ contract VCOPCollateralManager is Ownable {
         });
         
         emit CollateralAdded(token, ratio);
+    }
+    
+    /**
+     * @dev Adds funds to PSM reserves
+     * @param collateralToken Address of the collateral token
+     * @param amount Amount of collateral to add to PSM reserves
+     */
+    function addPSMFunds(address collateralToken, uint256 amount) external onlyOwner {
+        require(collaterals[collateralToken].active, "Collateral not active");
+        require(amount > 0, "Amount must be greater than zero");
+        
+        // Transfer collateral to this contract
+        IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), amount);
+        
+        // Update PSM reserves
+        psmReserves[collateralToken].collateralAmount += amount;
+        psmReserves[collateralToken].active = true;
+        
+        emit PSMReserveAdded(collateralToken, amount);
+    }
+    
+    /**
+     * @dev Removes funds from PSM reserves
+     * @param collateralToken Address of the collateral token
+     * @param amount Amount of collateral to remove from PSM reserves
+     */
+    function removePSMFunds(address collateralToken, uint256 amount) external onlyOwner {
+        PSMReserve storage reserve = psmReserves[collateralToken];
+        require(reserve.active, "PSM reserve not active for token");
+        require(amount <= reserve.collateralAmount, "Insufficient PSM reserves");
+        
+        // Update PSM reserves
+        reserve.collateralAmount -= amount;
+        
+        // Transfer collateral to owner
+        IERC20(collateralToken).safeTransfer(msg.sender, amount);
+        
+        emit PSMReserveRemoved(collateralToken, amount);
+    }
+    
+    /**
+     * @dev Sets PSM reserve active status
+     * @param collateralToken Address of the collateral token
+     * @param active Whether the PSM reserve should be active
+     */
+    function setPSMReserveStatus(address collateralToken, bool active) external onlyOwner {
+        psmReserves[collateralToken].active = active;
+        emit PSMStatusChanged(collateralToken, active);
+    }
+    
+    /**
+     * @dev Transfers collateral from PSM reserves (only callable by PSM hook)
+     * @param to Address to receive the collateral
+     * @param collateralToken Address of the collateral token
+     * @param amount Amount of collateral to transfer
+     */
+    function transferPSMCollateral(address to, address collateralToken, uint256 amount) external {
+        require(msg.sender == psmHookAddress, "Not authorized");
+        PSMReserve storage reserve = psmReserves[collateralToken];
+        require(reserve.active, "PSM reserve not active for token");
+        require(reserve.collateralAmount >= amount, "Insufficient PSM reserves");
+        
+        // Update PSM reserves
+        reserve.collateralAmount -= amount;
+        
+        // Update stats
+        lastPSMOperationTimestamp = block.timestamp;
+        totalPSMSwapsCount++;
+        
+        // Transfer collateral
+        IERC20(collateralToken).safeTransfer(to, amount);
+        
+        emit PSMCollateralTransferred(to, collateralToken, amount);
+    }
+    
+    /**
+     * @dev Adds VCOP to PSM reserves (only callable by PSM hook)
+     * @param collateralToken Associated collateral token for this VCOP
+     * @param amount Amount of VCOP to add
+     */
+    function addPSMVcop(address collateralToken, uint256 amount) external {
+        require(msg.sender == psmHookAddress, "Not authorized");
+        PSMReserve storage reserve = psmReserves[collateralToken];
+        require(reserve.active, "PSM reserve not active for token");
+        
+        // Update PSM reserves
+        reserve.vcopAmount += amount;
+        
+        // Update stats
+        lastPSMOperationTimestamp = block.timestamp;
+    }
+    
+    /**
+     * @dev Removes VCOP from PSM reserves and mints to recipient (only callable by PSM hook)
+     * @param to Recipient of minted VCOP
+     * @param collateralToken Associated collateral token for this VCOP
+     * @param amount Amount of VCOP to mint
+     */
+    function mintPSMVcop(address to, address collateralToken, uint256 amount) external {
+        require(msg.sender == psmHookAddress, "Not authorized");
+        PSMReserve storage reserve = psmReserves[collateralToken];
+        require(reserve.active, "PSM reserve not active for token");
+        
+        // Mint VCOP to recipient
+        vcop.mint(to, amount);
+        
+        // Update stats
+        lastPSMOperationTimestamp = block.timestamp;
+    }
+    
+    /**
+     * @dev Checks if PSM reserves are sufficient for a specific token and amount
+     * @param collateralToken Address of the collateral token
+     * @param amount Amount of collateral needed
+     * @return Whether the reserves are sufficient
+     */
+    function hasPSMReservesFor(address collateralToken, uint256 amount) public view returns (bool) {
+        PSMReserve memory reserve = psmReserves[collateralToken];
+        return reserve.active && reserve.collateralAmount >= amount;
+    }
+    
+    /**
+     * @dev Gets PSM reserve statistics
+     * @param collateralToken Address of the collateral token
+     * @return collateralAmount Amount of collateral in the PSM
+     * @return vcopAmount Amount of VCOP in the PSM
+     * @return active Whether the PSM is active for this token
+     */
+    function getPSMReserves(address collateralToken) public view returns (
+        uint256 collateralAmount,
+        uint256 vcopAmount,
+        bool active
+    ) {
+        PSMReserve memory reserve = psmReserves[collateralToken];
+        return (reserve.collateralAmount, reserve.vcopAmount, reserve.active);
     }
     
     /**

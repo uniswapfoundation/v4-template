@@ -87,6 +87,8 @@ contract DeployVCOPCollateral is Script {
         vm.setEnv("ETHERSCAN_API_KEY", DUMMY_API_KEY);
         
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        // Si se proporciona una clave privada específica para el hook owner, usarla
+        uint256 hookOwnerPrivateKey = vm.envOr("HOOK_OWNER_PRIVATE_KEY", deployerPrivateKey);
         address deployerAddress = vm.addr(deployerPrivateKey);
         address poolManagerAddress = vm.envAddress("POOL_MANAGER_ADDRESS");
         address positionManagerAddress = vm.envAddress("POSITION_MANAGER_ADDRESS");
@@ -160,6 +162,24 @@ contract DeployVCOPCollateral is Script {
         vm.setEnv("ORACLE_ADDRESS", vm.toString(address(oracle)));
         vm.setEnv("USDC_ADDRESS", vm.toString(usdcAddress));
         
+        // === PASO 5: Desplegar VCOPCollateralManager ===
+        console.logString("=== PASO 5: Desplegando Collateral Manager ===");
+        vm.startBroadcast(deployerPrivateKey);
+        
+        // Desplegar el gestor de colateral
+        VCOPCollateralManager collateralManager = new VCOPCollateralManager(
+            address(vcop),
+            address(oracle)
+        );
+        
+        console.logString("Collateral Manager desplegado en:");
+        console.logAddress(address(collateralManager));
+        
+        vm.stopBroadcast();
+        
+        // Guardar dirección del manager para que el hook pueda usarla durante el despliegue
+        vm.setEnv("COLLATERAL_MANAGER_ADDRESS", vm.toString(address(collateralManager)));
+        
         // === PASO 4: Desplegar Hook con script especializado ===
         console.logString("=== PASO 4: Desplegando Hook con script especializado ===");
         
@@ -176,40 +196,67 @@ contract DeployVCOPCollateral is Script {
         // Guardar dirección del hook para futuros scripts
         vm.setEnv("HOOK_ADDRESS", vm.toString(address(hook)));
         
-        // === PASO 5: Desplegar VCOPCollateralManager ===
-        console.logString("=== PASO 5: Desplegando Collateral Manager ===");
+        // === PASO 6: Configurar Referencias Cruzadas ===
+        console.logString("=== PASO 6: Configurando Referencias Cruzadas ===");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Desplegar el gestor de colateral
-        VCOPCollateralManager collateralManager = new VCOPCollateralManager(
-            address(vcop),
-            address(oracle)
-        );
+        // Verificar el propietario actual del hook
+        address hookOwner;
+        try hook.owner() returns (address currentOwner) {
+            hookOwner = currentOwner;
+            console.logString("Owner actual del hook:");
+            console.logAddress(hookOwner);
+            
+            // Transferir la propiedad al deployer si es necesario
+            if (hookOwner != deployerAddress) {
+                console.logString("Transfiriendo propiedad del hook al deployer...");
+                
+                // Primero necesitamos transmitir desde la dirección del owner actual
+                vm.stopBroadcast();
+                vm.startBroadcast(hookOwnerPrivateKey);
+                
+                // Transferir propiedad al deployer
+                hook.transferOwnership(deployerAddress);
+                console.logString("Propiedad transferida al deployer");
+                
+                // Volver al deployer
+                vm.stopBroadcast();
+                vm.startBroadcast(deployerPrivateKey);
+            }
+        } catch {
+            console.logString("No se pudo obtener el owner del hook, posiblemente no es Ownable");
+        }
         
-        // Configurar referencias cruzadas
-        // 1. Hook -> Manager (Note: Hook is initialized with collateralManager address at deployment)
-        // hook.updateCollateralManager(address(collateralManager));
+        // 1. Configurar el hook para que reconozca al collateralManager (si no se hizo en el constructor)
+        if (hook.collateralManagerAddress() == address(0)) {
+            try hook.setCollateralManager(address(collateralManager)) {
+                console.logString("CollateralManager asignado al hook exitosamente");
+            } catch (bytes memory errorData) {
+                console.logString("Error al asignar CollateralManager al hook:");
+                console.logBytes(errorData);
+            }
+        } else {
+            console.logString("Hook ya tiene CollateralManager configurado:");
+            console.logAddress(hook.collateralManagerAddress());
+        }
         
-        // 2. Token -> Manager
+        // 2. Configurar el collateralManager para que reconozca al hook
+        collateralManager.setPSMHook(address(hook));
+        
+        // 3. Token -> Manager
         vcop.setCollateralManager(address(collateralManager));
         
-        // 3. Permisos de mint/burn al manager
+        // 4. Permisos de mint/burn al manager
         vcop.setMinter(address(collateralManager), true);
         vcop.setBurner(address(collateralManager), true);
         
-        // 4. Fee collector
+        // 5. Fee collector
         collateralManager.setFeeCollector(treasuryAddress);
-        
-        console.logString("Collateral Manager desplegado en:");
-        console.logAddress(address(collateralManager));
         
         vm.stopBroadcast();
         
-        // Guardar dirección del manager
-        vm.setEnv("COLLATERAL_MANAGER_ADDRESS", vm.toString(address(collateralManager)));
-        
-        // === PASO 6: Configurar Colaterales y Permisos ===
-        console.logString("=== PASO 6: Configurando Colaterales y Permisos ===");
+        // === PASO 7: Configurar Colaterales y Permisos ===
+        console.logString("=== PASO 7: Configurando Colaterales y Permisos ===");
         vm.startBroadcast(deployerPrivateKey);
         
         // Configurar USDC como colateral
@@ -247,8 +294,8 @@ contract DeployVCOPCollateral is Script {
         
         vm.stopBroadcast();
         
-        // === PASO 7: Crear Pool y Añadir Liquidez ===
-        console.logString("=== PASO 7: Creando Pool y agregando liquidez ===");
+        // === PASO 8: Crear Pool y Añadir Liquidez ===
+        console.logString("=== PASO 8: Creando Pool y agregando liquidez ===");
         console.logString("Liquidez USDC a agregar:"); 
         console.logUint(stablecoinLiquidity / 1e6); 
         console.logString("USDC");
@@ -395,8 +442,8 @@ contract DeployVCOPCollateral is Script {
         
         vm.stopBroadcast();
         
-        // === PASO 8: Provisionar Liquidez al Sistema Colateral ===
-        console.logString("=== PASO 8: Provisionando Liquidez al Sistema Colateral ===");
+        // === PASO 9: Provisionar Liquidez al Sistema Colateral ===
+        console.logString("=== PASO 9: Provisionando Liquidez al Sistema Colateral ===");
         vm.startBroadcast(deployerPrivateKey);
         
         // Transferir USDC al collateralManager para el PSM
@@ -405,11 +452,70 @@ contract DeployVCOPCollateral is Script {
         // Mint VCOP al collateralManager para el PSM
         vcop.mint(address(collateralManager), psmVcopFunding);
         
+        // Activar el módulo PSM en el collateralManager
+        collateralManager.setPSMReserveStatus(usdcAddress, true);
+        
+        // Verificar nuevamente el propietario del hook
+        try hook.owner() returns (address currentOwner) {
+            console.logString("Owner actual del hook en paso 9:");
+            console.logAddress(currentOwner);
+            
+            if (currentOwner != deployerAddress) {
+                console.logString("ADVERTENCIA: Hook no pertenece al deployer");
+                // No podemos usar HOOK_OWNER_PRIVATE_KEY aqui porque ya usamos el PSM
+                // Reportar el problema para que se solucione manualmente
+            }
+        } catch {
+            console.logString("No se pudo verificar el propietario del hook");
+        }
+        
+        // Verificar que el hook tenga permisos adecuados
+        // Asegurar que el hook reconozca al manager
+        try hook.collateralManagerAddress() returns (address currentManager) {
+            console.logString("CollateralManager actual del hook:");
+            console.logAddress(currentManager);
+            
+            if (currentManager != address(collateralManager)) {
+                console.logString("Intentando actualizar el CollateralManager en el hook...");
+                try hook.setCollateralManager(address(collateralManager)) {
+                    console.logString("CollateralManager actualizado en el hook exitosamente");
+                } catch (bytes memory errorData) {
+                    console.logString("Error al actualizar CollateralManager en el hook:");
+                    console.logBytes(errorData);
+                    console.logString("Esto puede deberse a un problema de permisos");
+                }
+            } else {
+                console.logString("Hook ya tiene el CollateralManager configurado correctamente");
+            }
+        } catch {
+            console.logString("No se pudo verificar el CollateralManager en el hook");
+        }
+        
         // Configurar PSM en el hook
-        hook.updatePSMParameters(
+        try hook.updatePSMParameters(
             psmFee, 
             psmVcopFunding / 10 // Limitar operaciones individuales al 10% del fondo
-        );
+        ) {
+            console.logString("Parametros de PSM actualizados exitosamente");
+        } catch (bytes memory errorData) {
+            console.logString("Error actualizando parametros de PSM:");
+            console.logBytes(errorData);
+            
+            // En caso de error, verificar el owner del hook
+            try hook.owner() returns (address hookOwner) {
+                console.logString("Owner del hook:");
+                console.logAddress(hookOwner);
+                
+                console.logString("Deployer address:");
+                console.logAddress(deployerAddress);
+                
+                if (hookOwner != deployerAddress) {
+                    console.logString("El propietario del hook no es el deployer. Esto debe corregirse manualmente.");
+                }
+            } catch {
+                console.logString("No se pudo obtener el owner del hook");
+            }
+        }
         
         console.logString("Liquidez provisionada al PSM:");
         console.logString("USDC en PSM:");
