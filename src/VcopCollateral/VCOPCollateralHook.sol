@@ -346,7 +346,7 @@ contract VCOPCollateralHook is BaseHook, Ownable {
         uint256 fee = (vcopAmount * psmFee) / 1000000;
         uint256 amountOut = vcopAmount - fee;
         
-        // Transfer collateral from user to PSM reserves
+        // Transfer collateral from user to collateral manager
         address collateralTokenAddress = Currency.unwrap(stablecoinCurrency);
         IERC20 collateralToken = IERC20(collateralTokenAddress);
         
@@ -358,7 +358,7 @@ contract VCOPCollateralHook is BaseHook, Ownable {
         collateralToken.safeTransferFrom(msg.sender, address(collateralManager()), collateralAmount);
         
         // Update PSM reserves to reflect new collateral
-        collateralManager().addPSMFunds(collateralTokenAddress, collateralAmount);
+        collateralManager().registerPSMFunds(collateralTokenAddress, collateralAmount);
         
         // Mint VCOP to user
         VCOPCollateralized vcop = VCOPCollateralized(Currency.unwrap(vcopCurrency));

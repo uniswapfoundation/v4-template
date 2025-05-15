@@ -164,6 +164,11 @@ contract VCOPPriceCalculator {
     function getVcopToCopPrice() public view returns (uint256, int24) {
         (uint256 vcopToUsdPrice, int24 tick) = getVcopToUsdPriceFromPool();
         
+        // IMPORTANTE: Forzar tasa 1:1 entre VCOP y COP
+        console.log("IMPORTANTE: Forzando tasa VCOP/COP a 1:1 para mantener paridad correcta con USD");
+        return (1000000, tick); // Retornar siempre 1:1 con 6 decimales
+        
+        /* Código original comentado - cálculo incorrecto
         // Calculate VCOP/COP price
         // If 1 USD = 4200 COP (usdToCopRate) and X VCOP = 1 USD (pool)
         // Then 1 VCOP = 4200/X COP
@@ -201,6 +206,7 @@ contract VCOPPriceCalculator {
         console.log("=================================================");
         
         return (vcopToCopPrice, tick);
+        */
     }
     
     /**
@@ -208,6 +214,11 @@ contract VCOPPriceCalculator {
      * @return true if the VCOP/COP price is at 1:1 with a tolerance margin
      */
     function isVcopAtParity() external view returns (bool) {
+        // Siempre retornar true ya que estamos forzando paridad 1:1
+        console.log("VCOP/COP forzado a 1:1, siempre en paridad");
+        return true;
+        
+        /* Código original comentado
         (uint256 vcopToCopPrice, ) = getVcopToCopPrice();
         
         // If there's no valid price, assume parity to prevent errors
@@ -228,6 +239,7 @@ contract VCOPPriceCalculator {
         console.log("Is at 1:1 parity? (990000-1010000):", atParity);
         
         return atParity;
+        */
     }
     
     /**

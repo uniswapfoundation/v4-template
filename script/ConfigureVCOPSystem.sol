@@ -40,10 +40,10 @@ contract ConfigureVCOPSystem is Script {
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     
     // Addresses of deployed contracts (obtained from logs)
-    address constant DEPLOYED_USDC_ADDRESS = 0x9e58c822c643779fe1a64aCB93d9c22D701eEBB0;
-    address constant DEPLOYED_VCOP_ADDRESS = 0x092C440a765F09B2f4Fb99C6cfF73eC0EaDb0cb9;
-    address constant DEPLOYED_ORACLE_ADDRESS = 0x1B47cF922B3A0ba5CE7A7B3e9E2b3792ad119D02;
-    address constant DEPLOYED_COLLATERAL_MANAGER_ADDRESS = 0x0F97fE0C0390479E3271498a0a2EF7E023Ec19ca;
+    address constant DEPLOYED_USDC_ADDRESS = 0x1D954BcfB060a3dc5A49536243545334dD536493;
+    address constant DEPLOYED_VCOP_ADDRESS = 0xbbF67a9C2a6E33B405ff30C948275c2154B36E3A;
+    address constant DEPLOYED_ORACLE_ADDRESS = 0x352a80294311db57562f625cFcab502ccAd61581;
+    address constant DEPLOYED_COLLATERAL_MANAGER_ADDRESS = 0x2D644FC74e5fe6598b0843f149b02bFEf99Ef383;
     
     // Configurable parameters for the pool
     uint24 lpFee = 3000; // 0.30%
@@ -224,7 +224,11 @@ contract ConfigureVCOPSystem is Script {
         vcop.setMinter(collateralManagerAddress, true);
         vcop.setBurner(collateralManagerAddress, true);
         
-        // 5. Fee collector
+        // 5. Grant burn permissions to the hook for PSM operations
+        vcop.setBurner(hookAddress, true);
+        console.logString("Burn permissions granted to hook for PSM operations");
+        
+        // 6. Fee collector
         collateralManager.setFeeCollector(treasuryAddress);
         
         // === STEP 3: Configure Collaterals and Prices ===

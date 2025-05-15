@@ -158,6 +158,26 @@ contract VCOPCollateralManager is Ownable {
     }
     
     /**
+     * @dev Registers collateral funds already transferred to this contract as PSM reserves
+     * @param collateralToken Address of the collateral token
+     * @param amount Amount of collateral to register as PSM reserves
+     */
+    function registerPSMFunds(address collateralToken, uint256 amount) external {
+        require(msg.sender == psmHookAddress, "Not authorized");
+        require(collaterals[collateralToken].active, "Collateral not active");
+        require(amount > 0, "Amount must be greater than zero");
+        
+        // Update PSM reserves (funds should already be transferred to this contract)
+        psmReserves[collateralToken].collateralAmount += amount;
+        psmReserves[collateralToken].active = true;
+        
+        // Update stats
+        lastPSMOperationTimestamp = block.timestamp;
+        
+        emit PSMReserveAdded(collateralToken, amount);
+    }
+    
+    /**
      * @dev Removes funds from PSM reserves
      * @param collateralToken Address of the collateral token
      * @param amount Amount of collateral to remove from PSM reserves
