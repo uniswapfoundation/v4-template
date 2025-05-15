@@ -40,10 +40,10 @@ contract ConfigureVCOPSystem is Script {
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     
     // Addresses of deployed contracts (obtained from logs)
-    address constant DEPLOYED_USDC_ADDRESS = 0xF1A811E804b01A113fCE804f2b1C98bE25Ff8557;
-    address constant DEPLOYED_VCOP_ADDRESS = 0x7aa903a5fEe8F484575D5B8c43f5516504D29306;
-    address constant DEPLOYED_ORACLE_ADDRESS = 0xCE578C179b73b50Eba41b3121a11eB4AeE1EBA7a;
-    address constant DEPLOYED_COLLATERAL_MANAGER_ADDRESS = 0x8da23521353163Cb88451a49488c5A287a34EDD3;
+    address constant DEPLOYED_USDC_ADDRESS = 0x9e58c822c643779fe1a64aCB93d9c22D701eEBB0;
+    address constant DEPLOYED_VCOP_ADDRESS = 0x092C440a765F09B2f4Fb99C6cfF73eC0EaDb0cb9;
+    address constant DEPLOYED_ORACLE_ADDRESS = 0x1B47cF922B3A0ba5CE7A7B3e9E2b3792ad119D02;
+    address constant DEPLOYED_COLLATERAL_MANAGER_ADDRESS = 0x0F97fE0C0390479E3271498a0a2EF7E023Ec19ca;
     
     // Configurable parameters for the pool
     uint24 lpFee = 3000; // 0.30%
@@ -419,11 +419,18 @@ contract ConfigureVCOPSystem is Script {
         // Transfer USDC to collateralManager for PSM
         usdc.transfer(address(collateralManager), psmUsdcFunding);
         
+        // Register the USDC funds in the PSM mapping
+        usdc.approve(address(collateralManager), psmUsdcFunding);
+        collateralManager.addPSMFunds(usdcAddress, psmUsdcFunding);
+        
         // Mint VCOP to collateralManager for PSM
         vcop.mint(address(collateralManager), psmVcopFunding);
         
-        // Activate PSM module in collateralManager
+        // Activate PSM module in collateralManager first (required)
         collateralManager.setPSMReserveStatus(usdcAddress, true);
+        
+        // Register VCOP amount in PSM reserves using the initialization function 
+        collateralManager.initializePSMVcop(usdcAddress, psmVcopFunding);
         
         // Configure PSM in the hook
         try hook.updatePSMParameters(

@@ -229,6 +229,24 @@ contract VCOPCollateralManager is Ownable {
     }
     
     /**
+     * @dev Initializes VCOP in PSM reserves (only callable by owner during setup)
+     * @param collateralToken Associated collateral token for this VCOP
+     * @param amount Amount of VCOP to register
+     */
+    function initializePSMVcop(address collateralToken, uint256 amount) external onlyOwner {
+        PSMReserve storage reserve = psmReserves[collateralToken];
+        require(reserve.active, "PSM reserve not active for token");
+        
+        // Update PSM reserves
+        reserve.vcopAmount += amount;
+        
+        // Update stats
+        lastPSMOperationTimestamp = block.timestamp;
+        
+        emit PSMReserveAdded(collateralToken, amount);
+    }
+    
+    /**
      * @dev Removes VCOP from PSM reserves and mints to recipient (only callable by PSM hook)
      * @param to Recipient of minted VCOP
      * @param collateralToken Associated collateral token for this VCOP
