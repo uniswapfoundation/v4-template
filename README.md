@@ -11,6 +11,21 @@ VCOP is a collateralized stablecoin that maintains its target peg of 1 COP thank
 - `VCOPCollateralHook.sol`: Uniswap v4 hook implementing the PSM and monitoring swaps
 - `VCOPPriceCalculator.sol`: Auxiliary price calculator for accurate rate conversion
 
+## Deployed Contracts
+
+All contracts are deployed on Base Sepolia. Click on the addresses to view them on Sepolia BaseScan and verified to facilitate their review and interaction:
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| [VCOP Token](https://sepolia.basescan.org/address/0x3D384BeB1Ba0197e6a87668E1D68267164c8B776) | `0x3D384BeB1Ba0197e6a87668E1D68267164c8B776` | Collateralized stablecoin token |
+| [VCOP Oracle](https://sepolia.basescan.org/address/0x046fFDe3161CD0a8DCBF7e1c433f5f510703d56d) | `0x046fFDe3161CD0a8DCBF7e1c433f5f510703d56d` | Price oracle for rates |
+| [VCOP Collateral Hook](https://sepolia.basescan.org/address/0xb1D909689f88Bd34340f477A0Bad3956113944C0) | `0xb1D909689f88Bd34340f477A0Bad3956113944C0` | Uniswap v4 hook implementing PSM |
+| [VCOP Collateral Manager](https://sepolia.basescan.org/address/0x8f17E2128a4F917ec4147c15FC90bADd79E7F090) | `0x8f17E2128a4F917ec4147c15FC90bADd79E7F090` | Collateral reserves manager |
+| [VCOP Price Calculator](https://sepolia.basescan.org/address/0x12C8498b96714615B7bF98456058D48e01C59DB3) | `0x12C8498b96714615B7bF98456058D48e01C59DB3` | Price calculation helper |
+| [Mock USDC](https://sepolia.basescan.org/address/0x5405e3a584014c8659BA10591c1b7D55cB1cFc0d) | `0x5405e3a584014c8659BA10591c1b7D55cB1cFc0d` | Collateral token (test version) |
+| [Uniswap Pool Manager](https://sepolia.basescan.org/address/0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408) | `0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408` | Uniswap v4 pool manager |
+| [Treasury](https://sepolia.basescan.org/address/0xA6B3D200cD34ca14d7579DAc8B054bf50a62c37c) | `0xA6B3D200cD34ca14d7579DAc8B054bf50a62c37c` | Treasury for system fees |
+
 ## System Architecture
 
 ```
@@ -62,7 +77,7 @@ VCOP is a collateralized stablecoin that maintains its target peg of 1 COP thank
 │ - _wouldBreakPeg()          │                  │
 │ - _isLargeSwap()            │                  │
 └───────┬─────────┬───────────┘                  │
-        │         │                              │                                           
+        │         │                              │
         │         │                  ┌─────────────────────────────┐
         │         │                  │    VCOPPriceCalculator      │
         │         │                  ├─────────────────────────────┤
