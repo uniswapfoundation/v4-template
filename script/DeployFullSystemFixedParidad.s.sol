@@ -18,7 +18,7 @@ contract DeployFullSystemFixedParidad is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         
-        // Configurar un gas price más alto para acelerar las transacciones (3 gwei)
+        // Configurar un gas price mas alto para acelerar las transacciones (3 gwei)
         vm.txGasPrice(3_000_000_000); // 3 gwei
         
         console.log("=== Desplegando sistema completo VCOP con paridad fija 1:1 ===");
@@ -42,7 +42,7 @@ contract DeployFullSystemFixedParidad is Script {
         console.log("Oracle:", oracleAddress);
         console.log("CollateralManager:", collateralManagerAddress);
         
-        // Verificar que el oráculo tenga la configuración correcta
+        // Verificar que el oraculo tenga la configuracion correcta
         vm.startBroadcast(deployerPrivateKey);
         
         VCOPOracle oracle = VCOPOracle(oracleAddress);
@@ -50,18 +50,22 @@ contract DeployFullSystemFixedParidad is Script {
         uint256 usdToCopRate = oracle.getUsdToCopRateView();
         
         console.log("Verificando configuracion inicial del oraculo:");
-        console.log("VCOP/COP rate:", vcopToCopRate);
-        console.log("USD/COP rate:", usdToCopRate);
+        console.log("VCOP/COP rate inicial:", vcopToCopRate);
+        console.log("USD/COP rate inicial:", usdToCopRate);
         
-        // Forzar actualización para asegurar tasa VCOP/COP = 1:1
-        (uint256 newVcopToCopRate, uint256 vcopToUsdPrice) = oracle.updateRatesFromPool();
-        console.log("Oraculo actualizado:");
-        console.log("VCOP/COP rate despues de actualizacion:", newVcopToCopRate);
-        console.log("VCOP/USD price:", vcopToUsdPrice);
+        // Confirmar que ya estamos en la configuracion correcta
+        // VCOP/COP deberia ser 1:1 (1,000,000) directamente en el constructor del oraculo
+        // Verificamos que tenga el valor esperado
+        require(vcopToCopRate == 1000000, "La tasa VCOP/COP inicial no es 1:1 (1,000,000)");
+        console.log("Confirmado: La tasa VCOP/COP ya esta correctamente fijada en 1:1");
         
-        // Verificar que sea efectivamente 1:1
-        require(newVcopToCopRate == 1000000, "La tasa VCOP/COP no es 1:1 (1,000,000)");
-        console.log("Confirmado: La tasa VCOP/COP esta correctamente fijada en 1:1");
+        // Solo para asegurarnos, configuramos la tasa USD/COP
+        uint256 expectedUsdToCopRate = 4200000000; // 4200 COP = 1 USD con 6 decimales
+        if (usdToCopRate != expectedUsdToCopRate) {
+            console.log("Configurando tasa USD/COP a 4200:");
+            oracle.setUsdToCopRate(expectedUsdToCopRate);
+            console.log("Tasa USD/COP actualizada a:", expectedUsdToCopRate);
+        }
         
         vm.stopBroadcast();
         

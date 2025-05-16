@@ -16,10 +16,10 @@ import {VCOPOracle} from "../src/VcopCollateral/VCOPOracle.sol";
  */
 contract CustomPsmSwapScript is Script {
     // Contract addresses (actualizadas al nuevo despliegue)
-    address public constant USDC_ADDRESS = 0x8d877B848d6Bd4556a46A6CE5522CbAD46cECf73;
-    address public constant VCOP_ADDRESS = 0xD63b4A94daf79D088ca9709aEc219bD779292167;
-    address public constant VCOP_HOOK_ADDRESS = 0xe94E0544fdB25a33C8aBcf0bbef83dE5926c84C0;
-    address public constant VCOP_ORACLE_ADDRESS = 0x6D63f256663BB137376fe7d5f252ce77BfF97e0C;
+    address public constant USDC_ADDRESS = 0x5405e3a584014c8659BA10591c1b7D55cB1cFc0d;
+    address public constant VCOP_ADDRESS = 0x3D384BeB1Ba0197e6a87668E1D68267164c8B776;
+    address public constant VCOP_HOOK_ADDRESS = 0xb1D909689f88Bd34340f477A0Bad3956113944C0;
+    address public constant VCOP_ORACLE_ADDRESS = 0x046fFDe3161CD0a8DCBF7e1c433f5f510703d56d;
 
     // Setup function - update logger config
     function setUp() public {}

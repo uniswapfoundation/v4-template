@@ -1,228 +1,315 @@
 # VCOP Stablecoin with Uniswap v4
 
-A collateralized stablecoin backed by USDC (or other ERC-20 tokens) with a Peg Stability Module (PSM) operating through a Uniswap v4 hook.
+A collateralized stablecoin backed by USDC with a Peg Stability Module (PSM) operating through a Uniswap v4 hook.
 
 ## Description
 
 VCOP is a collateralized stablecoin that maintains its target peg of 1 COP thanks to a collateral-based Peg Stability Module (PSM) and automatic monitoring via a Uniswap v4 hook. The system integrates:
 
-- VCOP collateralized token with 6 decimals (`VCOPCollateralized.sol`)
-- Price oracle for VCOP/COP and USD/COP rates (`VCOPOracle.sol`)
-- Collateral manager and PSM module (`VCOPCollateralManager.sol`)
-- Uniswap v4 hook that implements the PSM and monitors large swaps (`VCOPCollateralHook.sol`)
-- VCOP/USDC pool on Uniswap v4
-- Auxiliary price calculator for the oracle (`VCOPPriceCalculator.sol`)
+- `VCOPCollateralized.sol`: Collateralized stablecoin token with 6 decimals
+- `VCOPOracle.sol`: Price oracle for VCOP/COP and USD/COP rates
+- `VCOPCollateralHook.sol`: Uniswap v4 hook implementing the PSM and monitoring swaps
+- `VCOPPriceCalculator.sol`: Auxiliary price calculator for accurate rate conversion
+
+## System Architecture
+
+```
+┌───────────────────────────── UNISWAP V4 INTEGRATION ────────────────────────────┐
+│                                                                                 │
+│  ┌────────────────────────┐                  ┌───────────────────────────────┐  │
+│  │   Uniswap v4 Pool      │                  │     Pool Events & Hooks       │  │
+│  │                        │                  │                               │  │
+│  │  VCOP/USDC Liquidity   │◄───Monitors──────┤ • beforeSwap                  │  │
+│  │  Price Discovery       │                  │ • afterSwap                   │  │
+│  │  Swap Execution        │──Hook Callbacks─►│ • afterAddLiquidity           │  │
+│  └──────────┬─────────────┘                  └────────────────┬──────────────┘  │
+│             │                                                 │                 │
+│             │                                                 │                 │
+│             │           ┌─────────────────────┐               │                 │
+│             └──────────►│  Uniswap Pool State │◄──────────────┘                 │
+│                         │                     │                                 │
+│                         │ • sqrtPriceX96      │◄───────┐                        │
+│                         │ • liquidity         │        │                        │
+│                         │ • tick              │        │                        │
+│                         └──────────┬──────────┘        │                        │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                      │                  │
+                                      │                  │ Reads Price
+                                      │                  │
+          ┌─────────────────────┐     │                  │
+          │      External       │     │                  │
+          │      Systems        │     │                  │
+          │  (USDC, Users)      │     │                  │
+          └──────────┬──────────┘     │                  │
+                     │                │                  │
+                     │                │                  │
+                     ▼                ▼                  ▼
+┌─────────────────────────────┐     ┌─────────────────────────────┐
+│    VCOPCollateralHook       │     │       VCOPOracle            │
+├─────────────────────────────┤     ├─────────────────────────────┤
+│ HOOK IMPLEMENTATION:        │     │ PRICE DATA:                 │
+│ - getHookPermissions()      │     │ - getVcopToCopRate()        │
+│ - _beforeSwap()             │     │ - getUsdToCopRate()         │
+│ - _afterSwap()              │     │ - updateRatesFromPool()     │
+├─────────────────────────────┤     └────────────┬────────────────┘
+│ PSM OPERATIONS:             │                  │
+│ - psmSwapVCOPForCollateral()│                  │
+│ - psmSwapCollateralForVCOP()│                  │
+│ - stabilizePriceWithPSM()   │                  │
+├─────────────────────────────┤                  │
+│ STABILITY CONTROL:          │                  │
+│ - monitorPrice()            │                  │
+│ - _wouldBreakPeg()          │                  │
+│ - _isLargeSwap()            │                  │
+└───────┬─────────┬───────────┘                  │
+        │         │                              │                                           
+        │         │                  ┌─────────────────────────────┐
+        │         │                  │    VCOPPriceCalculator      │
+        │         │                  ├─────────────────────────────┤
+        │         │                  │ POOL PRICE CALCULATION:     │
+        │         │                  │ - getVcopToUsdPriceFromPool()│
+        │         │                  │ - getVcopToCopPrice()       │
+        │         │                  │ - createPoolKey()           │
+        │         │                  │ - isVcopAtParity()          │
+        │         │                  └─────────────────────────────┘
+        │         │
+        │         ▼
+        │  ┌─────────────────────────────┐
+        │  │     VCOPCollateralManager   │
+        │  ├─────────────────────────────┤
+        │  │ RESERVES MANAGEMENT:        │
+        │  │ - mintPSMVcop()             │
+        │  │ - transferPSMCollateral()   │
+        │  │ - registerPSMFunds()        │
+        │  │ - hasPSMReservesFor()       │
+        │  │ - getPSMReserves()          │
+        │  └────────────────┬────────────┘
+        │                   │
+        │                   │
+        ▼                   ▼
+┌─────────────────────────────┐
+│    VCOPCollateralized       │
+├─────────────────────────────┤
+│ TOKEN OPERATIONS:           │
+│ - mint()                    │
+│ - burn()                    │
+│ - transfer()/transferFrom() │
+└─────────────────────────────┘
+```
+
+## Uniswap v4 Integration Details
+
+### 1. Hook Implementation
+
+The `VCOPCollateralHook` contract integrates with Uniswap v4 through the hook interface:
+
+```solidity
+function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
+    return Hooks.Permissions({
+        beforeInitialize: false,
+        afterInitialize: false,
+        beforeAddLiquidity: false,
+        afterAddLiquidity: true,
+        beforeRemoveLiquidity: false,
+        afterRemoveLiquidity: false,
+        beforeSwap: true,
+        afterSwap: true,
+        beforeDonate: false,
+        afterDonate: false,
+        beforeSwapReturnDelta: false,
+        afterSwapReturnDelta: false,
+        afterAddLiquidityReturnDelta: false,
+        afterRemoveLiquidityReturnDelta: false
+    });
+}
+```
+
+This hook implementation allows the contract to:
+1. **Monitor swaps** - Be notified before and after swaps occur in the VCOP/USDC pool
+2. **Track liquidity** - Be notified after liquidity is added to the pool
+3. **Take action** - Execute stabilization operations when necessary
+
+### 2. Price Monitoring & Stabilization
+
+When a swap occurs in the VCOP/USDC pool:
+
+1. The **beforeSwap** hook is triggered:
+   - Checks if the swap is large enough to potentially break the peg
+   - Can preemptively execute stabilization if needed
+
+2. The **afterSwap** hook is triggered:
+   - Monitors the price after the swap is completed
+   - Triggers the PSM stabilization mechanism if the price is outside bounds
+
+3. **Price evaluation process**:
+   ```
+   Uniswap Pool → VCOPOracle → VCOPPriceCalculator → VCOPCollateralHook
+   ```
+   - PriceCalculator reads the pool's `sqrtPriceX96` value
+   - Converts to VCOP/USDC and then to VCOP/COP
+   - Returns this to the hook for evaluation
+
+4. **Stabilization triggers** when price crosses thresholds:
+   - If VCOP < pegLowerBound: Buy VCOP with collateral (raise price)
+   - If VCOP > pegUpperBound: Sell VCOP for collateral (lower price)
+
+### 3. PSM Direct Operations
+
+Users can directly interact with the PSM through two main functions:
+
+1. **psmSwapVCOPForCollateral**:
+   ```
+   User → [VCOP tokens] → VCOPCollateralHook → Burns VCOP → VCOPCollateralManager → [USDC] → User
+   ```
+
+2. **psmSwapCollateralForVCOP**:
+   ```
+   User → [USDC] → VCOPCollateralHook → VCOPCollateralManager → Mints VCOP → [VCOP tokens] → User
+   ```
+
+## Contract Interactions
+
+### 1. Core Process Flows
+
+#### PSM Swap Flow (User → VCOP)
+1. User initiates PSM swap via `VCOPCollateralHook` functions
+2. Hook transfers collateral to/from `VCOPCollateralManager`  
+3. Manager instructs token contract to mint/burn VCOP
+4. User receives VCOP tokens or collateral tokens
+
+#### Price Monitoring Flow
+1. Uniswap V4 swap triggers hook callbacks in `VCOPCollateralHook`
+2. Hook calls `VCOPOracle` to check current prices
+3. Oracle uses `VCOPPriceCalculator` to get accurate pool prices
+4. Hook executes stability operations if price is outside target range
+
+#### Automatic Stabilization Flow
+1. Large swap is detected in the pool through beforeSwap hook
+2. System evaluates if swap would break peg using `_wouldBreakPeg()`
+3. If necessary, initiates `stabilizePriceWithPSM()` operation
+4. Based on price deviation, executes buy or sell operation via PSM
+
+### 2. Key Contract Responsibilities
+
+#### VCOPCollateralHook
+- **Primary Role**: Uniswap v4 hook for monitoring pool activity and price
+- **Key Functions**:
+  - `psmSwapVCOPForCollateral()`: User-facing function to sell VCOP for collateral
+  - `psmSwapCollateralForVCOP()`: User-facing function to buy VCOP with collateral
+  - `stabilizePriceWithPSM()`: Automated market operations to maintain peg
+  - `monitorPrice()`: Check if VCOP price is within target bounds
+  - `_beforeSwap()/_afterSwap()`: Hook callbacks from Uniswap v4
+
+#### VCOPCollateralManager
+- **Primary Role**: Manage collateral reserves and token minting permissions
+- **Key Functions**:
+  - `mintPSMVcop()`: Create new VCOP tokens backed by collateral
+  - `transferPSMCollateral()`: Move collateral tokens from reserves
+  - `registerPSMFunds()`: Record new collateral in the system
+  - `hasPSMReservesFor()`: Check if sufficient reserves exist for an operation
+  - `getPSMReserves()`: Get current collateral and VCOP reserve amounts
+
+#### VCOPCollateralized
+- **Primary Role**: ERC-20 stablecoin token implementation
+- **Key Functions**:
+  - `mint()`: Create new tokens (restricted to authorized callers)
+  - `burn()`: Destroy tokens (restricted to authorized callers)
+  - `transfer()` & `transferFrom()`: Standard ERC-20 token operations
+
+#### VCOPOracle
+- **Primary Role**: Provide exchange rates for the system
+- **Key Functions**:
+  - `getVcopToCopRate()`: Get current VCOP/COP exchange rate
+  - `getUsdToCopRate()`: Get current USD/COP exchange rate
+  - `updateRatesFromPool()`: Update rates from Uniswap pool data
+
+#### VCOPPriceCalculator
+- **Primary Role**: Handle complex price calculations from Uniswap pool data
+- **Key Functions**:
+  - `getVcopToUsdPriceFromPool()`: Calculate VCOP/USD price from pool's sqrtPriceX96
+  - `getVcopToCopPrice()`: Convert to VCOP/COP rate
+  - `isVcopAtParity()`: Check if VCOP is at target 1:1 parity with COP
+  - `createPoolKey()`: Generate the PoolKey needed to query Uniswap v4
 
 ## Requirements
 
 - [Foundry](https://book.getfoundry.sh/getting-started/installation)
 - Node.js and npm
 - ETH on Base Sepolia for gas fees
-- USDC on Base Sepolia to add liquidity
+- USDC on Base Sepolia for collateral
 
 ## Installation
 
 ```bash
 # Clone the repository
-git clone <repositorio>
+git clone https://github.com/your-username/VCOPstablecoinUniswapv4.git
 cd VCOPstablecoinUniswapv4
 
 # Install dependencies
 forge install
 ```
 
+## Key Commands
+
+### PSM Operations
+
+```bash
+# Check PSM status and reserves
+make check-psm
+
+# Check current prices from the oracle
+make check-prices
+
+# Swap VCOP for USDC (default 100 VCOP)
+make swap-vcop-to-usdc [AMOUNT=X]
+
+# Swap USDC for VCOP (default 100 USDC)
+make swap-usdc-to-vcop [AMOUNT=X]
+```
+
+### System Management
+
+```bash
+# Update oracle to fix conversion rate
+make update-oracle
+
+# Deploy entire system with fixed parity
+make deploy-fixed-system
+
+# Clean pending transactions
+make clean-txs
+
+# Check rates from new oracle
+make check-new-oracle
+
+# Test a swap with the newly deployed system
+make test-new-system
+```
+
+### Loan System
+
+```bash
+# Test full loan cycle (create, add collateral, withdraw, repay)
+make test-loans
+
+# Test loan liquidation mechanism
+make test-liquidation
+
+# Test PSM functionality
+make test-psm
+
+# Create position with specific collateral amount (default 1000 USDC)
+make create-position [COLLATERAL=X]
+```
+
 ## Deployment Flow
 
-Deployment can be done in a local environment or on the Base Sepolia network.
-
-### Option 1: Deployment on Base Sepolia
-
-#### 1. Setting up the .env file
-
-The `.env` file is already configured with the official Uniswap v4 contract addresses on Base Sepolia. You only need to update your private key:
-
-```
-# Replace with your actual private key (must include 0x prefix)
-PRIVATE_KEY=0xtu_clave_privada_aqui
-
-# Base Sepolia RPC URL
-RPC_URL=https://sepolia.base.org
-
-# Official Uniswap v4 addresses on Base Sepolia (ChainID: 84532)
-POOL_MANAGER_ADDRESS=0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
-POSITION_MANAGER_ADDRESS=0x4b2c77d209d3405f41a037ec6c77f7f5b8e2ca80
-
-# USDC on Base Sepolia
-USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
-```
-
-#### 2. Get USDC on Base Sepolia
-
-Before deploying, make sure you have enough USDC on Base Sepolia to add initial liquidity. The script is configured to use 50 USDC.
-
-#### 3. Deploy the Complete VCOP System
-
-Run the complete deployment script:
+You can deploy the system on Base Sepolia with:
 
 ```bash
-# Use the --via-ir option to resolve potential "stack too deep" errors
-forge script script/DeployVCOPComplete.s.sol:DeployVCOPComplete --via-ir --broadcast --rpc-url base-sepolia
+forge script script/DeployFullSystemFixedParidad.s.sol:DeployFullSystemFixedParidad --rpc-url https://sepolia.base.org --broadcast --gas-price 3000000000 -vv
 ```
-
-This script performs the deployment process in three steps:
-
-1. **Step 1**: Deploys the VCOP token and the Oracle
-2. **Step 2**: Uses HookMiner to find and deploy the hook with a valid address for Uniswap v4
-3. **Step 3**: Creates the VCOP/USDC pool and adds initial liquidity
-
-The deployed contracts and their addresses will be displayed in the script output.
-
-#### 4. Verify Contracts on BaseScan Sepolia
-
-You can automatically verify the deployed contracts using the included script:
-
-```bash
-./verify-contracts.sh
-```
-
-The script verifies:
-- VCOP Token
-- VCOP Oracle
-- VCOP Collateral Hook
-
-### Option 2: Secure Two-Phase Deployment
-
-If you prefer a more controlled deployment flow, split the operation into two scripts:
-
-1. **Deploy base contracts** (token, oracle and manager):
-
-```bash
-forge script script/DeployVCOPBase.sol:DeployVCOPBase --via-ir --broadcast --rpc-url https://sepolia.base.org
-```
-
-2. **Configure the complete system** (hook, PSM, pool and liquidity):
-
-```bash
-forge script script/ConfigureVCOPSystem.sol:ConfigureVCOPSystem --via-ir --broadcast --rpc-url https://sepolia.base.org
-```
-
-This division provides:
-
-- Enhanced security by limiting required permissions in each phase.
-- Easier recovery; if something fails in the second part, you don't need to redeploy the base contracts.
-- Clearer code with separated responsibilities.
-
-## Main Scripts
-
-| Script | Description |
-|--------|-------------|
-| `DeployVCOPBase.sol` | Deploys the base contracts (Token, Oracle, Manager) |
-| `ConfigureVCOPSystem.sol` | Configures hook, collaterals, pool and liquidity |
-| `DeployVCOPCollateralHook.s.sol` | Deploys only the hook (modular deployment) |
-| 
-
-
-Old scripts and examples have been moved to the `script/archive` folder.
-
-## Running Utility Scripts
-
-### Query Pool Price
-
-To get the current VCOP/USDC price directly from the pool on Base Sepolia, run:
-
-```bash
-forge script script/TestPoolPrice.s.sol --rpc-url https://sepolia.base.org
-```
-
-This script shows detailed information such as:
-- Whether VCOP is token0 or token1 in the pool
-- The raw price (token1/token0)
-- The VCOP/USDC price (dollar equivalent)
-- The VCOP/COP price (Colombian peso equivalent)
-
-### Swap VCOP to USDC
-
-To perform a swap from VCOP to USDC on Base Sepolia:
-
-1. Make sure your account has enough VCOP tokens.
-2. Run the following command:
-
-```bash
-# Load environment variables and run the script
-source .env
-forge script script/SwapVCOP.s.sol:SwapVCOPScript --rpc-url base-sepolia --private-key $PRIVATE_KEY --broadcast
-```
-
-The script is configured to sell 49,000 VCOP for USDC. If you need to change the amount, modify the `SWAP_AMOUNT` constant in the file `script/SwapVCOP.s.sol`.
-
-## Why do we need HookMiner?
-
-In Uniswap v4, hooks must have special addresses that encode the permissions they use. HookMiner finds a "salt" to deploy the contract using CREATE2 to an address that has the correct bits, allowing Uniswap v4 to validate which hooks are enabled.
-
-## Main Contracts
-
-- `VCOPCollateralized.sol`: Collateralized stablecoin token
-- `VCOPOracle.sol`: Price oracle for VCOP/COP & USD/COP rates
-- `VCOPCollateralManager.sol`: Collateral manager and PSM reserves
-- `VCOPCollateralHook.sol`: Uniswap v4 hook implementing the PSM
-
-## Tests
-
-To run the tests:
-
-```bash
-forge test -vv
-```
-
-## Interacting with the System
-
-Once deployed, you can:
-
-1. Manually adjust the USD/COP rate in the `VCOPOracle` or run `updateRatesFromPool()` to force synchronization.
-2. Make large swaps in the VCOP/USDC pool and observe how the hook executes automatic stabilization operations.
-3. Use the public functions of `VCOPCollateralManager` to query PSM reserves and stability statistics.
 
 ## Security
 
-This code is experimental and has not been audited. It is not recommended for production use.
-
-## Setup
-
-1. Make sure you have Foundry installed:
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
-
-2. Clone this repository:
-```bash
-git clone https://github.com/tu-usuario/VCOPstablecoinUniswapv4.git
-cd VCOPstablecoinUniswapv4
-```
-
-3. Install dependencies:
-```bash
-forge install
-```
-
-4. Configure environment variables in the `.env` file:
-```
-PRIVATE_KEY=your_private_key
-RPC_URL=https://sepolia.base.org
-```
-
-### Important Note
-
-- The script assumes VCOP has 6 decimals.
-- Make sure the account associated with your private key has enough VCOP tokens to perform the swap.
-- The script uses the PoolSwapTest contract from Uniswap V4 on Base Sepolia.
-
-## Contracts Used
-
-- PoolManager: 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408
-- Universal Router: 0x492E6456D9528771018DeB9E87ef7750EF184104
-- Position Manager: 0x4B2C77d209D3405F41a037Ec6c77F7F5b8e2ca80
-- PoolSwapTest: 0x8B5bcC363ddE2614281aD875bad385E0A785D3B9
-- VCOP Token: 0x7aa903a5fEe8F484575D5B8c43f5516504D29306
-- USDC Token: 0xF1A811E804b01A113fCE804f2b1C98bE25Ff8557
-- VCOP Collateral Hook: 0xe63037ccc7ae9D980f2DFA26D2C37a92937DC4c0 
+This code is experimental and has not been audited. Use at your own risk. 
