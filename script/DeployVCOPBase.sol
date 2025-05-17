@@ -33,11 +33,22 @@ contract DeployVCOPBase is Script {
         
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
+        
+        // Get Pool Manager address from environment (set by main deployment script)
         address poolManagerAddress = vm.envAddress("POOL_MANAGER_ADDRESS");
         
+        // Log network info
+        uint256 chainId = block.chainid;
+        string memory networkName = chainId == 8453 ? "Base Mainnet" : (chainId == 84532 ? "Base Sepolia" : "Unknown network");
+        
         console.logString("Verifying network and balances...");
+        console.logString(string.concat("Network: ", networkName));
+        console.logString("Chain ID:"); 
+        console.logUint(chainId);
         console.logString("Deployer address:"); 
         console.logAddress(deployerAddress);
+        console.logString("Pool Manager address:"); 
+        console.logAddress(poolManagerAddress);
         
         // === STEP 1: Deploy Simulated USDC ===
         console.logString("=== STEP 1: Deploying Simulated USDC ===");

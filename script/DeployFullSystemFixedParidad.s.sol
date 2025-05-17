@@ -7,6 +7,8 @@ import {DeployVCOPBase} from "./DeployVCOPBase.sol";
 import {ConfigureVCOPSystem} from "./ConfigureVCOPSystem.sol";
 import {VCOPOracle} from "../src/VcopCollateral/VCOPOracle.sol";
 import {VCOPPriceCalculator} from "../src/VcopCollateral/VCOPPriceCalculator.sol";
+import {PoolManagerAddresses} from "./base/PoolManagerAddresses.sol";
+import {PositionManagerAddresses} from "./base/PositionManagerAddresses.sol";
 
 /**
  * @title DeployFullSystemFixedParidad
@@ -18,11 +20,40 @@ contract DeployFullSystemFixedParidad is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         
+        // Get chain ID to use correct contract addresses
+        uint256 chainId = block.chainid;
+        address poolManagerAddress;
+        address positionManagerAddress;
+        
+        // Use address libraries to get correct addresses for current network
+        try this.getPoolManagerAddress(chainId) returns (address poolManager) {
+            poolManagerAddress = poolManager;
+        } catch {
+            // Fallback to environment variables if library doesn't have the chain
+            poolManagerAddress = vm.envOr("POOL_MANAGER_ADDRESS", address(0));
+            require(poolManagerAddress != address(0), "Pool Manager address not found for this chain");
+        }
+        
+        try this.getPositionManagerAddress(chainId) returns (address positionManager) {
+            positionManagerAddress = positionManager;
+        } catch {
+            // Fallback to environment variables if library doesn't have the chain
+            positionManagerAddress = vm.envOr("POSITION_MANAGER_ADDRESS", address(0));
+            require(positionManagerAddress != address(0), "Position Manager address not found for this chain");
+        }
+        
+        // Set environment variables for other scripts to use
+        vm.setEnv("POOL_MANAGER_ADDRESS", vm.toString(poolManagerAddress));
+        vm.setEnv("POSITION_MANAGER_ADDRESS", vm.toString(positionManagerAddress));
+        
         // Configurar un gas price mas alto para acelerar las transacciones (3 gwei)
         vm.txGasPrice(3_000_000_000); // 3 gwei
         
         console.log("=== Desplegando sistema completo VCOP con paridad fija 1:1 ===");
         console.log("Deployer address:", deployerAddress);
+        console.log("Chain ID:", chainId);
+        console.log("Pool Manager address:", poolManagerAddress);
+        console.log("Position Manager address:", positionManagerAddress);
         console.log("Gas price configurado: 3 gwei");
         
         // Paso 1: Desplegar los contratos base con DeployVCOPBase
@@ -95,5 +126,14 @@ contract DeployFullSystemFixedParidad is Script {
         console.log("Tasa efectiva USDC/VCOP:", effectiveRate);
         
         vm.stopBroadcast();
+    }
+    
+    // Helper functions to get contract addresses based on chain ID
+    function getPoolManagerAddress(uint256 chainId) external pure returns (address) {
+        return PoolManagerAddresses.getPoolManagerByChainId(chainId);
+    }
+    
+    function getPositionManagerAddress(uint256 chainId) external pure returns (address) {
+        return PositionManagerAddresses.getPositionManagerByChainId(chainId);
     }
 } 

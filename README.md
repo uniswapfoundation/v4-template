@@ -13,7 +13,24 @@ VCOP is a collateralized stablecoin that maintains its target peg of 1 COP thank
 
 ## Deployed Contracts
 
-All contracts are deployed on Base Sepolia. Click on the addresses to view them on Sepolia BaseScan and verified to facilitate their review and interaction:
+### Base Mainnet Deployment
+
+All contracts are deployed on Base Mainnet. Click on the addresses to view them on BaseScan:
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| [VCOP Token](https://basescan.org/address/0xE126098b5111330ceD47b80928348E4B8ED7A784) | `0xE126098b5111330ceD47b80928348E4B8ED7A784` | Collateralized stablecoin token |
+| [VCOP Oracle](https://basescan.org/address/0xA3aCc71fDA8C0E321ea9d49eF0630Dc1c1951E17) | `0xA3aCc71fDA8C0E321ea9d49eF0630Dc1c1951E17` | Price oracle for rates |
+| [VCOP Collateral Hook](https://basescan.org/address/0x00feAFe88e9441C10227Be8CcF2DC34D691b84c0) | `0x00feAFe88e9441C10227Be8CcF2DC34D691b84c0` | Uniswap v4 hook implementing PSM |
+| [VCOP Collateral Manager](https://basescan.org/address/0x5d211f80A23f04201C6b3Fa06B85171b11802B95) | `0x5d211f80A23f04201C6b3Fa06B85171b11802B95` | Collateral reserves manager |
+| [VCOP Price Calculator](https://basescan.org/address/0x5F56a7Eb5CD6aa8fC904d6dFEA676BE7C9Dabd26) | `0x5F56a7Eb5CD6aa8fC904d6dFEA676BE7C9Dabd26` | Price calculation helper |
+| [Mock USDC](https://basescan.org/address/0xC9D7A317B5A9B39d971fA4430d0Fec7A572d2520) | `0xC9D7A317B5A9B39d971fA4430d0Fec7A572d2520` | Collateral token (test version) |
+| [Uniswap Pool Manager](https://basescan.org/address/0x498581ff718922c3f8e6a244956af099b2652b2b) | `0x498581ff718922c3f8e6a244956af099b2652b2b` | Uniswap v4 pool manager |
+| [Uniswap Position Manager](https://basescan.org/address/0x7c5f5a4bbd8fd63184577525326123b519429bdc) | `0x7c5f5a4bbd8fd63184577525326123b519429bdc` | Uniswap v4 position manager |
+
+### Base Sepolia Testnet Deployment
+
+The contracts are also deployed on Base Sepolia for testing purposes:
 
 | Contract | Address | Description |
 |----------|---------|-------------|
@@ -266,7 +283,29 @@ forge install
 
 ## Key Commands
 
-### PSM Operations
+### Mainnet Operations
+
+```bash
+# Check PSM status and reserves on mainnet
+make check-psm-mainnet
+
+# Check current prices from the oracle on mainnet
+make check-prices-mainnet
+
+# Swap VCOP for USDC on mainnet (default 100 VCOP)
+make swap-vcop-to-usdc-mainnet [AMOUNT=X]
+
+# Swap USDC for VCOP on mainnet (default 100 USDC)
+make swap-usdc-to-vcop-mainnet [AMOUNT=X]
+
+# Check rates from oracle on mainnet
+make check-new-oracle-mainnet
+
+# Run interactive mainnet command script
+./script/MainnetCommands.sh
+```
+
+### PSM Operations (Testnet)
 
 ```bash
 # Check PSM status and reserves
@@ -294,9 +333,6 @@ make deploy-fixed-system
 # Clean pending transactions
 make clean-txs
 
-# Check rates from new oracle
-make check-new-oracle
-
 # Test a swap with the newly deployed system
 make test-new-system
 ```
@@ -319,11 +355,33 @@ make create-position [COLLATERAL=X]
 
 ## Deployment Flow
 
+### Testnet Deployment
+
 You can deploy the system on Base Sepolia with:
 
 ```bash
 forge script script/DeployFullSystemFixedParidad.s.sol:DeployFullSystemFixedParidad --rpc-url https://sepolia.base.org --broadcast --gas-price 3000000000 -vv
 ```
+
+### Mainnet Deployment
+
+The system is already deployed on Base mainnet. If you need to deploy a new instance, you can use:
+
+```bash
+# Deploy the system to Base mainnet
+make deploy-mainnet
+
+# Or use the deployment script directly
+./script/DeployMainnet.sh
+```
+
+After deployment, you can verify contracts using:
+
+```bash
+./verify-contracts.sh
+```
+
+The deployed contracts are documented in `docs/MAINNET_DEPLOYMENT_RECORD.md`.
 
 ## Security
 

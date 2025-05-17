@@ -52,14 +52,30 @@ fork_url = "https://sepolia.base.org"
 # Disable verification
 verify = false
 
+[profile.base_mainnet]
+src = 'src'
+out = 'out'
+libs = ['lib']
+solc = '0.8.26'
+evm_version = 'cancun'
+fuzz = { runs = 256 }
+invariant = { runs = 256 }
+fork_url = "https://mainnet.base.org"
+# Disable verification
+verify = false
+
 # SPDX-License-Identifier: MIT
 
 [rpc_endpoints]
 # Base Sepolia Testnet - URL oficial
 base-sepolia = "https://sepolia.base.org" 
+# Base Mainnet
+base-mainnet = "https://mainnet.base.org"
 
 [etherscan]
 # Base Sepolia Testnet (compatible con Base Goerli)
 base-sepolia = { key = "IS3DBRSG4KAU2T8BS54ECSD2TKSIT9T9CI", chain = 84532 }
+# Base Mainnet
+base-mainnet = { key = "IS3DBRSG4KAU2T8BS54ECSD2TKSIT9T9CI", chain = 8453 }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

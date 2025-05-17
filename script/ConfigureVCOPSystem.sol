@@ -39,7 +39,7 @@ contract ConfigureVCOPSystem is Script {
     // Uniswap V4 Constants - Official addresses for Base Sepolia
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     
-    // Addresses of deployed contracts (obtained from logs)
+    // Addresses of deployed contracts (obtained from logs) - for Sepolia
     address constant DEPLOYED_USDC_ADDRESS = 0x1D954BcfB060a3dc5A49536243545334dD536493;
     address constant DEPLOYED_VCOP_ADDRESS = 0xbbF67a9C2a6E33B405ff30C948275c2154B36E3A;
     address constant DEPLOYED_ORACLE_ADDRESS = 0x352a80294311db57562f625cFcab502ccAd61581;
@@ -153,8 +153,24 @@ contract ConfigureVCOPSystem is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         address treasuryAddress = deployerAddress;
+        
+        // Get Pool Manager and Position Manager addresses from environment
         address poolManagerAddress = vm.envAddress("POOL_MANAGER_ADDRESS");
         address positionManagerAddress = vm.envAddress("POSITION_MANAGER_ADDRESS");
+        
+        // Log network information
+        uint256 chainId = block.chainid;
+        string memory networkName = chainId == 8453 ? "Base Mainnet" : (chainId == 84532 ? "Base Sepolia" : "Unknown network");
+        
+        console.logString(string.concat("Network: ", networkName));
+        console.logString("Chain ID:"); 
+        console.logUint(chainId);
+        console.logString("Deployer address:"); 
+        console.logAddress(deployerAddress);
+        console.logString("Pool Manager address:"); 
+        console.logAddress(poolManagerAddress);
+        console.logString("Position Manager address:"); 
+        console.logAddress(positionManagerAddress);
         
         // Load addresses from the base deployment
         (
