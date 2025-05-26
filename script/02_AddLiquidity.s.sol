@@ -11,7 +11,7 @@ import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 
-import {EasyPosm} from "../test/utils/EasyPosm.sol";
+import {EasyPosm} from "../test/utils/libraries/EasyPosm.sol";
 import {Constants} from "./base/Constants.sol";
 import {Config} from "./base/Config.sol";
 

@@ -16,7 +16,7 @@ import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {LiquidityAmounts} from "@uniswap/v4-core/test/utils/LiquidityAmounts.sol";
 import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionManager.sol";
 
-import {EasyPosm} from "./utils/EasyPosm.sol";
+import {EasyPosm} from "./utils/libraries/EasyPosm.sol";
 import {Fixtures} from "./utils/Fixtures.sol";
 
 import {Counter} from "../src/Counter.sol";

@@ -22,9 +22,18 @@ import {PositionManagerDeployer} from "@uniswap/briefcase/deployers/v4-periphery
  * [ ] If not, use the existing deployment addresses for the specified chain.
  */
 contract Deployers is Test {
+    IAllowanceTransfer permit2;
+    IPoolManager poolManager;
+    IPositionManager positionManager;
+
     function deployToken() internal returns (MockERC20 token) {
         token = new MockERC20("Test Token", "TEST", 18);
-        token.mint(address(this), type(uint256).max);
+        token.mint(address(this), 10_000_000 ether);
+
+        token.approve(address(permit2), type(uint256).max);
+
+        permit2.approve(address(token), address(positionManager), type(uint160).max, type(uint48).max);
+        permit2.approve(address(token), address(poolManager), type(uint160).max, type(uint48).max);
     }
 
     function deployCurrencyPair() internal returns (Currency currency0, Currency currency1) {
@@ -38,48 +47,36 @@ contract Deployers is Test {
         vm.label(address(token1), "Currency1");
     }
 
-    function deployPermit2() internal returns (IAllowanceTransfer) {
+    function deployPermit2() internal {
         address permit2Address = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
         vm.label(permit2Address, "Permit2");
 
-        vm.etch(permit2Address, Permit2Deployer.initcode());
+        address tempDeployAddress = address(Permit2Deployer.deploy());
 
-        return IAllowanceTransfer(permit2Address);
+        vm.etch(permit2Address, tempDeployAddress.code);
+
+        permit2 = IAllowanceTransfer(permit2Address);
     }
 
-    function deployPoolManager() internal returns (IPoolManager) {
-        address poolManager = 0x000000000004444c5dc75cB358380D2e3dE08A90;
-        vm.label(poolManager, "V4:PoolManager");
+    function deployPoolManager() internal {
+        poolManager = IPoolManager(address(PoolManagerDeployer.deploy(address(0x4444))));
 
-        bytes memory initcode_ = abi.encodePacked(PoolManagerDeployer.initcode(), abi.encode(address(0)));
-        vm.etch(poolManager, initcode_);
-
-        return IPoolManager(poolManager);
+        vm.label(address(poolManager), "V4PoolManager");
     }
 
-    function deployPositionManager(IPoolManager poolManager, IAllowanceTransfer permit2)
-        internal
-        returns (IPositionManager)
-    {
-        address positionManager = 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e;
-        vm.label(positionManager, "V4:PositionManager");
-
-        bytes memory initcode_ = abi.encodePacked(
-            PositionManagerDeployer.initcode(),
-            abi.encode(address(poolManager), address(permit2), 300_000, address(0), address(0))
+    function deployPositionManager() internal {
+        positionManager = IPositionManager(
+            address(
+                PositionManagerDeployer.deploy(address(poolManager), address(permit2), 300_000, address(0), address(0))
+            )
         );
-
-        vm.etch(positionManager, initcode_);
-
-        return IPositionManager(positionManager);
+        vm.label(address(positionManager), "V4PositionManager");
     }
 
-    function deployAll()
-        internal
-        returns (IAllowanceTransfer permit2, IPoolManager poolManager, IPositionManager positionManager)
-    {
-        permit2 = deployPermit2();
-        poolManager = deployPoolManager();
-        positionManager = deployPositionManager(poolManager, permit2);
+    function deployArtifacts() internal {
+        // Order matters.
+        deployPermit2();
+        deployPoolManager();
+        deployPositionManager();
     }
 }
