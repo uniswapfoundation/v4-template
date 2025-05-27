@@ -18,6 +18,7 @@ import {PositionManagerDeployer} from "@uniswap/briefcase/deployers/v4-periphery
 /**
  * TODO:
  * [x] Setup deployments for Permit2, PoolManager, and PositionManager.
+ * [ ] Add v4Router.
  * [ ] Check if chainId is 31337, is so, etch them all.
  * [ ] If not, use the existing deployment addresses for the specified chain.
  */

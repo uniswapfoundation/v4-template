@@ -12,19 +12,19 @@ import {Constants} from "./base/Constants.sol";
 import {Config} from "./base/Config.sol";
 
 contract SwapScript is Script, Constants, Config {
-    // slippage tolerance to allow for unlimited price impact
+    // Slippage tolerance to allow for unlimited price impact
     uint160 public constant MIN_PRICE_LIMIT = TickMath.MIN_SQRT_PRICE + 1;
     uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_PRICE - 1;
 
     /////////////////////////////////////
-    // --- Parameters to Configure --- //
+    // --- Configure These --- //
     /////////////////////////////////////
 
     // PoolSwapTest Contract address, default to the anvil address
     PoolSwapTest swapRouter = PoolSwapTest(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
 
-    // --- pool configuration --- //
-    // fees paid by swappers that accrue to liquidity providers
+    // --- Pool Configuration --- //
+    // Fees paid by swappers that accrue to liquidity providers
     uint24 lpFee = 3000; // 0.30%
     int24 tickSpacing = 60;
 
@@ -37,7 +37,7 @@ contract SwapScript is Script, Constants, Config {
             hooks: hookContract
         });
 
-        // approve tokens to the swap router
+        // Approve tokens to the swap router
         vm.broadcast();
         token0.approve(address(swapRouter), type(uint256).max);
         vm.broadcast();
@@ -53,7 +53,7 @@ contract SwapScript is Script, Constants, Config {
             sqrtPriceLimitX96: zeroForOne ? MIN_PRICE_LIMIT : MAX_PRICE_LIMIT // unlimited impact
         });
 
-        // in v4, users have the option to receieve native ERC20s or wrapped ERC1155 tokens
+        // In v4, users have the option to receive native ERC20s or wrapped ERC1155 tokens
         // here, we'll take the ERC20s
         PoolSwapTest.TestSettings memory testSettings =
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false});
