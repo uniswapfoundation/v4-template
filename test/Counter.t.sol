@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.26;
 
 import {Test, console2} from "forge-std/Test.sol";
 
@@ -15,17 +15,23 @@ import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {LiquidityAmounts} from "@uniswap/v4-core/test/utils/LiquidityAmounts.sol";
 import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionManager.sol";
+import {Constants} from "@uniswap/v4-core/test/utils/Constants.sol";
 
 import {EasyPosm} from "./utils/libraries/EasyPosm.sol";
-import {Fixtures} from "./utils/Fixtures.sol";
+import {Deployers} from "./utils/Deployers.sol";
 
 import {Counter} from "../src/Counter.sol";
 
-contract CounterTest is Test, Fixtures {
+contract CounterTest is Test, Deployers {
     using EasyPosm for IPositionManager;
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
     using StateLibrary for IPoolManager;
+
+    Currency currency0;
+    Currency currency1;
+
+    PoolKey poolKey;
 
     Counter hook;
     PoolId poolId;
@@ -35,11 +41,10 @@ contract CounterTest is Test, Fixtures {
     int24 tickUpper;
 
     function setUp() public {
-        // creates the pool manager, utility routers, and test tokens
-        deployFreshManagerAndRouters();
-        deployMintAndApprove2Currencies();
+        // Deploys all required artifacts.
+        deployArtifacts();
 
-        deployAndApprovePosm(manager);
+        (currency0, currency1) = deployCurrencyPair();
 
         // Deploy the hook to an address with the correct flags
         address flags = address(
@@ -48,30 +53,30 @@ contract CounterTest is Test, Fixtures {
                     | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
             ) ^ (0x4444 << 144) // Namespace the hook to avoid collisions
         );
-        bytes memory constructorArgs = abi.encode(manager); //Add all the necessary constructor arguments from the hook
+        bytes memory constructorArgs = abi.encode(poolManager); // Add all the necessary constructor arguments from the hook
         deployCodeTo("Counter.sol:Counter", constructorArgs, flags);
         hook = Counter(flags);
 
         // Create the pool
-        key = PoolKey(currency0, currency1, 3000, 60, IHooks(hook));
-        poolId = key.toId();
-        manager.initialize(key, SQRT_PRICE_1_1);
+        poolKey = PoolKey(currency0, currency1, 3000, 60, IHooks(hook));
+        poolId = poolKey.toId();
+        poolManager.initialize(poolKey, Constants.SQRT_PRICE_1_1);
 
         // Provide full-range liquidity to the pool
-        tickLower = TickMath.minUsableTick(key.tickSpacing);
-        tickUpper = TickMath.maxUsableTick(key.tickSpacing);
+        tickLower = TickMath.minUsableTick(poolKey.tickSpacing);
+        tickUpper = TickMath.maxUsableTick(poolKey.tickSpacing);
 
         uint128 liquidityAmount = 100e18;
 
         (uint256 amount0Expected, uint256 amount1Expected) = LiquidityAmounts.getAmountsForLiquidity(
-            SQRT_PRICE_1_1,
+            Constants.SQRT_PRICE_1_1,
             TickMath.getSqrtPriceAtTick(tickLower),
             TickMath.getSqrtPriceAtTick(tickUpper),
             liquidityAmount
         );
 
-        (tokenId,) = posm.mint(
-            key,
+        (tokenId,) = positionManager.mint(
+            poolKey,
             tickLower,
             tickUpper,
             liquidityAmount,
@@ -79,7 +84,7 @@ contract CounterTest is Test, Fixtures {
             amount1Expected + 1,
             address(this),
             block.timestamp,
-            ZERO_BYTES
+            Constants.ZERO_BYTES
         );
     }
 
@@ -92,12 +97,19 @@ contract CounterTest is Test, Fixtures {
         assertEq(hook.afterSwapCount(poolId), 0);
 
         // Perform a test swap //
-        bool zeroForOne = true;
-        int256 amountSpecified = -1e18; // negative number indicates exact input swap!
-        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+        uint256 amountIn = 1e18;
+        BalanceDelta swapDelta = swapRouter.swapExactTokensForTokens({
+            amountIn: amountIn,
+            amountOutMin: 0, // Very bad, but we want to allow for unlimited price impact
+            zeroForOne: true,
+            poolKey: poolKey,
+            hookData: Constants.ZERO_BYTES,
+            receiver: address(this),
+            deadline: block.timestamp + 1
+        });
         // ------------------- //
 
-        assertEq(int256(swapDelta.amount0()), amountSpecified);
+        assertEq(int256(swapDelta.amount0()), -int256(amountIn));
 
         assertEq(hook.beforeSwapCount(poolId), 1);
         assertEq(hook.afterSwapCount(poolId), 1);
@@ -110,14 +122,14 @@ contract CounterTest is Test, Fixtures {
 
         // remove liquidity
         uint256 liquidityToRemove = 1e18;
-        posm.decreaseLiquidity(
+        positionManager.decreaseLiquidity(
             tokenId,
             liquidityToRemove,
-            MAX_SLIPPAGE_REMOVE_LIQUIDITY,
-            MAX_SLIPPAGE_REMOVE_LIQUIDITY,
+            0, // Max slippage, token0
+            0, // Max slippage, token1
             address(this),
             block.timestamp,
-            ZERO_BYTES
+            Constants.ZERO_BYTES
         );
 
         assertEq(hook.beforeAddLiquidityCount(poolId), 1);

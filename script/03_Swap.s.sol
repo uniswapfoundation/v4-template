@@ -1,20 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.26;
 
-import "forge-std/Script.sol";
-import {IPoolManager, SwapParams} from "v4-core/src/interfaces/IPoolManager.sol";
-import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
-import {TickMath} from "v4-core/src/libraries/TickMath.sol";
-import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
 import {BaseScript} from "./base/BaseScript.sol";
 
 contract SwapScript is BaseScript {
     function run() external {
-        // Automatically sorts tokens.
-        (Currency currency0, Currency currency1) = getCurrencies();
-
         PoolKey memory poolKey = PoolKey({
             currency0: currency0,
             currency1: currency1,
