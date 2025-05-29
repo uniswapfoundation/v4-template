@@ -5,9 +5,9 @@ forge-std/=lib/forge-std/src/
 v4-core/=lib/uniswap-hooks/lib/v4-core/
 v4-periphery/=lib/uniswap-hooks/lib/v4-periphery/
 
-@openzeppelin/uniswap-hooks=lib/uniswap-hooks/
-@openzeppelin/contracts=lib/uniswap-hooks/lib/v4-core/lib/openzeppelin-contracts/contracts/
+@openzeppelin/uniswap-hooks/=lib/uniswap-hooks/
+@openzeppelin/contracts/=lib/uniswap-hooks/lib/v4-core/lib/openzeppelin-contracts/contracts/
 
+hookmate/=lib/hookmate/src/
 permit2/=lib/uniswap-hooks/lib/v4-periphery/lib/permit2/
 solmate/=lib/uniswap-hooks/lib/v4-core/lib/solmate/
-hookmate/=lib/hookmate/src/
