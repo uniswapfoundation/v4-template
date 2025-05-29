@@ -33,8 +33,8 @@ contract BaseScript is Script {
     Currency immutable currency1;
 
     constructor() {
-        poolManager = IPoolManager(AddressConstants.getPoolManagerAddressByChainId(block.chainid));
-        positionManager = IPositionManager(payable(AddressConstants.getPositionManagerAddressByChainId(block.chainid)));
+        poolManager = IPoolManager(AddressConstants.getPoolManagerAddress(block.chainid));
+        positionManager = IPositionManager(payable(AddressConstants.getPositionManagerAddress(block.chainid)));
         swapRouter = IUniswapV4Router04(payable(AddressConstants.getV4SwapRouterAddress(block.chainid)));
 
         deployerAddress = getDeployer();

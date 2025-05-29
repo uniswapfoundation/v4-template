@@ -20,11 +20,15 @@ import {V4PositionManagerDeployer} from "hookmate/artifacts/V4PositionManager.so
 import {V4RouterDeployer} from "hookmate/artifacts/V4Router.sol";
 
 /**
- * TODO:
- * [x] Setup deployments for Permit2, PoolManager, and PositionManager.
- * [x] Add v4Router.
- * [ ] Check if chainId is 31337, is so, etch them all.
- * [ ] If not, use the existing deployment addresses for the specified chain.
+ * Base Deployer Contract for Hook Testing
+ *
+ * Automatically does the following:
+ * 1. Setup deployments for Permit2, PoolManager, PositionManager and V4SwapRouter.
+ * 2. Check if chainId is 31337, is so, deploys local instances.
+ * 3. If not, uses existing canonical deployments on the selected network.
+ * 4. Provides utility functions to deploy tokens and currency pairs.
+ *
+ * This contract can be used for both local testing and fork testing.
  */
 contract Deployers is Test {
     IPermit2 permit2;
@@ -59,35 +63,52 @@ contract Deployers is Test {
     }
 
     function deployPermit2() internal {
-        address permit2Address = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
-        vm.label(permit2Address, "Permit2");
+        address permit2Address = AddressConstants.getPermit2Address();
 
-        address tempDeployAddress = address(Permit2Deployer.deploy());
+        if (permit2Address.code.length > 0) {
+            // Permit2 is already deployed, no need to etch it.
+        } else {
+            address tempDeployAddress = address(Permit2Deployer.deploy());
 
-        vm.etch(permit2Address, tempDeployAddress.code);
+            vm.etch(permit2Address, tempDeployAddress.code);
+        }
 
         permit2 = IPermit2(permit2Address);
+        vm.label(permit2Address, "Permit2");
     }
 
     function deployPoolManager() internal {
-        poolManager = IPoolManager(address(V4PoolManagerDeployer.deploy(address(0x4444))));
+        if (block.chainid == 31337) {
+            poolManager = IPoolManager(address(V4PoolManagerDeployer.deploy(address(0x4444))));
+        } else {
+            poolManager = IPoolManager(AddressConstants.getPoolManagerAddress(block.chainid));
+        }
 
         vm.label(address(poolManager), "V4PoolManager");
     }
 
     function deployPositionManager() internal {
-        positionManager = IPositionManager(
-            address(
-                V4PositionManagerDeployer.deploy(
-                    address(poolManager), address(permit2), 300_000, address(0), address(0)
+        if (block.chainid == 31337) {
+            positionManager = IPositionManager(
+                address(
+                    V4PositionManagerDeployer.deploy(
+                        address(poolManager), address(permit2), 300_000, address(0), address(0)
+                    )
                 )
-            )
-        );
+            );
+        } else {
+            positionManager = IPositionManager(AddressConstants.getPositionManagerAddress(block.chainid));
+        }
+
         vm.label(address(positionManager), "V4PositionManager");
     }
 
     function deployRouter() internal {
-        swapRouter = IUniswapV4Router04(payable(V4RouterDeployer.deploy(address(poolManager), address(permit2))));
+        if (block.chainid == 31337) {
+            swapRouter = IUniswapV4Router04(payable(V4RouterDeployer.deploy(address(poolManager), address(permit2))));
+        } else {
+            swapRouter = IUniswapV4Router04(payable(AddressConstants.getV4SwapRouterAddress(block.chainid)));
+        }
 
         vm.label(address(swapRouter), "V4SwapRouter");
     }
