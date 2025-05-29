@@ -11,9 +11,13 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionManager.sol";
 
-import {Permit2Deployer} from "@uniswap/briefcase/deployers/permit2/Permit2Deployer.sol";
-import {PoolManagerDeployer} from "@uniswap/briefcase/deployers/v4-core/PoolManagerDeployer.sol";
-import {PositionManagerDeployer} from "@uniswap/briefcase/deployers/v4-periphery/PositionManagerDeployer.sol";
+import {IUniswapV4Router04} from "hookmate/interfaces/router/IUniswapV4Router04.sol";
+import {Constants} from "hookmate/constants/Constants.sol";
+
+import {Permit2Deployer} from "hookmate/artifacts/Permit2.sol";
+import {V4PoolManagerDeployer} from "hookmate/artifacts/V4PoolManager.sol";
+import {V4PositionManagerDeployer} from "hookmate/artifacts/V4PositionManager.sol";
+import {V4RouterDeployer} from "hookmate/artifacts/V4Router.sol";
 
 /**
  * TODO:
@@ -26,6 +30,7 @@ contract Deployers is Test {
     IAllowanceTransfer permit2;
     IPoolManager poolManager;
     IPositionManager positionManager;
+    IUniswapV4Router04 router;
 
     function deployToken() internal returns (MockERC20 token) {
         token = new MockERC20("Test Token", "TEST", 18);
@@ -60,7 +65,7 @@ contract Deployers is Test {
     }
 
     function deployPoolManager() internal {
-        poolManager = IPoolManager(address(PoolManagerDeployer.deploy(address(0x4444))));
+        poolManager = IPoolManager(address(V4PoolManagerDeployer.deploy(address(0x4444))));
 
         vm.label(address(poolManager), "V4PoolManager");
     }
@@ -68,10 +73,18 @@ contract Deployers is Test {
     function deployPositionManager() internal {
         positionManager = IPositionManager(
             address(
-                PositionManagerDeployer.deploy(address(poolManager), address(permit2), 300_000, address(0), address(0))
+                V4PositionManagerDeployer.deploy(
+                    address(poolManager), address(permit2), 300_000, address(0), address(0)
+                )
             )
         );
         vm.label(address(positionManager), "V4PositionManager");
+    }
+
+    function deployRouter() internal {
+        router = IUniswapV4Router04(payable(V4RouterDeployer.deploy(address(poolManager), address(permit2))));
+
+        vm.label(address(router), "V4Router");
     }
 
     function deployArtifacts() internal {
@@ -79,5 +92,6 @@ contract Deployers is Test {
         deployPermit2();
         deployPoolManager();
         deployPositionManager();
+        deployRouter();
     }
 }

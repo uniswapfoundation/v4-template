@@ -1,6 +1,5 @@
 forge-std/=lib/forge-std/src/
 
-@uniswap/briefcase=lib/briefcase/src/
 @uniswap/v4-core/=lib/uniswap-hooks/lib/v4-core/
 @uniswap/v4-periphery/=lib/uniswap-hooks/lib/v4-periphery/
 v4-core/=lib/uniswap-hooks/lib/v4-core/
@@ -11,3 +10,4 @@ v4-periphery/=lib/uniswap-hooks/lib/v4-periphery/
 
 permit2/=lib/uniswap-hooks/lib/v4-periphery/lib/permit2/
 solmate/=lib/uniswap-hooks/lib/v4-core/lib/solmate/
+hookmate/=lib/hookmate/src/

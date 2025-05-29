@@ -10,14 +10,15 @@ import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
-import {PoolManagerAddresses} from "./PoolManagerAddresses.sol";
-import {PositionManagerAddresses} from "./PositionManagerAddresses.sol";
+import {IUniswapV4Router04} from "hookmate/interfaces/router/IUniswapV4Router04.sol";
+import {Constants} from "hookmate/constants/Constants.sol";
 
 /// @notice Shared configuration between scripts
 contract BaseScript is Script {
     IAllowanceTransfer immutable permit2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     IPoolManager immutable poolManager;
     PositionManager immutable positionManager;
+    IUniswapV4Router04 immutable swapRouter;
 
     /////////////////////////////////////
     // --- Configure These ---
@@ -27,11 +28,12 @@ contract BaseScript is Script {
     IHooks constant hookContract = IHooks(address(0x0));
 
     constructor() {
-        poolManager = IPoolManager(PoolManagerAddresses.getPoolManagerByChainId(block.chainid));
-        positionManager = PositionManager(payable(PositionManagerAddresses.getPositionManagerByChainId(block.chainid)));
+        poolManager = IPoolManager(Constants.getPoolManagerAddressByChainId(block.chainid));
+        positionManager = PositionManager(payable(Constants.getPositionManagerAddressByChainId(block.chainid)));
+        swapRouter = IUniswapV4Router04(payable(Constants.getV4SwapRouterAddress()));
     }
 
-    function setUp() public {}
+    function setUp() public virtual {}
 
     function getCurrencies() public pure returns (Currency, Currency) {
         require(address(token0) != address(token1));
