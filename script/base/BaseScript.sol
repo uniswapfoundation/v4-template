@@ -40,6 +40,15 @@ contract BaseScript is Script {
         deployerAddress = getDeployer();
 
         (currency0, currency1) = getCurrencies();
+
+        vm.label(address(token0), "Token0");
+        vm.label(address(token1), "Token1");
+
+        vm.label(address(deployerAddress), "Deployer");
+        vm.label(address(poolManager), "PoolManager");
+        vm.label(address(positionManager), "PositionManager");
+        vm.label(address(swapRouter), "SwapRouter");
+        vm.label(address(hookContract), "HookContract");
     }
 
     function getCurrencies() public pure returns (Currency, Currency) {
@@ -54,6 +63,7 @@ contract BaseScript is Script {
 
     function getDeployer() public returns (address) {
         address[] memory wallets = vm.getWallets();
+
         require(wallets.length > 0, "No wallets found");
 
         return wallets[0];

@@ -34,8 +34,6 @@ contract LiquidityHelpers is BaseScript {
     }
 
     function tokenApprovals() public {
-        (Currency currency0, Currency currency1) = getCurrencies();
-
         if (!currency0.isAddressZero()) {
             token0.approve(address(permit2), type(uint256).max);
             permit2.approve(address(token0), address(positionManager), type(uint160).max, type(uint48).max);

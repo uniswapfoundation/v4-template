@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import {console2} from "forge-std/Script.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
@@ -29,10 +30,10 @@ contract AddLiquidityScript is BaseScript, LiquidityHelpers {
     uint256 public token0Amount = 1e18;
     uint256 public token1Amount = 1e18;
 
-    // range of the position, must be a multiple of tickSpacing
-    int24 tickLower = -10 * tickSpacing;
-    int24 tickUpper = 10 * tickSpacing;
     /////////////////////////////////////
+
+    int24 tickLower;
+    int24 tickUpper;
 
     function run() external {
         PoolKey memory poolKey = PoolKey({
@@ -45,6 +46,11 @@ contract AddLiquidityScript is BaseScript, LiquidityHelpers {
         bytes memory hookData = new bytes(0);
 
         (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(poolKey.toId());
+
+        int24 currentTick = TickMath.getTickAtSqrtPrice(sqrtPriceX96);
+
+        tickLower = ((currentTick - 1000 * tickSpacing) / tickSpacing) * tickSpacing;
+        tickUpper = ((currentTick + 1000 * tickSpacing) / tickSpacing) * tickSpacing;
 
         // Converts token amounts to liquidity units
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(

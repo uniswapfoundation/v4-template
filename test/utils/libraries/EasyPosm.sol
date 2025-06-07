@@ -45,8 +45,8 @@ library EasyPosm {
         MintData memory mintData = MintData({
             balance0Before: currency0.balanceOf(address(this)),
             balance1Before: currency1.balanceOf(address(this)),
-            params: new bytes[](4),
-            actions: new bytes(0)
+            actions: new bytes(0),
+            params: new bytes[](4)
         });
 
         mintData.actions = abi.encodePacked(

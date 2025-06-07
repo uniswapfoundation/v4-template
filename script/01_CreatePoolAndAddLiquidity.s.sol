@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import {console2} from "forge-std/Script.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
@@ -19,17 +20,17 @@ contract CreatePoolAndAddLiquidityScript is BaseScript, LiquidityHelpers {
     // --- Configure These ---
     /////////////////////////////////////
 
-    uint24 lpFee = 3000; // 0.30%
-    int24 tickSpacing = 60;
-    uint160 startingPrice = 79228162514264337593543950336; // Starting price, sqrtPriceX96; floor(sqrt(1) * 2^96)
+    uint24 lpFee = 5000; // 0.50%
+    int24 tickSpacing = 100;
+    uint160 startingPrice = 2 ** 96; // Starting price, sqrtPriceX96; floor(sqrt(1) * 2^96)
 
     // --- liquidity position configuration --- //
     uint256 public token0Amount = 1e18;
     uint256 public token1Amount = 1e18;
 
     // range of the position, must be a multiple of tickSpacing
-    int24 tickLower = -10 * tickSpacing;
-    int24 tickUpper = 10 * tickSpacing;
+    int24 tickLower;
+    int24 tickUpper;
     /////////////////////////////////////
 
     function run() external {
@@ -40,7 +41,13 @@ contract CreatePoolAndAddLiquidityScript is BaseScript, LiquidityHelpers {
             tickSpacing: tickSpacing,
             hooks: hookContract
         });
+
         bytes memory hookData = new bytes(0);
+
+        int24 currentTick = TickMath.getTickAtSqrtPrice(startingPrice);
+
+        tickLower = ((currentTick - 750 * tickSpacing) / tickSpacing) * tickSpacing;
+        tickUpper = ((currentTick + 750 * tickSpacing) / tickSpacing) * tickSpacing;
 
         // Converts token amounts to liquidity units
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(
@@ -52,8 +59,8 @@ contract CreatePoolAndAddLiquidityScript is BaseScript, LiquidityHelpers {
         );
 
         // slippage limits
-        uint256 amount0Max = token0Amount + 1 wei;
-        uint256 amount1Max = token1Amount + 1 wei;
+        uint256 amount0Max = token0Amount + 1;
+        uint256 amount1Max = token1Amount + 1;
 
         (bytes memory actions, bytes[] memory mintParams) = _mintLiquidityParams(
             poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, deployerAddress, hookData
@@ -67,7 +74,7 @@ contract CreatePoolAndAddLiquidityScript is BaseScript, LiquidityHelpers {
 
         // Mint Liquidity
         params[1] = abi.encodeWithSelector(
-            positionManager.modifyLiquidities.selector, abi.encode(actions, mintParams), block.timestamp + 60
+            positionManager.modifyLiquidities.selector, abi.encode(actions, mintParams), block.timestamp + 3600
         );
 
         // If the pool is an ETH pair, native tokens are to be transferred
