@@ -24,7 +24,7 @@ git merge template/main <BRANCH> --allow-unrelated-histories
 
 </details>
 
-### Check Forge Installation
+### Requirements
 
 This template is designed to work with Foundry (stable). If you are using Foundry Nightly, you may encounter compatibility issues. You can update your Foundry installation to the latest stable version by running:
 
@@ -32,7 +32,7 @@ This template is designed to work with Foundry (stable). If you are using Foundr
 foundryup
 ```
 
-## Setting up the template
+To set up the project, run the following commands in your terminal to install dependencies and run the tests:
 
 ```
 forge install
