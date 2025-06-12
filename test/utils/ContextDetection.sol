@@ -11,6 +11,7 @@ library ContextDetection {
     /// @dev ref: https://getfoundry.sh/reference/cheatcodes/is-context#examples
     uint8 constant CONTEXT_TEST_GROUP = 0; // VmSafe.ForgeContext.TestGroup
 
+    /// @dev Determines whether we're running in the ctx/environment of a foundry test
     function isTest() internal view returns (bool result) {
         // vm.isContext() selector
         bytes4 selector = bytes4(keccak256("isContext(uint8)"));
@@ -23,7 +24,7 @@ library ContextDetection {
 
             // vm.isContext(CONTEXT_TEST_GROUP)
             let success := staticcall(gas(), VM_ADDRESS, ptr, 0x24, ptr, 0x20)
-            // True if successful
+            // success should simply be false in mainnet, so result = false
             if success { result := mload(ptr) }
         }
     }
