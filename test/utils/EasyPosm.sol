@@ -27,6 +27,7 @@ library EasyPosm {
 
     /// @dev This function supports sending native tokens (ETH), the amount-to-pay is determined by amount0Max.
     ///      Any excess amount is NOT refunded since it is not encoding the SWEEP action
+    ///      In tests, ctx should point to address(this), in scripts ctx should point to address posm
     function mint(
         IPositionManager posm,
         PoolKey memory poolKey,
@@ -37,13 +38,14 @@ library EasyPosm {
         uint256 amount1Max,
         address recipient,
         uint256 deadline,
-        bytes memory hookData
+        bytes memory hookData,
+        address ctx
     ) internal returns (uint256 tokenId, BalanceDelta delta) {
         (Currency currency0, Currency currency1) = (poolKey.currency0, poolKey.currency1);
 
         MintData memory mintData = MintData({
-            balance0Before: currency0.balanceOf(address(this)),
-            balance1Before: currency1.balanceOf(address(this)),
+            balance0Before: currency0.balanceOf(ctx),
+            balance1Before: currency1.balanceOf(ctx),
             params: new bytes[](2)
         });
         mintData.params[0] =
@@ -59,11 +61,12 @@ library EasyPosm {
         );
 
         delta = toBalanceDelta(
-            -(mintData.balance0Before - currency0.balanceOf(address(this))).toInt128(),
-            -(mintData.balance1Before - currency1.balanceOf(address(this))).toInt128()
+            -(mintData.balance0Before - currency0.balanceOf(ctx)).toInt128(),
+            -(mintData.balance1Before - currency1.balanceOf(ctx)).toInt128()
         );
     }
 
+    /// @dev In tests, ctx should point to address(this), in scripts ctx should point to address posm
     function increaseLiquidity(
         IPositionManager posm,
         uint256 tokenId,
@@ -71,7 +74,8 @@ library EasyPosm {
         uint256 amount0Max,
         uint256 amount1Max,
         uint256 deadline,
-        bytes memory hookData
+        bytes memory hookData,
+        address ctx
     ) internal returns (BalanceDelta delta) {
         (Currency currency0, Currency currency1) = getCurrencies(posm, tokenId);
 
@@ -80,8 +84,8 @@ library EasyPosm {
         params[1] = abi.encode(currency0);
         params[2] = abi.encode(currency1);
 
-        uint256 balance0Before = currency0.balanceOf(address(this));
-        uint256 balance1Before = currency1.balanceOf(address(this));
+        uint256 balance0Before = currency0.balanceOf(ctx);
+        uint256 balance1Before = currency1.balanceOf(ctx);
 
         uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
         posm.modifyLiquidities{value: valueToPass}(
@@ -95,11 +99,12 @@ library EasyPosm {
         );
 
         delta = toBalanceDelta(
-            (currency0.balanceOf(address(this)).toInt256() - balance0Before.toInt256()).toInt128(),
-            (currency1.balanceOf(address(this)).toInt256() - balance1Before.toInt256()).toInt128()
+            (currency0.balanceOf(ctx).toInt256() - balance0Before.toInt256()).toInt128(),
+            (currency1.balanceOf(ctx).toInt256() - balance1Before.toInt256()).toInt128()
         );
     }
 
+    /// @dev In tests, ctx should point to address(this), in scripts ctx should point to address posm
     function decreaseLiquidity(
         IPositionManager posm,
         uint256 tokenId,
@@ -108,7 +113,8 @@ library EasyPosm {
         uint256 amount1Min,
         address recipient,
         uint256 deadline,
-        bytes memory hookData
+        bytes memory hookData,
+        address ctx
     ) internal returns (BalanceDelta delta) {
         (Currency currency0, Currency currency1) = getCurrencies(posm, tokenId);
 
@@ -116,16 +122,16 @@ library EasyPosm {
         params[0] = abi.encode(tokenId, liquidityToRemove, amount0Min, amount1Min, hookData);
         params[1] = abi.encode(currency0, currency1, recipient);
 
-        uint256 balance0Before = currency0.balanceOf(address(this));
-        uint256 balance1Before = currency1.balanceOf(address(this));
+        uint256 balance0Before = currency0.balanceOf(ctx);
+        uint256 balance1Before = currency1.balanceOf(ctx);
 
         posm.modifyLiquidities(
             abi.encode(abi.encodePacked(uint8(Actions.DECREASE_LIQUIDITY), uint8(Actions.TAKE_PAIR)), params), deadline
         );
 
         delta = toBalanceDelta(
-            (currency0.balanceOf(address(this)) - balance0Before).toInt128(),
-            (currency1.balanceOf(address(this)) - balance1Before).toInt128()
+            (currency0.balanceOf(ctx) - balance0Before).toInt128(),
+            (currency1.balanceOf(ctx) - balance1Before).toInt128()
         );
     }
 
