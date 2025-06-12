@@ -52,7 +52,7 @@ anvil
 forge script script/Anvil.s.sol \
     --rpc-url http://localhost:8545 \
     --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-    --broadcast
+    --broadcast --optimize --optimizer-runs 10
 ```
 
 See [script/](script/) for hook deployment, pool creation, liquidity provision, and swapping.
