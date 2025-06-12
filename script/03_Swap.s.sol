@@ -1,66 +1,38 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.26;
 
-import "forge-std/Script.sol";
-import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {ModifyLiquidityParams, SwapParams} from "v4-core/src/types/PoolOperation.sol";
-import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
-import {TickMath} from "v4-core/src/libraries/TickMath.sol";
-import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
-import {Constants} from "./base/Constants.sol";
-import {Config} from "./base/Config.sol";
+import {BaseScript} from "./base/BaseScript.sol";
 
-contract SwapScript is Script, Constants, Config {
-    // slippage tolerance to allow for unlimited price impact
-    uint160 public constant MIN_PRICE_LIMIT = TickMath.MIN_SQRT_PRICE + 1;
-    uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_PRICE - 1;
-
-    /////////////////////////////////////
-    // --- Parameters to Configure --- //
-    /////////////////////////////////////
-
-    // PoolSwapTest Contract address, default to the anvil address
-    PoolSwapTest swapRouter = PoolSwapTest(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
-
-    // --- pool configuration --- //
-    // fees paid by swappers that accrue to liquidity providers
-    uint24 lpFee = 3000; // 0.30%
-    int24 tickSpacing = 60;
-
+contract SwapScript is BaseScript {
     function run() external {
-        PoolKey memory pool = PoolKey({
+        PoolKey memory poolKey = PoolKey({
             currency0: currency0,
             currency1: currency1,
-            fee: lpFee,
-            tickSpacing: tickSpacing,
-            hooks: hookContract
+            fee: 3000,
+            tickSpacing: 60,
+            hooks: hookContract // This must match the pool
         });
-
-        // approve tokens to the swap router
-        vm.broadcast();
-        token0.approve(address(swapRouter), type(uint256).max);
-        vm.broadcast();
-        token1.approve(address(swapRouter), type(uint256).max);
-
-        // ------------------------------ //
-        // Swap 100e18 token0 into token1 //
-        // ------------------------------ //
-        bool zeroForOne = true;
-        SwapParams memory params = SwapParams({
-            zeroForOne: zeroForOne,
-            amountSpecified: 100e18,
-            sqrtPriceLimitX96: zeroForOne ? MIN_PRICE_LIMIT : MAX_PRICE_LIMIT // unlimited impact
-        });
-
-        // in v4, users have the option to receieve native ERC20s or wrapped ERC1155 tokens
-        // here, we'll take the ERC20s
-        PoolSwapTest.TestSettings memory testSettings =
-            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false});
-
         bytes memory hookData = new bytes(0);
-        vm.broadcast();
-        swapRouter.swap(pool, params, testSettings, hookData);
+
+        vm.startBroadcast();
+
+        // We'll approve both, just for testing.
+        token1.approve(address(swapRouter), type(uint256).max);
+        token0.approve(address(swapRouter), type(uint256).max);
+
+        // Execute swap
+        swapRouter.swapExactTokensForTokens({
+            amountIn: 1e18,
+            amountOutMin: 0, // Very bad, but we want to allow for unlimited price impact
+            zeroForOne: true,
+            poolKey: poolKey,
+            hookData: hookData,
+            receiver: address(this),
+            deadline: block.timestamp + 1
+        });
+
+        vm.stopBroadcast();
     }
 }

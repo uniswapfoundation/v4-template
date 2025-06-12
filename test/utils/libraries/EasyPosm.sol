@@ -4,10 +4,10 @@ pragma solidity ^0.8.21;
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {BalanceDelta, toBalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
-import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
-import {Actions} from "v4-periphery/src/libraries/Actions.sol";
-import {SafeCast} from "v4-core/src/libraries/SafeCast.sol";
-import {PositionInfo, PositionInfoLibrary} from "v4-periphery/src/libraries/PositionInfoLibrary.sol";
+import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionManager.sol";
+import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
+import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
+import {PositionInfo, PositionInfoLibrary} from "@uniswap/v4-periphery/src/libraries/PositionInfoLibrary.sol";
 
 /// @title Easy Position Manager
 /// @notice A library for abstracting Position Manager calldata
@@ -23,6 +23,7 @@ library EasyPosm {
         uint256 balance0Before;
         uint256 balance1Before;
         bytes[] params;
+        bytes actions;
     }
 
     /// @dev This function supports sending native tokens (ETH), the amount-to-pay is determined by amount0Max.
@@ -44,19 +45,24 @@ library EasyPosm {
         MintData memory mintData = MintData({
             balance0Before: currency0.balanceOf(address(this)),
             balance1Before: currency1.balanceOf(address(this)),
-            params: new bytes[](2)
+            actions: new bytes(0),
+            params: new bytes[](4)
         });
+
+        mintData.actions = abi.encodePacked(
+            uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR), uint8(Actions.SWEEP), uint8(Actions.SWEEP)
+        );
+
         mintData.params[0] =
             abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, recipient, hookData);
         mintData.params[1] = abi.encode(currency0, currency1);
+        mintData.params[2] = abi.encode(currency0, recipient);
+        mintData.params[3] = abi.encode(currency1, recipient);
 
         // Mint Liquidity
         tokenId = posm.nextTokenId();
         uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
-        posm.modifyLiquidities{value: valueToPass}(
-            abi.encode(abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR)), mintData.params),
-            deadline
-        );
+        posm.modifyLiquidities{value: valueToPass}(abi.encode(mintData.actions, mintData.params), deadline);
 
         delta = toBalanceDelta(
             -(mintData.balance0Before - currency0.balanceOf(address(this))).toInt128(),
