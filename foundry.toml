@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 ffi = true
+viaIR = true
 fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
 solc_version = "0.8.26"
 evm_version = "cancun"
