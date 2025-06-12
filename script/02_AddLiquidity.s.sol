@@ -70,7 +70,16 @@ contract AddLiquidityScript is Script, Constants, Config {
 
         vm.startBroadcast();
         IPositionManager(address(posm)).mint(
-            pool, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, block.timestamp + 60, hookData
+            pool,
+            tickLower,
+            tickUpper,
+            liquidity,
+            amount0Max,
+            amount1Max,
+            msg.sender,
+            block.timestamp + 60,
+            hookData,
+            address(posm)
         );
         vm.stopBroadcast();
     }

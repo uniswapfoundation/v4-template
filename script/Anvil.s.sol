@@ -147,7 +147,18 @@ contract CounterScript is Script, DeployPermit2 {
         ModifyLiquidityParams memory liqParams = ModifyLiquidityParams(tickLower, tickUpper, 100 ether, 0);
         lpRouter.modifyLiquidity(poolKey, liqParams, "");
 
-        posm.mint(poolKey, tickLower, tickUpper, 100e18, 10_000e18, 10_000e18, msg.sender, block.timestamp + 300, "");
+        posm.mint(
+            poolKey,
+            tickLower,
+            tickUpper,
+            100e18,
+            10_000e18,
+            10_000e18,
+            msg.sender,
+            block.timestamp + 300,
+            "",
+            address(posm)
+        );
     }
 
     function _exampleSwap(PoolKey memory poolKey) internal {
