@@ -65,7 +65,8 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             recipient,
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
         assertEq(delta.amount0(), -int128(uint128(amount0 + 1 wei)));
         assertEq(delta.amount1(), -int128(uint128(amount1 + 1 wei)));
@@ -92,7 +93,8 @@ contract CounterTest is Test, Fixtures {
             amount1 + 1,
             recipient,
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
         assertEq(delta.amount0(), -int128(uint128(amount0 + 1 wei)));
         assertEq(delta.amount1(), -int128(uint128(amount1 + 1 wei)));
@@ -108,7 +110,8 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             address(this),
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
 
         uint256 liquidityToAdd = 1e18;
@@ -126,7 +129,8 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
         assertEq(delta.amount0(), -int128(uint128(amount0 + 1 wei)));
         assertEq(delta.amount1(), -int128(uint128(amount1 + 1 wei)));
@@ -153,7 +157,8 @@ contract CounterTest is Test, Fixtures {
             amount1 + 1,
             recipient,
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
 
         uint256 liquidityToIncrease = 1e18;
@@ -167,7 +172,7 @@ contract CounterTest is Test, Fixtures {
 
         vm.deal(address(this), amount0 + 1);
         delta = posm.increaseLiquidity(
-            tokenId, liquidityToIncrease, amount0 + 1, amount1 + 1, block.timestamp + 1, ZERO_BYTES
+            tokenId, liquidityToIncrease, amount0 + 1, amount1 + 1, block.timestamp + 1, ZERO_BYTES, address(this)
         );
         assertEq(delta.amount0(), -int128(uint128(amount0 + 1 wei)));
         assertEq(delta.amount1(), -int128(uint128(amount1 + 1 wei)));
@@ -183,7 +188,8 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             address(this),
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
 
         uint256 liquidityToRemove = 1e18;
@@ -202,7 +208,8 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
             address(this),
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
         assertEq(delta.amount0(), int128(uint128(amount0)));
         assertEq(delta.amount1(), int128(uint128(amount1)));
@@ -218,7 +225,8 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             address(this),
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
 
         BalanceDelta delta = posm.burn(
@@ -243,7 +251,8 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_ADD_LIQUIDITY,
             address(this),
             block.timestamp + 1,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
 
         // donate to regenerate fee revenue

@@ -77,7 +77,8 @@ contract CounterTest is Test, Fixtures {
             amount1Expected + 1,
             address(this),
             block.timestamp,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
     }
 
@@ -115,7 +116,8 @@ contract CounterTest is Test, Fixtures {
             MAX_SLIPPAGE_REMOVE_LIQUIDITY,
             address(this),
             block.timestamp,
-            ZERO_BYTES
+            ZERO_BYTES,
+            address(this)
         );
 
         assertEq(hook.beforeAddLiquidityCount(poolId), 1);
