@@ -43,6 +43,28 @@ forge test
 
 Other than writing unit tests (recommended!), you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/) locally. Scripts are available in the `script/` directory, which can be used to deploy hooks, create pools, provide liquidity and swap tokens. The scripts support both local `anvil` environment as well as running them directly on a production network.
 
+#### Anvil usage:
+You'll need two terminal instances open.  In the first:
+```bash
+anvil --fork-url https://eth.meowrpc.com
+```
+> This will create a local "fork" of mainnet to simulate against, so all dependent contracts match ETH Mainnet deployments shown [here](https://docs.uniswap.org/contracts/v4/deployments).  
+> In the script above, we're using a public RPC.  For better reliability, a private RPC should be considered such as `https://mainnet.infura.io/v3/{apiKey}`.
+
+
+In the second:
+```bash
+forge script script/examples/FullDeploymentOneStepLiquidity.s.sol \
+    --rpc-url http://localhost:8545 \
+    --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+    --broadcast
+```
+> This will run the end-to-end deployment process.  In this example, we are using the `getWallets()[0]` private key provided by anvil to:
+> - Deploy two mock tokens
+> - Deploy `Counter.sol` hooks contract
+> - Create pool and add liquidity atomically in one transaction
+> - Perform a swap against the created pool
+
 ### Troubleshooting
 
 <details>
