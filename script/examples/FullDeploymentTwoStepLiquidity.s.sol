@@ -15,20 +15,22 @@ import {PoolInputs, PositionInputs, CurrencyPair} from "../types/Types.sol";
 import {LoadDependencies} from "../actions/LoadDependencies.sol";
 import {DeployToken} from "../actions/DeployToken.sol";
 import {DeployHooks} from "../actions/DeployHooks.sol";
-import {BootstrapPool} from "../actions/BootstrapPool.sol";
 import {CreatePool} from "../actions/CreatePool.sol";
 import {InjectLiquidity} from "../actions/InjectLiquidity.sol";
 import {ExecuteSwap} from "../actions/ExecuteSwap.sol";
 
 /// @dev Run e2e for create pool / add liquidity in two steps
 contract TwoStepLiquidityScript is Script {
+    /// Currency pair
+    CurrencyPair public currencyPair;
+    /// Deployer wallet
+    address public deployer = vm.getWallets()[0];
     /// Pool configuration
     PoolInputs poolInputs = PoolInputs({
         lpFee: 5000, // 0.5%
         tickSpacing: 100,
         startingPrice: 2 ** 96 // sqrtPriceX96; floor(sqrt(1) * 2^96)
     });
-
     /// Position configuration
     PositionInputs positionInputs = PositionInputs({
         token0Amount: 20 ether,
@@ -42,11 +44,6 @@ contract TwoStepLiquidityScript is Script {
         deadline: block.timestamp + 2500,
         hookData: new bytes(0)
     });
-
-    /// Currency pair
-    CurrencyPair public currencyPair;
-
-    address deployer = vm.getWallets()[0];
 
     function run() public {
         vm.startBroadcast();

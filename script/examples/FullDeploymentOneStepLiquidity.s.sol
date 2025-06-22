@@ -10,7 +10,6 @@ import {IUniswapV4Router04} from "hookmate/interfaces/router/IUniswapV4Router04.
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {TokenApprover} from "../utils/TokenApprover.sol";
 import {TokenUtils} from "../utils/TokenUtils.sol";
 import {PoolInputs, PositionInputs, CurrencyPair} from "../types/Types.sol";
 import {LoadDependencies} from "../actions/LoadDependencies.sol";
@@ -21,13 +20,16 @@ import {ExecuteSwap} from "../actions/ExecuteSwap.sol";
 
 /// @dev Run e2e for create pool / add liquidity in one step
 contract OneStepLiquidityScript is Script {
+    /// Currency pair
+    CurrencyPair public currencyPair;
+    /// Deployer wallet
+    address public deployer = vm.getWallets()[0];
     /// Pool configuration
     PoolInputs public poolInputs = PoolInputs({
         lpFee: 5000, // 0.5%
         tickSpacing: 100,
         startingPrice: 2 ** 96 // sqrtPriceX96; floor(sqrt(1) * 2^96)
     });
-
     /// Position configuration
     PositionInputs public positionInputs = PositionInputs({
         token0Amount: 20 ether,
@@ -41,11 +43,6 @@ contract OneStepLiquidityScript is Script {
         deadline: block.timestamp + 2500,
         hookData: new bytes(0)
     });
-
-    /// Currency pair
-    CurrencyPair public currencyPair;
-
-    address deployer = vm.getWallets()[0];
 
     function run() public {
         vm.startBroadcast();

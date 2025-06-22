@@ -17,11 +17,11 @@ contract MixedDeploymentScript is Script {
     address public constant ETH = address(0);
     /// Currency pair (ensure numerically sorted)
     CurrencyPair public currencyPair = CurrencyPair(Currency.wrap(ETH), Currency.wrap(USDC));
-
-    PoolInputs poolInputs = PoolInputs({
+    /// Pool configuration
+    PoolInputs public poolInputs = PoolInputs({
         lpFee: 70_000, // 7%
         tickSpacing: 200,
-        // Assume ETH is 2500.  Should be ~ correct
+        // Assume ETH is 2500.
         startingPrice: uint160(Math.sqrt(2500) * 2 ** 96)
     });
 

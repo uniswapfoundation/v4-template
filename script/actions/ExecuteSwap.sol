@@ -7,7 +7,6 @@ import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {IUniswapV4Router04} from "hookmate/interfaces/router/IUniswapV4Router04.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
-import {TokenApprover} from "../utils/TokenApprover.sol";
 import {PoolInputs, CurrencyPair} from "../types/Types.sol";
 
 /// @dev Swap tokens

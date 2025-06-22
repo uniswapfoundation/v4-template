@@ -2,7 +2,6 @@
 pragma solidity ^0.8.26;
 
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
-import {console} from "forge-std/console.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 
