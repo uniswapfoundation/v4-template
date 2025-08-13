@@ -30,7 +30,7 @@ contract SwapScript is BaseScript {
             poolKey: poolKey,
             hookData: hookData,
             receiver: address(this),
-            deadline: block.timestamp + 1
+            deadline: block.timestamp + 30
         });
 
         vm.stopBroadcast();
