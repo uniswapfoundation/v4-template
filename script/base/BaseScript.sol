@@ -11,7 +11,7 @@ import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionMa
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 
 import {IUniswapV4Router04} from "hookmate/interfaces/router/IUniswapV4Router04.sol";
-import {AddressConstants} from "hookmate/constants/AddressConstants.sol";
+import {Constants} from "./Constants.sol";
 
 /// @notice Shared configuration between scripts
 contract BaseScript is Script {
@@ -33,9 +33,9 @@ contract BaseScript is Script {
     Currency immutable currency1;
 
     constructor() {
-        poolManager = IPoolManager(AddressConstants.getPoolManagerAddress(block.chainid));
-        positionManager = IPositionManager(payable(AddressConstants.getPositionManagerAddress(block.chainid)));
-        swapRouter = IUniswapV4Router04(payable(AddressConstants.getV4SwapRouterAddress(block.chainid)));
+        poolManager = IPoolManager(Constants.POOL_MANAGER);
+        positionManager = IPositionManager(payable(Constants.POSITION_MANAGER));
+        swapRouter = IUniswapV4Router04(payable(Constants.UNISWAP_ROUTER));
 
         deployerAddress = getDeployer();
 
