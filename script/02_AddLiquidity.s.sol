@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {console2} from "forge-std/Script.sol";
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
-
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
 import {LiquidityAmounts} from "@uniswap/v4-core/test/utils/LiquidityAmounts.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
@@ -49,8 +45,8 @@ contract AddLiquidityScript is BaseScript, LiquidityHelpers {
 
         int24 currentTick = TickMath.getTickAtSqrtPrice(sqrtPriceX96);
 
-        tickLower = ((currentTick - 1000 * tickSpacing) / tickSpacing) * tickSpacing;
-        tickUpper = ((currentTick + 1000 * tickSpacing) / tickSpacing) * tickSpacing;
+        tickLower = truncateTickSpacing((currentTick - 1000 * tickSpacing), tickSpacing);
+        tickUpper = truncateTickSpacing((currentTick + 1000 * tickSpacing), tickSpacing);
 
         // Converts token amounts to liquidity units
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(
