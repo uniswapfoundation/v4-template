@@ -44,4 +44,9 @@ contract LiquidityHelpers is BaseScript {
             permit2.approve(address(token1), address(positionManager), type(uint160).max, type(uint48).max);
         }
     }
+
+    function truncateTickSpacing(int24 tick, int24 tickSpacing) internal pure returns (int24) {
+        /// forge-lint: disable-next-line(divide-before-multiply)
+        return ((tick / tickSpacing) * tickSpacing);
+    }
 }
