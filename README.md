@@ -43,6 +43,88 @@ forge test
 
 Other than writing unit tests (recommended!), you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/) locally. Scripts are available in the `script/` directory, which can be used to deploy hooks, create pools, provide liquidity and swap tokens. The scripts support both local `anvil` environment as well as running them directly on a production network.
 
+### Executing locally with using **Anvil**:
+
+1. Start Anvil (or fork a specific chain using anvil):
+
+```bash
+anvil
+```
+
+or
+
+```bash
+anvil --fork-url <YOUR_RPC_URL>
+```
+
+2. Execute scripts:
+
+```bash
+forge script script/00_DeployHook.s.sol \
+    --rpc-url http://localhost:8545 \
+    --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d \
+    --broadcast
+```
+
+### Using **RPC URLs** (actual transactions):
+
+:::info
+It is best to not store your private key even in .env or enter it directly in the command line. Instead use the `--account` flag to select your private key from your keystore.
+:::
+
+### Follow these steps if you have not stored your private key in the keystore:
+
+<details>
+
+1. Add your private key to the keystore:
+
+```bash
+cast wallet import <SET_A_NAME_FOR_KEY> --interactive
+```
+
+2. You will prompted to enter your private key and set a password, fill and press enter:
+
+```
+Enter private key: <YOUR_PRIVATE_KEY>
+Enter keystore password: <SET_NEW_PASSWORD>
+```
+
+You should see this:
+
+```
+`<YOUR_WALLET_PRIVATE_KEY_NAME>` keystore was saved successfully. Address: <YOUR_WALLET_ADDRESS>
+```
+
+::: warning
+Use ```history -c``` to clear your command history.
+:::
+
+</details>
+
+1. Execute scripts:
+
+```bash
+forge script script/00_DeployHook.s.sol \
+    --rpc-url <YOUR_RPC_URL> \
+    --account <YOUR_WALLET_PRIVATE_KEY_NAME> \
+    --sender <YOUR_WALLET_ADDRESS> \
+    --broadcast
+```
+
+You will prompted to enter your wallet password, fill and press enter:
+
+```
+Enter keystore password: <YOUR_PASSWORD>
+```
+
+### Key Modifications to note:
+
+1. Update the `token0` and `token1` addresses in the `BaseScript.sol` file to match the tokens you want to use in the network of your choice for sepolia and mainnet deployments.
+2. Update the `token0Amount` and `token1Amount` in the `CreatePoolAndAddLiquidity.s.sol` file to match the amount of tokens you want to provide liquidity with.
+3. Update the `token0Amount` and `token1Amount` in the `AddLiquidity.s.sol` file to match the amount of tokens you want to provide liquidity with.
+4. Update the `amountIn` and `amountOutMin` in the `Swap.s.sol` file to match the amount of tokens you want to swap.
+
+
 ### Troubleshooting
 
 <details>
