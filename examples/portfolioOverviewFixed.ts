@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { http, createPublicClient, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { getContracts, UNICHAIN_SEPOLIA } from './contracts';
+import { calculateUsdcVethPoolId, getPoolInfo } from './poolUtils';
 
 const RPC_URL = process.env.RPC_URL || process.env.UNICHAIN_SEPOLIA_RPC_URL || 'https://sepolia.unichain.org';
 const CHAIN_ID = Number(process.env.CHAIN_ID || UNICHAIN_SEPOLIA);
@@ -55,7 +56,7 @@ async function showAllPositions() {
       address: c.fundingOracle.address,
       abi: c.fundingOracle.abi as any,
       functionName: 'getMarkPrice',
-      args: ['0xdb86d006b7f5ba7afb160f08da976bf53d7254e25da80f1dda0a5d36d26d656d']
+      args: [poolId]
     }) as bigint;
 
     const markPriceFormatted = Number(markPrice) / 1e18;

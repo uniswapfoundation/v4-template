@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { http, createPublicClient, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { getContracts, UNICHAIN_SEPOLIA } from './contracts';
+import { calculateUsdcVethPoolId, getPoolInfo } from './poolUtils';
 
 const RPC_URL = process.env.RPC_URL || process.env.UNICHAIN_SEPOLIA_RPC_URL || 'https://sepolia.unichain.org';
 const CHAIN_ID = Number(process.env.CHAIN_ID || UNICHAIN_SEPOLIA);
@@ -34,7 +35,7 @@ async function checkMarginRequirements() {
       address: c.fundingOracle.address,
       abi: c.fundingOracle.abi as any,
       functionName: 'getMarkPrice',
-      args: ['0xdb86d006b7f5ba7afb160f08da976bf53d7254e25da80f1dda0a5d36d26d656d']
+      args: [poolId]
     }) as bigint;
 
     const markPriceFormatted = Number(markPrice) / 1e18;
@@ -59,7 +60,7 @@ async function checkMarginRequirements() {
         address: c.marketManager.address,
         abi: c.marketManager.abi as any,
         functionName: 'getRiskParameters',
-        args: ['0xdb86d006b7f5ba7afb160f08da976bf53d7254e25da80f1dda0a5d36d26d656d']
+        args: [poolId]
       }) as any;
       console.log('🎯 Risk Parameters:', riskParams);
     } catch (e) {
@@ -72,7 +73,7 @@ async function checkMarginRequirements() {
         address: c.positionManager.address,
         abi: c.positionManager.abi as any,
         functionName: 'getMarginRequirement',
-        args: ['0xdb86d006b7f5ba7afb160f08da976bf53d7254e25da80f1dda0a5d36d26d656d', BigInt(75000000000000000)] // 0.075 VETH
+        args: [poolId, BigInt(75000000000000000)] // 0.075 VETH
       }) as bigint;
       console.log(`💰 Required Margin for 0.075 VETH: ${Number(marginRequirement) / 1e6} USDC`);
     } catch (e) {
@@ -97,7 +98,7 @@ async function checkMarginRequirements() {
           address: c.positionManager.address,
           abi: c.positionManager.abi as any,
           functionName: 'openPosition',
-          args: ['0xdb86d006b7f5ba7afb160f08da976bf53d7254e25da80f1dda0a5d36d26d656d', -positionSize, entryPrice, marginWei],
+          args: [poolId, -positionSize, entryPrice, marginWei],
           account: account.address
         });
         

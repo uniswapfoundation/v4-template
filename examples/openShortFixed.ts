@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { http, createWalletClient, createPublicClient, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { getContracts, UNICHAIN_SEPOLIA } from './contracts';
+import { calculateUsdcVethPoolId, getPoolInfo } from './poolUtils';
 
 const RPC_URL = process.env.RPC_URL || process.env.UNICHAIN_SEPOLIA_RPC_URL || 'https://sepolia.unichain.org';
 const CHAIN_ID = Number(process.env.CHAIN_ID || UNICHAIN_SEPOLIA);
@@ -47,29 +48,17 @@ async function openShortPosition() {
 
   console.log('👤 Using account:', account.address);
 
-  // Define pool configuration
-  const currency0 = c.mockVETH.address; // VETH
-  const currency1 = c.mockUSDC.address; // USDC
-  const fee = 3000; // 0.3%
-  const hook = c.perpsHook.address;
+  // Calculate pool ID dynamically
+  const poolId = calculateUsdcVethPoolId(c.mockUSDC.address, c.mockVETH.address, c.perpsHook.address);
+  const poolInfo = getPoolInfo(c.mockUSDC.address, c.mockVETH.address, c.perpsHook.address);
 
   console.log('💱 Pool Configuration:');
-  console.log('  Currency0:', currency0);
-  console.log('  Currency1:', currency1);
-  console.log('  Fee:', fee, 'bps');
-  console.log('  Hook:', hook);
-
-  // Calculate pool ID
-  const poolKey = {
-    currency0,
-    currency1,
-    fee,
-    tickSpacing: 60,
-    hooks: hook
-  };
-
-  // Pool ID calculation (keccak256 of encoded pool key)
-  const poolId = '0xdb86d006b7f5ba7afb160f08da976bf53d7254e25da80f1dda0a5d36d26d656d'; // Known pool ID
+  console.log('  Currency0 (lower):', poolInfo.poolKey.currency0);
+  console.log('  Currency1 (higher):', poolInfo.poolKey.currency1);
+  console.log('  Fee:', poolInfo.poolKey.fee, 'bps');
+  console.log('  Hook:', poolInfo.poolKey.hooks);
+  console.log('  Base Asset (VETH):', poolInfo.baseAsset);
+  console.log('  Quote Asset (USDC):', poolInfo.quoteAsset);
   console.log('🆔 Pool ID:', poolId);
 
   console.log('📊 Position Parameters:');
