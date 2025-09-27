@@ -1,0 +1,362 @@
+{
+  "anvil": {
+    "chainId": 31337,
+    "rpcUrl": "http://localhost:8545",
+    "description": "Local Anvil development network",
+    "contracts": {
+      "tokens": {
+        "MockUSDC": {
+          "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "description": "Mock USDC token (6 decimals)",
+          "symbol": "USDC",
+          "decimals": 6
+        },
+        "MockVETH": {
+          "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+          "description": "Mock Virtual ETH token (18 decimals)",
+          "symbol": "VETH",
+          "decimals": 18
+        }
+      },
+      "core": {
+        "PoolManager": {
+          "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "description": "Uniswap V4 Pool Manager (placeholder for testing)",
+          "isPredeployed": true
+        },
+        "MarginAccount": {
+          "address": "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
+          "description": "USDC Collateral Vault for Perpetual Futures - centralized margin management",
+          "integratedWith": ["PositionManager", "PerpsHook", "PerpsRouter", "LiquidationEngine"]
+        },
+        "InsuranceFund": {
+          "address": "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
+          "description": "Insurance fund for liquidation backstop and bad debt coverage",
+          "authorizedContracts": ["PerpsRouter", "PositionManager", "PerpsHook", "LiquidationEngine"]
+        },
+        "PositionManager": {
+          "address": "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
+          "description": "NFT-based position management contract for perpetual futures - integrated with MarginAccount",
+          "integratedWith": ["MarginAccount"],
+          "constructor": ["USDC", "MarginAccount"]
+        },
+        "FundingOracle": {
+          "address": "0x09635F643e140090A9A8Dcd712eD6285858ceBef",
+          "description": "Price aggregation and funding rate oracle for perpetual futures",
+          "marketsConfigured": ["ETH-USDC"]
+        },
+        "PerpsHook": {
+          "address": "0xaF8e584B4c1D75A025531EBFD8284C60cEE4DaC8",
+          "description": "Main perpetual futures hook contract - integrated with MarginAccount and PositionManager",
+          "flags": {
+            "afterInitialize": true,
+            "beforeAddLiquidity": true,
+            "beforeRemoveLiquidity": true,
+            "beforeSwap": true,
+            "afterSwap": true,
+            "beforeSwapReturnDelta": true
+          },
+          "integratedWith": ["MarginAccount", "PositionManager"],
+          "constructor": ["PoolManager", "PositionManager", "MarginAccount", "USDC"]
+        },
+        "PerpsRouter": {
+          "address": "0xc5a5C42992dECbae36851359345FE25997F5C42d",
+          "description": "User-friendly perpetual futures interface - complete trading system",
+          "integratedWith": ["MarginAccount", "PositionManager", "FundingOracle"]
+        },
+        "LiquidationEngine": {
+          "address": "",
+          "description": "Automated liquidation system with maintenance margin monitoring",
+          "integratedWith": ["PositionManager", "MarginAccount", "FundingOracle", "InsuranceFund"],
+          "status": "designed_not_deployed"
+        },
+        "MockOracle": {
+          "address": "",
+          "description": "Mock price oracle for testing",
+          "feeds": {
+            "ETH/USD": "2000000000000000000000"
+          }
+        }
+      },
+      "pools": {
+        "USDC_VETH_3000": {
+          "poolId": "0x4175de8db9494990ffa19f24a61d828981e34e9d0e789441733d0b955bac11eb",
+          "description": "USDC/VETH pool with 0.3% fee and integrated PerpsHook",
+          "fee": 3000,
+          "tickSpacing": 60,
+          "currency0": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "currency1": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+          "hook": "0xaF8e584B4c1D75A025531EBFD8284C60cEE4DaC8",
+          "sqrtPriceX96": "79228162514264337593543950336",
+          "integrationStatus": "fully_configured"
+        }
+      }
+    },
+    "markets": {
+      "ETH_PERP": {
+        "marketId": "0x4175de8db9494990ffa19f24a61d828981e34e9d0e789441733d0b955bac11eb",
+        "baseAsset": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "quoteAsset": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "poolAddress": "0xaF8e584B4c1D75A025531EBFD8284C60cEE4DaC8",
+        "description": "ETH Perpetual Futures Market - fully integrated",
+        "isActive": true,
+        "configuredIn": {
+          "FundingOracle": true,
+          "PositionManager": true
+        }
+      }
+    },
+    "testAccounts": {
+      "deployer": {
+        "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "privateKey": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+        "description": "Default Anvil account #0 (deployer)"
+      },
+      "user1": {
+        "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "privateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+        "description": "Default Anvil account #1 (test user)"
+      },
+      "user2": {
+        "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+        "privateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+        "description": "Default Anvil account #2 (test user)"
+      }
+    }
+  },
+  "sepolia": {
+    "chainId": 11155111,
+    "rpcUrl": "https://sepolia.infura.io/v3/YOUR_INFURA_KEY",
+    "description": "Ethereum Sepolia testnet",
+    "contracts": {
+      "tokens": {
+        "MockUSDC": {
+          "address": "",
+          "description": "Mock USDC token on Sepolia"
+        },
+        "MockVETH": {
+          "address": "",
+          "description": "Mock Virtual ETH token on Sepolia"
+        }
+      },
+      "core": {
+        "PoolManager": {
+          "address": "",
+          "description": "Uniswap V4 Pool Manager on Sepolia"
+        },
+        "PositionManager": {
+          "address": "",
+          "description": "Position Manager on Sepolia"
+        },
+        "PerpsHook": {
+          "address": "",
+          "description": "Perps Hook on Sepolia"
+        }
+      }
+    }
+  },
+  "mainnet": {
+    "chainId": 1,
+    "rpcUrl": "https://mainnet.infura.io/v3/YOUR_INFURA_KEY",
+    "description": "Ethereum mainnet",
+    "contracts": {
+      "core": {
+        "PoolManager": {
+          "address": "",
+          "description": "Uniswap V4 Pool Manager on mainnet (when available)"
+        }
+      }
+    }
+  },
+  "deployment": {
+    "lastUpdated": "2024-01-01T00:00:00Z",
+    "version": "2.0.0-integrated",
+    "deploymentMethod": "integrated_system",
+    "deploymentOrder": [
+      "MockUSDC",
+      "MockVETH", 
+      "MarginAccount",
+      "InsuranceFund",
+      "PositionManager (with MarginAccount integration)",
+      "FundingOracle",
+      "PerpsHook (with full integration)",
+      "PerpsRouter",
+      "Market Configuration",
+      "Authorization Setup"
+    ],
+    "integrationStatus": {
+      "hookIntegration": "completed",
+      "marginAccountIntegration": "completed", 
+      "marketSetup": "completed",
+      "endToEndTesting": "completed",
+      "liquidationSystem": "designed"
+    },
+    "notes": {
+      "hookAddressGeneration": "Hook address is deterministically generated using CREATE2 with proper v4 flags",
+      "poolManager": "Using placeholder PoolManager for testing - replace with actual Uniswap V4 PoolManager",
+      "currencies": "Currency0 and Currency1 are determined by token address ordering (lower address = currency0)",
+      "integration": "All contracts are fully integrated with centralized margin management through MarginAccount",
+      "testResults": "Quick integration test passed - all contracts deployed and working",
+      "liquidationEngine": "LiquidationEngine designed but not yet deployed - ready for production use"
+    },
+    "scripts": {
+      "integratedDeployment": "script/DeployIntegratedSystem.s.sol",
+      "hookDeployment": "script/DeployPerpsHook.s.sol", 
+      "integrationTest": "script/QuickIntegrationTest.s.sol",
+      "fullFlowTest": "script/TestIntegratedFlow.s.sol"
+    }
+  },
+  "unichain-sepolia": {
+    "chainId": 1301,
+    "rpcUrl": "https://sepolia.unichain.org",
+    "description": "Unichain Sepolia testnet with production deployment using HookMiner",
+    "contracts": {
+      "tokens": {
+        "MockUSDC": {
+          "address": "0xb2feD1a40Fe6CA0be97Cde27e1D2dF1CC65Fd101",
+          "description": "Mock USDC token (6 decimals)",
+          "symbol": "USDC",
+          "decimals": 6
+        },
+        "MockVETH": {
+          "address": "0x7f7FD1D6A6BF6225F4872Fc8aa165E43Bf22D30c",
+          "description": "Mock Virtual ETH token (18 decimals)",
+          "symbol": "VETH",
+          "decimals": 18
+        }
+      },
+      "core": {
+        "PoolManager": {
+          "address": "0x00B036B58a818B1BC34d502D3fE730Db729e62AC",
+          "description": "Uniswap V4 Pool Manager (official testnet deployment)",
+          "isPredeployed": true
+        },
+        "MarginAccount": {
+          "address": "0x4Aa68070609C7EE42CDd7E431F202c0577c8556E",
+          "description": "USDC Collateral Vault for Perpetual Futures - centralized margin management",
+          "integratedWith": ["PositionManager", "PerpsHook", "PerpsRouter", "LiquidationEngine"]
+        },
+        "InsuranceFund": {
+          "address": "0x4F7a720494f11B7A2e82e9fe7236F09631C9602F",
+          "description": "Insurance fund for liquidation backstop and bad debt coverage",
+          "authorizedContracts": ["PerpsRouter", "PositionManager", "PerpsHook", "LiquidationEngine"]
+        },
+        "PositionFactory": {
+          "address": "0xFdB6179d9778942Db01C189791c8199350a149e1",
+          "description": "Creates and manages individual position contracts",
+          "integratedWith": ["PositionNFT", "MarginAccount", "PositionManager"]
+        },
+        "PositionNFT": {
+          "address": "0xC747b142E151e043fc880035B961d0fd78657caD",
+          "description": "ERC721 NFT representing position ownership",
+          "integratedWith": ["PositionFactory", "PositionManager"]
+        },
+        "MarketManager": {
+          "address": "0x222a07FB1ee309d2e6839e20B384E9DadaAB8D5b",
+          "description": "Manages trading markets and funding configurations",
+          "authorizedContracts": ["PositionManager"]
+        },
+        "PositionManager": {
+          "address": "0xD919D9FA466fD3e88640F97700640fbBb3214eB2",
+          "description": "Orchestrates modular position management with NFT-based positions",
+          "integratedWith": ["PositionFactory", "PositionNFT", "MarketManager", "MarginAccount"]
+        },
+        "FundingOracle": {
+          "address": "0xB07387d2ddF33372C9AE9D5aBe8f0850BD54444d",
+          "description": "Price aggregation and funding rate oracle using Pyth",
+          "pythContract": "0x2880aB155794e7179c9eE2e38200202908C17B43",
+          "ethUsdFeedId": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"
+        },
+        "PerpsHook": {
+          "address": "0x06cB25A0F63D88EAED5cb7273d4fab8516B41ac8",
+          "description": "Main perpetual futures hook contract - mined with HookMiner",
+          "flags": {
+            "AFTER_INITIALIZE_FLAG": 4096,
+            "BEFORE_ADD_LIQUIDITY_FLAG": 2048,
+            "BEFORE_REMOVE_LIQUIDITY_FLAG": 512,
+            "BEFORE_SWAP_FLAG": 128,
+            "AFTER_SWAP_FLAG": 64,
+            "BEFORE_SWAP_RETURNS_DELTA_FLAG": 8,
+            "total": 6856
+          },
+          "hookMinerSalt": "0x0000000000000000000000000000000000000000000000000000000000002e83",
+          "integratedWith": ["MarginAccount", "PositionManager"]
+        },
+        "PerpsRouter": {
+          "address": "0x88e9ae14e9b18417bBdB9e5EA0B836F4DB5093af",
+          "description": "Router contract for perpetual futures operations",
+          "integratedWith": ["MarginAccount", "PositionManager", "FundingOracle"]
+        },
+        "LiquidationEngine": {
+          "address": "0xC037B7cfF8485971E1B1125e7B4Ed1Acc3f6acfd",
+          "description": "Liquidation engine for managing underwater positions",
+          "integratedWith": ["MarginAccount", "InsuranceFund"]
+        }
+      },
+      "uniswap": {
+        "UniversalRouter": {
+          "address": "0xf70536b3bcc1bd1a972dc186a2cf84cc6da6be5d",
+          "description": "Uniswap Universal Router for complex swaps",
+          "isPredeployed": true
+        },
+        "PositionManager": {
+          "address": "0xf969aee60879c54baaed9f3ed26147db216fd664",
+          "description": "Uniswap V4 Position Manager for liquidity management",
+          "isPredeployed": true
+        },
+        "StateView": {
+          "address": "0xc199f1072a74d4e905aba1a84d9a45e2546b6222",
+          "description": "Uniswap V4 State View for pool state queries",
+          "isPredeployed": true
+        },
+        "Quoter": {
+          "address": "0x56dcd40a3f2d466f48e7f48bdbe5cc9b92ae4472",
+          "description": "Uniswap V4 Quoter for price quotes",
+          "isPredeployed": true
+        },
+        "PoolSwapTest": {
+          "address": "0x9140a78c1a137c7ff1c151ec8231272af78a99a4",
+          "description": "Uniswap V4 Pool Swap Test helper",
+          "isPredeployed": true
+        },
+        "PoolModifyLiquidityTest": {
+          "address": "0x5fa728c0a5cfd51bee4b060773f50554c0c8a7ab",
+          "description": "Uniswap V4 Pool Modify Liquidity Test helper",
+          "isPredeployed": true
+        },
+        "Permit2": {
+          "address": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+          "description": "Permit2 contract for token approvals",
+          "isPredeployed": true
+        }
+      }
+    },
+    "deployment": {
+      "deployer": "0xcFE743EA353d4d3D2c20C41C7d878B2cbA66DA0a",
+      "blockNumber": 31147380,
+      "timestamp": 1758049850,
+      "version": "production-with-miner-v2",
+      "hookMiningSuccess": true,
+      "hookMiningDetails": {
+        "requiredFlags": 6856,
+        "minedAddress": "0x31F2128164886E6BFd4A791c16412A4Df3F6dac8",
+        "salt": "0x0000000000000000000000000000000000000000000000000000000000000264d"
+      }
+    },
+    "integrationStatus": {
+      "hookIntegration": "completed",
+      "marginAccountIntegration": "completed",
+      "modularArchitecture": "completed",
+      "marketSetup": "pending_pool_creation",
+      "endToEndTesting": "pending",
+      "liquidationSystem": "deployed"
+    },
+    "notes": {
+      "hookAddressGeneration": "Hook address mined using HookMiner with proper v4 flags for production",
+      "poolManager": "Using official Uniswap V4 PoolManager on Unichain Sepolia",
+      "oracle": "Integrated with Pyth Oracle for real price feeds",
+      "modularArchitecture": "Complete modular system with PositionFactory, PositionNFT, MarketManager, and PositionManager",
+      "hookMining": "Successfully mined hook address with salt 0x0000000000000000000000000000000000000000000000000000000000000264d"
+    }
+  }
+}

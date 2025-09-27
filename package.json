@@ -1,0 +1,28 @@
+{
+  "name": "uniperp",
+  "version": "1.0.0",
+  "description": "**A template for writing Uniswap v4 Hooks 🦄**",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StakeBaby69/uniPerp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/StakeBaby69/uniPerp/issues"
+  },
+  "homepage": "https://github.com/StakeBaby69/uniPerp#readme",
+  "dependencies": {
+    "@pythnetwork/pyth-sdk-solidity": "^4.2.0"
+  }
+}
