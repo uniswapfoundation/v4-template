@@ -1,0 +1,12 @@
+[profile.default]
+bytecode_hash = "none"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+out = "out"
+solc_version = "0.8.28"
+src = "src"
+via_ir = false
+
+[fmt]
+bracket_spacing = true

@@ -1,0 +1,12 @@
+= Interfaces
+
+[.readme-notice]
+NOTE: This document is better viewed on the docs page.
+
+Interfaces to be used by Hooks 
+
+ * {IHookEvents}: Interface for standard hook events emission.
+
+== Interfaces
+
+{{IHookEvents}}

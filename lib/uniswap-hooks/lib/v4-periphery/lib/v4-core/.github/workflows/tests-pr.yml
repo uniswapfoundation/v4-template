@@ -1,0 +1,34 @@
+name: Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+      - audit/*
+
+jobs:
+  forge-tests:
+    name: Forge Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Build
+        run: forge build
+        env:
+          FOUNDRY_PROFILE: pr
+
+      - name: Run tests
+        run: forge test --isolate -vvv
+        env:
+          FOUNDRY_PROFILE: pr
+          FORGE_SNAPSHOT_CHECK: true

@@ -1,0 +1,12 @@
+= Utilities
+
+[.readme-notice]
+NOTE: This document is better viewed on the docs page.
+
+Libraries and general purpose utilities to help develop hooks.
+
+ * {CurrencySettler}: Library used to interact with the `PoolManager` to settle any open deltas, with support for ERC-6909 and native currencies.
+
+== Libraries
+
+{{CurrencySettler}}
