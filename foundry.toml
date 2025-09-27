@@ -4,9 +4,27 @@ ffi = true
 fs_permissions = [{access = "read-write", path = ".forge-snapshots/"}]
 libs = ["lib"]
 out = "out"
-solc_version = "0.8.30"
+solc_version = "0.8.26"
 src = "src"
 via_ir = false
 
-[lint]
+[profile.ci]
+evm_version = "cancun"
+ffi = true
+fs_permissions = [{access = "read-write", path = ".forge-snapshots/"}]
+libs = ["lib"]
+out = "out"
+solc_version = "0.8.26"
+src = "src"
+via_ir = false
+verbosity = 2
+gas_reports = ["*"]
+# Optimize for CI speed
+optimizer = true
+optimizer_runs = 200
+# Reduce fuzz runs for faster CI
+fuzz = { runs = 100 }
+invariant = { runs = 100, depth = 10 }
+
+[profile.lint]
 exclude_lints = ["screaming-snake-case-immutable", "screaming-snake-case-const"]
