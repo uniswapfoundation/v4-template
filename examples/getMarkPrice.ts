@@ -1,30 +1,10 @@
 import 'dotenv/config';
-import { http, createPublicClient, defineChain, keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
+import { http, createPublicClient, defineChain } from 'viem';
 import { getContracts, UNICHAIN_SEPOLIA } from './contracts';
+import { calculateUsdcVethPoolId, getPoolInfo } from './poolUtils';
 
 const RPC_URL = process.env.RPC_URL || process.env.UNICHAIN_SEPOLIA_RPC_URL || 'http://localhost:8545';
 const CHAIN_ID = Number(process.env.CHAIN_ID || UNICHAIN_SEPOLIA);
-
-/**
- * Calculate PoolId from PoolKey (matches Solidity PoolIdLibrary.toId())
- * Returns keccak256 hash of abi.encode(poolKey)
- */
-function calculatePoolId(currency0: string, currency1: string, fee: number, tickSpacing: number, hooks: string): `0x${string}` {
-  // ABI encode the pool key struct (matches Solidity struct layout)
-  const encoded = encodeAbiParameters(
-    parseAbiParameters("address, address, uint24, int24, address"),
-    [
-      currency0 as `0x${string}`,
-      currency1 as `0x${string}`,
-      fee,
-      tickSpacing,
-      hooks as `0x${string}`
-    ]
-  );
-  
-  // Return keccak256 hash
-  return keccak256(encoded);
-}
 
 async function main() {
   const poolIdArg = process.argv[2];
@@ -35,16 +15,22 @@ async function main() {
   let poolId: `0x${string}`;
   if (poolIdArg) {
     poolId = poolIdArg as `0x${string}`;
+    console.log("Using provided PoolId:", poolId);
   } else {
-    const fee = 3000;
-    const tick = 60;
-    const [currency0, currency1] = c.mockUSDC.address.toLowerCase() < c.mockVETH.address.toLowerCase()
-      ? [c.mockUSDC.address, c.mockVETH.address]
-      : [c.mockVETH.address, c.mockUSDC.address];
-    poolId = calculatePoolId(currency0, currency1, fee, tick, c.perpsHook.address);
+    // Calculate pool ID dynamically from contract addresses
+    poolId = calculateUsdcVethPoolId(c.mockUSDC.address, c.mockVETH.address, c.perpsHook.address);
+    
+    const poolInfo = getPoolInfo(c.mockUSDC.address, c.mockVETH.address, c.perpsHook.address);
+    console.log("📊 Pool Configuration:");
+    console.log("  Currency0 (lower):", poolInfo.poolKey.currency0);
+    console.log("  Currency1 (higher):", poolInfo.poolKey.currency1);
+    console.log("  Fee:", poolInfo.poolKey.fee);
+    console.log("  Tick Spacing:", poolInfo.poolKey.tickSpacing);
+    console.log("  Hook:", poolInfo.poolKey.hooks);
+    console.log("  Base Asset (VETH):", poolInfo.baseAsset);
+    console.log("  Quote Asset (USDC):", poolInfo.quoteAsset);
+    console.log("🆔 Calculated PoolId:", poolId);
   }
-
-  console.log("PoolId calculated from USDC/VETH pool configuration:", poolId);
 
   try {
     const markPrice = await client.readContract({
