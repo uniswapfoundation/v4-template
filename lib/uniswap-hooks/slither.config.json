@@ -1,0 +1,4 @@
+{
+    "detectors_to_exclude": "assembly-usage,solc-version,low-level-calls,similar-names,unimplemented-functions,unused-return,pragma,arbitrary-send-erc20,unchecked-transfer,dead-code,reentrancy-events",
+    "filter_paths": "lib"
+}

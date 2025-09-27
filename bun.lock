@@ -1,0 +1,14 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "uniperp",
+      "dependencies": {
+        "@pythnetwork/pyth-sdk-solidity": "^4.2.0",
+      },
+    },
+  },
+  "packages": {
+    "@pythnetwork/pyth-sdk-solidity": ["@pythnetwork/pyth-sdk-solidity@4.2.0", "", {}, "sha512-IO4pRqloqEXdbWqFbiNqthpaA5Dktl+t5GXckwdReEti90H4zcgxvINFLrSfRp7ylN2cP/LVgoCRHGEJGYlwKg=="],
+  }
+}

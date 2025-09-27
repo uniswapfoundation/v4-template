@@ -1,0 +1,39 @@
+{
+  "name": "v4-js-scripts",
+  "description": "Scripts for v4 tests",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "version": "1.0.0",
+  "homepage": "https://uniswap.org",
+  "keywords": [
+    "uniswap",
+    "core",
+    "v4"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Uniswap/v4-core"
+  },
+  "engines": {
+    "node": ">=10"
+  },
+  "devDependencies": {
+    "decimal.js": "^10.2.1",
+    "esbuild": "^0.21.3",
+    "ethers": "^5.0.8",
+    "ts-generator": "^0.1.1",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.3"
+  },
+  "scripts": {
+    "build": "npm i && node build.js && rm -rf node_modules",
+    "forge-test-getSqrtPriceAtTick": "node dist/getSqrtPriceAtTick.js",
+    "forge-test-getTickAtSqrtPrice": "node dist/getTickAtSqrtPrice.js",
+    "forge-test-getModifyLiquidityResult": "node dist/getModifyLiquidityResult.js"
+  },
+  "dependencies": {
+    "@uniswap/v3-sdk": "^3.11.2"
+  }
+}
