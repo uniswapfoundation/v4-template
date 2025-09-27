@@ -296,6 +296,65 @@ contract PerpsHook is BaseHook {
     }
 
     /*//////////////////////////////////////////////////////////////
+                        PUBLIC VAMM BALANCING FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Emergency function to rebalance vAMM reserves
+    /// @dev This is a temporary function to fix vAMM initialization issues
+    /// @param poolId The pool to rebalance
+    /// @param newVirtualBase New virtual base reserve (in wei)
+    /// @param newVirtualQuote New virtual quote reserve (in USDC 6 decimals)
+    function emergencyRebalanceVAMM(PoolId poolId, uint256 newVirtualBase, uint256 newVirtualQuote) external {
+        MarketState storage market = markets[poolId];
+        require(market.isActive, "Market not active");
+        
+        // Validate reasonable ranges to prevent abuse
+        require(newVirtualBase >= 1e15, "Virtual base too low"); // At least 0.001 ETH
+        require(newVirtualBase <= 1000e18, "Virtual base too high"); // At most 1000 ETH
+        require(newVirtualQuote >= 1e9, "Virtual quote too low"); // At least 1000 USDC
+        require(newVirtualQuote <= 1e15, "Virtual quote too high"); // At most 1B USDC
+        
+        // Calculate new K
+        uint256 newK = newVirtualBase * newVirtualQuote;
+        
+        // Update market state
+        market.virtualBase = newVirtualBase;
+        market.virtualQuote = newVirtualQuote;
+        market.k = newK;
+        
+        emit VirtualReservesUpdated(poolId, newVirtualBase, newVirtualQuote);
+    }
+
+    /// @notice Public function to add virtual liquidity to balance vAMM
+    /// @dev Allows anyone to improve vAMM balance by adding proportional virtual reserves
+    /// @param poolId The pool to add virtual liquidity to
+    /// @param additionalBase Additional virtual base to add (in wei)
+    /// @param additionalQuote Additional virtual quote to add (in USDC 6 decimals)
+    function addVirtualLiquidity(PoolId poolId, uint256 additionalBase, uint256 additionalQuote) external {
+        MarketState storage market = markets[poolId];
+        require(market.isActive, "Market not active");
+        require(additionalBase > 0 && additionalQuote > 0, "Invalid amounts");
+        
+        // Validate proportional addition to maintain price stability
+        uint256 currentPrice = (market.virtualQuote * 1e18) / market.virtualBase;
+        uint256 addedPrice = (additionalQuote * 1e18) / additionalBase;
+        
+        // Allow some price deviation but prevent extreme changes
+        uint256 priceDeviation = currentPrice > addedPrice 
+            ? ((currentPrice - addedPrice) * 10000) / currentPrice
+            : ((addedPrice - currentPrice) * 10000) / currentPrice;
+            
+        require(priceDeviation <= 1000, "Price deviation too high"); // Max 10% deviation
+        
+        // Update virtual reserves
+        market.virtualBase += additionalBase;
+        market.virtualQuote += additionalQuote;
+        market.k = market.virtualBase * market.virtualQuote;
+        
+        emit VirtualReservesUpdated(poolId, market.virtualBase, market.virtualQuote);
+    }
+
+    /*//////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
