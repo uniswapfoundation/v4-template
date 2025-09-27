@@ -1,0 +1,18 @@
+= Fee
+
+[.readme-notice]
+NOTE: This document is better viewed on the docs page.
+
+Hooks for managing and customizing pool fees, including dynamic fee adjustments, fee overrides, and post-swap fee calculations.
+
+ * {BaseDynamicFee}: Hook to apply a manual dynamic fee via the Uniswap's `PoolManager` contract.
+ * {BaseOverrideFee}: Hook that overrides and applies a fee before swapping automatically.
+ * {BaseDynamicAfterFee}: Hook that overrides and applies a fee based on a delta after swapping.
+
+== Hooks
+
+{{BaseDynamicFee}}
+
+{{BaseOverrideFee}}
+
+{{BaseDynamicAfterFee}}

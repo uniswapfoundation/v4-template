@@ -1,0 +1,21 @@
+= Base
+
+[.readme-notice]
+NOTE: This document is better viewed on the docs page.
+
+Base contracts for building secure and modular Uniswap hooks, providing core functionality and common patterns for hook development.
+
+ * {BaseCustomAccounting}: Base hook implementation for custom accounting, including support for swaps and liquidity management.
+ * {BaseCustomCurve}: Base hook implementation for custom curves.
+ * {BaseHook}: Base implementation for hooks.
+ * {BaseAsyncSwap}: Base hook implementation for asynchronous swaps.
+
+== Hooks
+
+{{BaseCustomAccounting}}
+
+{{BaseCustomCurve}}
+
+{{BaseHook}}
+
+{{BaseAsyncSwap}}

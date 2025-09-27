@@ -1,0 +1,24 @@
+# Compiler files
+cache/
+out/
+artifacts/
+cache_hardhat/
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
+# Dotenv file
+.env
+
+# Dependency directory
+node_modules
+
+# Docs build
+build/
+docs/modules/api
+.DS_Store
+
+# Foundry coverage
+coverage

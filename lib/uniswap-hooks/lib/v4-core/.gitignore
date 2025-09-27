@@ -1,0 +1,9 @@
+# if you add a file here, add it to `.npmignore` too
+artifacts/
+cache/
+crytic-export/
+node_modules/
+typechain/
+foundry-out/
+.vscode/
+out/
