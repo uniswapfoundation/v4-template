@@ -10,6 +10,7 @@ import { useMarket } from "@/context/market-context";
 import { MarketList } from "@/data/market-list";
 import { useSpotData } from "@/hooks/api/use-market-data";
 import TimeframeSelector from "./timeframe-selector";
+import Image from "next/image";
 
 let tvScriptLoadingPromise: Promise<void> | undefined;
 
@@ -272,8 +273,14 @@ export default function TradingChart() {
                   className="flex items-center gap-2 hover:bg-accent/50 rounded px-2 py-1 transition-colors"
                   onClick={() => setIsMarketModalOpen(!isMarketModalOpen)}
                 >
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">H</span>
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center">
+                    <Image
+                      src="/ethlogo.jpg"
+                      alt="ETH"
+                      width={24}
+                      height={24}
+                      className="rounded-full"
+                    />
                   </div>
                   <span className="text-base sm:text-lg font-display">
                     {selectedMarket?.symbol || "Select Market"}
