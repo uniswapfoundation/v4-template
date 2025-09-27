@@ -280,7 +280,8 @@ contract DeployProductionWithMinerScript is Script {
             address(positionFactory),
             address(marginAccount),
             address(fundingOracle),
-            address(mockUSDC)
+            address(mockUSDC),
+            msg.sender // Pass deployer as initial owner
         );
         
         console.log("   Mining address with HookMiner...");

@@ -114,7 +114,8 @@ contract AnvilScript is Script {
             positionFactory,  // PositionFactory instance
             MarginAccount(address(0)), 
             FundingOracle(payable(address(0))),
-            IERC20(address(token0)) // USDC token
+            IERC20(address(token0)), // USDC token
+            msg.sender // Initial owner
         );
         console.log("PerpsHook deployed at:", address(perpsHook));
 

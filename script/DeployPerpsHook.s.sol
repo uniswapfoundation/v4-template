@@ -67,7 +67,8 @@ contract DeployPerpsHookScript is Script {
             PositionFactory(POSITION_FACTORY_ADDRESS), 
             MarginAccount(MARGIN_ACCOUNT_ADDRESS), 
             FundingOracle(FUNDING_ORACLE_ADDRESS), 
-            IERC20(USDC_ADDRESS)
+            IERC20(USDC_ADDRESS),
+            msg.sender // Initial owner
         );
         vm.stopBroadcast();
 

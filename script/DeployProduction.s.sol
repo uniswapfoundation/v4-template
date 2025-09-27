@@ -194,7 +194,8 @@ contract DeployProductionScript is Script {
             positionFactory,      // PositionFactory
             marginAccount,        // MarginAccount  
             fundingOracle,        // FundingOracle
-            mockUSDC              // IERC20 (USDC)
+            mockUSDC,             // IERC20 (USDC)
+            msg.sender            // Initial owner
         );
         console.log("   PerpsHook deployed at:", address(perpsHook));
         

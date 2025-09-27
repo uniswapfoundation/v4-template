@@ -119,13 +119,13 @@ contract PerpsHook is BaseHook {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(IPoolManager _poolManager, PositionManager _positionManager, PositionFactory _positionFactory, MarginAccount _marginAccount, FundingOracle _fundingOracle, IERC20 _usdc) BaseHook(_poolManager) {
+    constructor(IPoolManager _poolManager, PositionManager _positionManager, PositionFactory _positionFactory, MarginAccount _marginAccount, FundingOracle _fundingOracle, IERC20 _usdc, address _initialOwner) BaseHook(_poolManager) {
         positionManager = _positionManager;
         positionFactory = _positionFactory;
         marginAccount = _marginAccount;
         fundingOracle = _fundingOracle;
         USDC = _usdc;
-        owner = msg.sender;
+        owner = _initialOwner != address(0) ? _initialOwner : msg.sender;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -310,7 +310,7 @@ contract PerpsHook is BaseHook {
     /// @param poolId The pool to rebalance
     /// @param newVirtualBase New virtual base reserve (in wei)
     /// @param newVirtualQuote New virtual quote reserve (in USDC 6 decimals)
-    function emergencyRebalanceVAMM(PoolId poolId, uint256 newVirtualBase, uint256 newVirtualQuote) external {
+    function emergencyRebalanceVAMM(PoolId poolId, uint256 newVirtualBase, uint256 newVirtualQuote) external onlyOwner {
         MarketState storage market = markets[poolId];
         require(market.isActive, "Market not active");
         
@@ -331,12 +331,12 @@ contract PerpsHook is BaseHook {
         emit VirtualReservesUpdated(poolId, newVirtualBase, newVirtualQuote);
     }
 
-    /// @notice Public function to add virtual liquidity to balance vAMM
-    /// @dev Allows anyone to improve vAMM balance by adding proportional virtual reserves
+    /// @notice Function to add virtual liquidity to balance vAMM
+    /// @dev Allows owner to improve vAMM balance by adding proportional virtual reserves
     /// @param poolId The pool to add virtual liquidity to
     /// @param additionalBase Additional virtual base to add (in wei)
     /// @param additionalQuote Additional virtual quote to add (in USDC 6 decimals)
-    function addVirtualLiquidity(PoolId poolId, uint256 additionalBase, uint256 additionalQuote) external {
+    function addVirtualLiquidity(PoolId poolId, uint256 additionalBase, uint256 additionalQuote) external onlyOwner {
         MarketState storage market = markets[poolId];
         require(market.isActive, "Market not active");
         require(additionalBase > 0 && additionalQuote > 0, "Invalid amounts");

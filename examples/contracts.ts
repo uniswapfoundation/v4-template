@@ -95,7 +95,7 @@ export const externalContracts: ExternalContracts = {
       abi: fundingOracleArtifact.abi
     },
     perpsHook: {
-      address: "0xca17bc76e3882Dc2df766D9A1b6690a57449Dac8",
+      address: "0xfEe4D80A621808E3c21d7E4FA0Fd70e4686e5ac8",
       abi: perpsHookArtifact.abi
     },
     mockUSDC: {

@@ -174,7 +174,8 @@ contract DeployProductionSimpleScript is Script {
             positionFactory,
             marginAccount,
             fundingOracle,
-            mockUSDC
+            mockUSDC,
+            msg.sender // Initial owner
         );
         console.log("   PerpsHook deployed at:", address(perpsHook));
         
