@@ -1,0 +1,37 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "module": "index.ts",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.15.0",
+    "viem": "^2.21.15"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "scripts": {
+    "deposit:margin": "bun run depositMargin.ts",
+    "open:long": "bun run openLong.ts",
+    "open:short": "bun run openShort.ts",
+    "get:position": "bun run getPosition.ts",
+    "get:mark": "bun run getMarkPrice.ts",
+    "withdraw:margin": "bun run withdrawMargin.ts",
+    "close:position": "bun run closePosition.ts",
+    "create-pool": "bun run createPool.ts",
+    "add-liquidity": "bun run addLiquidity.ts",
+    "margin-operations": "bun run marginOperations.ts",
+    "swap:open-long": "bun run openLongViaSwap.ts",
+    "swap:open-short": "bun run openShortViaSwap.ts",
+    "swap:close": "bun run closePositionViaSwap.ts",
+    "swap:margin": "bun run marginViaSwap.ts",
+    "test:keymanager": "bun run testKeyManager.ts",
+    "create:veth-usdc-pool": "bun run createVethUsdcPool.ts",
+    "add:market": "bun run addVethUsdcMarket.ts",
+    "add:market:direct": "bun run addMarketDirect.ts",
+    "test:basic-pool": "bun run testBasicPool.ts",
+    "check:pool-exists": "bun run checkPoolExists.ts"
+  }
+}

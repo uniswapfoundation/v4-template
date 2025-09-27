@@ -1,0 +1,34 @@
+[profile.default]
+src             = 'src'                                 # The source directory
+out             = 'out'                                 # The output directory
+libs            = ['lib']                               # A list of library directories
+optimizer       = true                                  # Enable or disable the solc optimizer
+optimizer_runs  = 200                                   # The number of optimizer runs
+fs_permissions  = [{ access = "read", path = "./"}]     # Gives permission to read files for deployment keys.
+evm_version     = "cancun"                              # The EVM version to use
+ffi             = true                                  # Enable the foreign function interface (ffi) cheatcode.
+
+[fuzz]
+runs           = 256        # The number of times to run the fuzzing tests
+
+[invariant]
+runs           = 8          # The number of calls to make in the invariant tests
+depth          = 8          # The number of times to run the invariant tests
+fail_on_revert = true       # Fail the test if the contract reverts
+
+[profile.shallow.fuzz]
+runs           = 128        # The number of times to run the fuzzing tests
+
+[profile.deep.fuzz]
+runs           = 512        # The number of times to run the fuzzing tests
+
+[profile.deep.invariant]
+runs           = 12         # The number of times to run the invariant tests
+depth          = 12         # The number of calls to make in the invariant tests
+
+[profile.super_deep.fuzz]
+runs           = 1024       # The number of times to run the fuzzing tests
+
+[profile.super_deep.invariant]
+runs           = 16         # The number of calls to make in the invariant tests
+depth          = 16         # The number of times to run the invariant tests
