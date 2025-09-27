@@ -1,56 +1,36 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Star } from "lucide-react";
 
 interface MarketSelectionDropdownProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelectMarket: (market: string) => void;
+  onSelectMarket: (market: string, chartType: "spot" | "perp") => void;
   currentMarket: string;
+  currentChartType: "spot" | "perp";
   triggerRef?: React.RefObject<HTMLElement>;
 }
 
 import { MarketList } from "@/data/market-list";
-import { useMultipleMarketDetails } from "@/hooks/api";
 
 // Get market data for all available markets
-function useMarketsData() {
-  const marketIds = MarketList.map((spot) => spot.symbol);
-  const { data: marketsData, isLoading } = useMultipleMarketDetails(marketIds);
+function useMarketsData(selectedCategory: string) {
+  // Mock data for now - just return the markets with basic info
+  const markets = MarketList.map((spot) => ({
+    symbol: spot.symbol,
+    price: "0.00",
+    change: "0.00%",
+    volume: "0M",
+    isNegative: false,
+    leverage: selectedCategory,
+  }));
 
-  const markets = MarketList.map((spot, index) => {
-    const marketData = marketsData?.[index];
-
-    if (!marketData) {
-      return {
-        symbol: spot.symbol,
-        price: "0.00",
-        change: "0.00%",
-        volume: "0M",
-        isNegative: false,
-        leverage: "Spot",
-      };
-    }
-
-    return {
-      symbol: spot.symbol,
-      price: marketData.currentPrice.toFixed(2),
-      change: `${
-        marketData.priceChange24h >= 0 ? "+" : ""
-      }${marketData.priceChange24h.toFixed(2)}%`,
-      volume: `${(marketData.volume24h / 1000000).toFixed(0)}M`,
-      isNegative: marketData.priceChange24h < 0,
-      leverage: "Spot",
-    };
-  });
-
-  return { markets, isLoading };
+  return { markets, isLoading: false };
 }
 
 const categories = ["Perp", "Spot"];
@@ -60,12 +40,20 @@ export default function MarketSelectionDropdown({
   onOpenChange,
   onSelectMarket,
   currentMarket,
+  currentChartType,
   triggerRef,
 }: MarketSelectionDropdownProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Perp");
+  const [selectedCategory, setSelectedCategory] = useState(
+    currentChartType === "perp" ? "Perp" : "Spot"
+  );
 
-  const { markets, isLoading } = useMarketsData();
+  // Update selectedCategory when currentChartType changes
+  useEffect(() => {
+    setSelectedCategory(currentChartType === "perp" ? "Perp" : "Spot");
+  }, [currentChartType]);
+
+  const { markets, isLoading } = useMarketsData(selectedCategory);
 
   const filteredMarkets = markets.filter((market) =>
     market.symbol.toLowerCase().includes(searchQuery.toLowerCase())
@@ -85,7 +73,7 @@ export default function MarketSelectionDropdown({
           />
 
           <motion.div
-            className="absolute top-full left-0 mt-2 w-full max-w-[800px] min-w-[320px] bg-background border rounded-lg shadow-lg z-50 max-h-[500px] overflow-hidden"
+            className="absolute top-full left-0 mt-2 w-full max-w-[1200px] min-w-[400px] bg-background border rounded-lg shadow-lg z-50 max-h-[500px] overflow-hidden"
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -121,11 +109,16 @@ export default function MarketSelectionDropdown({
                       selectedCategory === category ? "default" : "ghost"
                     }
                     size="sm"
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => {
+                      console.log("Category clicked:", category);
+                      setSelectedCategory(category);
+                      // Immediately update chart type when toggle is clicked
+                      const chartType = category === "Perp" ? "perp" : "spot";
+                      onSelectMarket(currentMarket, chartType);
+                    }}
                     className="text-xs"
                   >
                     {category}
-                    {category === "Spot"}
                   </Button>
                 ))}
               </div>
@@ -152,9 +145,17 @@ export default function MarketSelectionDropdown({
                     {filteredMarkets.map((market) => (
                       <div
                         key={market.symbol}
-                        className="lg:grid lg:grid-cols-6 lg:gap-4 p-2 hover:bg-accent/50 rounded cursor-pointer transition-colors"
+                        className="lg:grid lg:grid-cols-6 lg:gap-16 p-2 hover:bg-accent/50 rounded cursor-pointer transition-colors"
                         onClick={() => {
-                          onSelectMarket(market.symbol);
+                          const chartType =
+                            selectedCategory === "Perp" ? "perp" : "spot";
+                          console.log(
+                            "Market selected:",
+                            market.symbol,
+                            "Chart type:",
+                            chartType
+                          );
+                          onSelectMarket(market.symbol, chartType);
                           onOpenChange(false);
                         }}
                       >
@@ -165,14 +166,6 @@ export default function MarketSelectionDropdown({
                               <span className="font-mono text-sm font-medium">
                                 {market.symbol}
                               </span>
-                              {market.leverage && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-xs px-1 py-0"
-                                >
-                                  {market.leverage}
-                                </Badge>
-                              )}
                             </div>
                             <div className="font-mono text-sm font-medium">
                               {market.price}
@@ -200,14 +193,6 @@ export default function MarketSelectionDropdown({
                             <span className="font-mono text-sm">
                               {market.symbol}
                             </span>
-                            {market.leverage && (
-                              <Badge
-                                variant="secondary"
-                                className="text-xs px-1 py-0"
-                              >
-                                {market.leverage}
-                              </Badge>
-                            )}
                           </div>
                           <div className="font-mono text-sm">
                             {market.price}
