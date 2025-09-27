@@ -42,7 +42,7 @@ async function showAllPositions() {
     const totalBalance = await publicClient.readContract({
       address: c.marginAccount.address,
       abi: c.marginAccount.abi as any,
-      functionName: 'totalBalance',
+      functionName: 'getTotalBalance',
       args: [account.address]
     }) as bigint;
 
@@ -50,6 +50,10 @@ async function showAllPositions() {
     console.log(`  Free Balance: ${Number(freeBalance) / 1e6} USDC`);
     console.log(`  Total Balance: ${Number(totalBalance) / 1e6} USDC`);
     console.log(`  Margin Used: ${Number(totalBalance - freeBalance) / 1e6} USDC`);
+
+    // Calculate pool ID dynamically
+    const poolId = calculateUsdcVethPoolId(c.mockUSDC.address, c.mockVETH.address, c.perpsHook.address);
+    console.log('\n🆔 Using Pool ID:', poolId);
 
     // Get current mark price for PnL calculations
     const markPrice = await publicClient.readContract({

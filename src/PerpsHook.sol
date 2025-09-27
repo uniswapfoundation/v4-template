@@ -49,6 +49,11 @@ contract PerpsHook is BaseHook {
     event FundingIndexUpdated(PoolId indexed poolId, int256 fundingIndex);
     event PositionOpened(PoolId indexed poolId, address indexed trader, uint256 tokenId, int256 size, uint256 margin);
     event PositionClosed(PoolId indexed poolId, address indexed trader, uint256 tokenId, int256 pnl);
+    
+    // Essential debug events
+    event DebugBeforeSwap(PoolId indexed poolId, uint8 operation, uint256 size, uint256 margin);
+    event DebugValidation(PoolId indexed poolId, uint256 markPrice, uint256 notionalSize);
+    event DebugError(string step, string reason);
 
     /*//////////////////////////////////////////////////////////////
                                 STRUCTS
@@ -114,13 +119,13 @@ contract PerpsHook is BaseHook {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(IPoolManager _poolManager, PositionManager _positionManager, PositionFactory _positionFactory, MarginAccount _marginAccount, FundingOracle _fundingOracle, IERC20 _usdc) BaseHook(_poolManager) {
+    constructor(IPoolManager _poolManager, PositionManager _positionManager, PositionFactory _positionFactory, MarginAccount _marginAccount, FundingOracle _fundingOracle, IERC20 _usdc, address _initialOwner) BaseHook(_poolManager) {
         positionManager = _positionManager;
         positionFactory = _positionFactory;
         marginAccount = _marginAccount;
         fundingOracle = _fundingOracle;
         USDC = _usdc;
-        owner = msg.sender;
+        owner = _initialOwner != address(0) ? _initialOwner : msg.sender;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -204,7 +209,7 @@ contract PerpsHook is BaseHook {
         return INITIAL_ETH_PRICE; // $2000 for ETH
     }
 
-    function _beforeSwap(address, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
+    function _beforeSwap(address sender, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
         internal
         override
         returns (bytes4, BeforeSwapDelta, uint24)
@@ -221,6 +226,7 @@ contract PerpsHook is BaseHook {
         
         // Decode trade parameters
         TradeParams memory trade = abi.decode(hookData, (TradeParams));
+        emit DebugBeforeSwap(poolId, trade.operation, trade.size, trade.margin);
         
         // Update funding if enough time has passed
         _updateFundingIfNeeded(poolId);
@@ -245,7 +251,7 @@ contract PerpsHook is BaseHook {
         return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, dynamicFee);
     }
 
-    function _afterSwap(address, PoolKey calldata key, SwapParams calldata params, BalanceDelta, bytes calldata hookData)
+    function _afterSwap(address sender, PoolKey calldata key, SwapParams calldata params, BalanceDelta, bytes calldata hookData)
         internal
         override
         returns (bytes4, int128)
@@ -296,38 +302,114 @@ contract PerpsHook is BaseHook {
     }
 
     /*//////////////////////////////////////////////////////////////
+                        PUBLIC VAMM BALANCING FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Emergency function to rebalance vAMM reserves
+    /// @dev This is a temporary function to fix vAMM initialization issues
+    /// @param poolId The pool to rebalance
+    /// @param newVirtualBase New virtual base reserve (in wei)
+    /// @param newVirtualQuote New virtual quote reserve (in USDC 6 decimals)
+    function emergencyRebalanceVAMM(PoolId poolId, uint256 newVirtualBase, uint256 newVirtualQuote) external onlyOwner {
+        MarketState storage market = markets[poolId];
+        require(market.isActive, "Market not active");
+        
+        // Validate reasonable ranges to prevent abuse
+        require(newVirtualBase >= 1e15, "Virtual base too low"); // At least 0.001 ETH
+        require(newVirtualBase <= 1000e18, "Virtual base too high"); // At most 1000 ETH
+        require(newVirtualQuote >= 1e9, "Virtual quote too low"); // At least 1000 USDC
+        require(newVirtualQuote <= 1e15, "Virtual quote too high"); // At most 1B USDC
+        
+        // Calculate new K
+        uint256 newK = newVirtualBase * newVirtualQuote;
+        
+        // Update market state
+        market.virtualBase = newVirtualBase;
+        market.virtualQuote = newVirtualQuote;
+        market.k = newK;
+        
+        emit VirtualReservesUpdated(poolId, newVirtualBase, newVirtualQuote);
+    }
+
+    /// @notice Function to add virtual liquidity to balance vAMM
+    /// @dev Allows owner to improve vAMM balance by adding proportional virtual reserves
+    /// @param poolId The pool to add virtual liquidity to
+    /// @param additionalBase Additional virtual base to add (in wei)
+    /// @param additionalQuote Additional virtual quote to add (in USDC 6 decimals)
+    function addVirtualLiquidity(PoolId poolId, uint256 additionalBase, uint256 additionalQuote) external onlyOwner {
+        MarketState storage market = markets[poolId];
+        require(market.isActive, "Market not active");
+        require(additionalBase > 0 && additionalQuote > 0, "Invalid amounts");
+        
+        // Validate proportional addition to maintain price stability
+        uint256 currentPrice = (market.virtualQuote * 1e30) / market.virtualBase;
+        uint256 addedPrice = (additionalQuote * 1e30) / additionalBase;
+        
+        // Allow some price deviation but prevent extreme changes
+        uint256 priceDeviation = currentPrice > addedPrice 
+            ? ((currentPrice - addedPrice) * 10000) / currentPrice
+            : ((addedPrice - currentPrice) * 10000) / currentPrice;
+            
+        require(priceDeviation <= 1000, "Price deviation too high"); // Max 10% deviation
+        
+        // Update virtual reserves
+        market.virtualBase += additionalBase;
+        market.virtualQuote += additionalQuote;
+        market.k = market.virtualBase * market.virtualQuote;
+        
+        emit VirtualReservesUpdated(poolId, market.virtualBase, market.virtualQuote);
+    }
+
+    /*//////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _validateTrade(PoolId poolId, TradeParams memory trade, SwapParams calldata params) internal view {
+    function _validateTrade(PoolId poolId, TradeParams memory trade, SwapParams calldata params) internal {
         MarketState storage market = markets[poolId];
         
         // Price band check
         uint256 currentMarkPrice = _getMarkPrice(poolId);
+        
         if (market.spotPriceFeed != address(0)) {
             uint256 spotPrice = _getSpotPrice(market.spotPriceFeed);
             uint256 deviation = currentMarkPrice > spotPrice ? 
                 ((currentMarkPrice - spotPrice) * 10000) / spotPrice :
                 ((spotPrice - currentMarkPrice) * 10000) / spotPrice;
             
-            if (deviation > MAX_DEVIATION_BPS) revert PriceBandExceeded();
+            if (deviation > MAX_DEVIATION_BPS) {
+                emit DebugError("priceBand", "Price deviation too high");
+                revert PriceBandExceeded();
+            }
         }
         
         // Open interest cap check for new positions
         if (trade.operation <= 1) { // Opening positions
             uint256 notionalSize = (trade.size * currentMarkPrice) / 1e18;  // This gives us USDC in 18 decimals
             notionalSize = notionalSize / 1e12;  // Convert to 6 decimals to match USDC
+            
+            emit DebugValidation(poolId, currentMarkPrice, notionalSize);
+            
             if (trade.operation == 0) { // Long
-                if (market.totalLongOI + notionalSize > market.maxOICap) revert OpenInterestCapExceeded();
+                if (market.totalLongOI + notionalSize > market.maxOICap) {
+                    emit DebugError("openInterest", "Long OI cap exceeded");
+                    revert OpenInterestCapExceeded();
+                }
             } else { // Short
-                if (market.totalShortOI + notionalSize > market.maxOICap) revert OpenInterestCapExceeded();
+                if (market.totalShortOI + notionalSize > market.maxOICap) {
+                    emit DebugError("openInterest", "Short OI cap exceeded");
+                    revert OpenInterestCapExceeded();
+                }
             }
         }
         
         // Margin requirement check for position operations
         if (trade.operation <= 1 && trade.margin > 0) {
             uint256 requiredMargin = _calculateRequiredMargin(trade.size, currentMarkPrice);
-            if (trade.margin < requiredMargin) revert InsufficientMargin();
+            
+            if (trade.margin < requiredMargin) {
+                emit DebugError("margin", "Insufficient margin");
+                revert InsufficientMargin();
+            }
         }
     }
 
@@ -540,7 +622,10 @@ contract PerpsHook is BaseHook {
         MarketState storage market = markets[poolId];
         
         // Get vAMM virtual price
-        uint256 vammPrice = (market.virtualQuote * 1e18) / market.virtualBase;
+        // virtualQuote is in 6 decimals (USDC), virtualBase is in 18 decimals (VETH)
+        // Price should be in 18 decimals: (virtualQuote * 1e30) / virtualBase
+        // We multiply by 1e30 = 1e12 (to convert USDC 6->18 decimals) * 1e18 (price precision)
+        uint256 vammPrice = (market.virtualQuote * 1e30) / market.virtualBase;
         
         // Try to get spot price from FundingOracle
         try fundingOracle.getSpotPrice(poolId) returns (uint256 spotPrice) {
@@ -579,7 +664,7 @@ contract PerpsHook is BaseHook {
     /// @return meanPrice Current mean price used for trading
     function getPriceBreakdown(PoolId poolId) external view returns (uint256 vammPrice, uint256 spotPrice, uint256 meanPrice) {
         MarketState storage market = markets[poolId];
-        vammPrice = (market.virtualQuote * 1e18) / market.virtualBase;
+        vammPrice = (market.virtualQuote * 1e30) / market.virtualBase;
         
         try fundingOracle.getSpotPrice(poolId) returns (uint256 oraclePrice) {
             if (oraclePrice > 0) {

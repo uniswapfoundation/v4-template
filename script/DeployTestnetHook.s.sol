@@ -191,7 +191,8 @@ contract DeployTestnetHookScript is Script {
             PositionFactory(positionFactory),
             MarginAccount(marginAccount),
             FundingOracle(fundingOracle),
-            IERC20(usdc)
+            IERC20(usdc),
+            msg.sender // Initial owner
         );
         
         // Verify the deployed address matches the mined address

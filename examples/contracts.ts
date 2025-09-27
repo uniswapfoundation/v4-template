@@ -75,51 +75,51 @@ interface ExternalContracts {
 export const externalContracts: ExternalContracts = {
   [UNICHAIN_SEPOLIA]: {
     perpsRouter: {
-      address: "0xB39d6b44437b1036f2C42bb1Fd490F5381dD22dc",
+      address: "0x0B5B1aF93438455940F548bAc210A16e6A27669C",
       abi: perpsRouterArtifact.abi
     },
     positionManager: {
-      address: "0x6B97C3E3fde7a2B06eF860622D7b5a847a34E81e",
+      address: "0xcFe240bE5C918d18DaC233DA08C9a3b71Adf7D18",
       abi: positionManagerArtifact.abi
     },
     marginAccount: {
-      address: "0xBcc2b27C15518Ee4923dcc643521F47A37514694",
+      address: "0xaCF00c49717E0CF51CD7Bc8F2fcC17E6647c5148",
       abi: marginAccountArtifact.abi
     },
     marketManager: {
-      address: "0xEF836549F8CA5d9396683f3e0ECE67348AF2c07b",
+      address: "0x77B6C376b88fA602026e6ba1cD81aD9F8C867a8B",
       abi: marketManagerArtifact.abi
     },
     fundingOracle: {
-      address: "0x8EBbAe5e8dA96f000C940CAc2e224EC83D0994CB",
+      address: "0x006694437063034c29d8e8c41D56486a902B9BD2",
       abi: fundingOracleArtifact.abi
     },
     perpsHook: {
-      address: "0x937c62fe13D4B8e51967b6cCC55605AA965A5aC8",
+      address: "0xfEe4D80A621808E3c21d7E4FA0Fd70e4686e5ac8",
       abi: perpsHookArtifact.abi
     },
     mockUSDC: {
-      address: "0x748Da545386651D3d83B4AbC6267153fF2BdF91d",
+      address: "0x022d625B4B8dcA331afdE3879A2FD1A5b66239e1",
       abi: mockUSDCArtifact.abi
     },
     mockVETH: {
-      address: "0x982d92a8593c0C3c0C4F8558b8C80245d758213e",
+      address: "0x8CB741567B4dEaE5c78A9ca9284b6B807974f72f",
       abi: mockVETHArtifact.abi
     },
     insuranceFund: {
-      address: "0x33E3a44781F5c12Eb35Fc4b304A5823591eaB51b",
+      address: "0x066DeF0AC376E6363763272ae0Aa1aE4012E4a42",
       abi: insuranceFundArtifact.abi
     },
     liquidationEngine: {
-      address: "0x4822184C495E33976DF10BD68C8Bb161Fa96927A",
+      address: "0x877A9334ca7323544065FCed5a351b7D057Cf826",
       abi: liquidationEngineArtifact.abi
     },
     positionFactory: {
-      address: "0x2c143D055b5c5EBd04BF8EeBa224284D280a8451",
+      address: "0xd1a79AA958dad1D89b6Ba94EFe597dE0cA380dD3",
       abi: positionFactoryArtifact.abi
     },
     positionNFT: {
-      address: "0x8EB238Ab91a06DC616c631ebA3D64d48040d37e3",
+      address: "0x25F273b73Db9f7EcA7aa9C7BBc6f1acfD4A6D22f",
       abi: positionNFTArtifact.abi
     },
     // Uniswap V4 Core Contracts
