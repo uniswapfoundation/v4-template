@@ -1,0 +1,29 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  run-tests:
+    name: Forge Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Run tests
+        run: forge test --isolate -vvv
+        env:
+          FOUNDRY_PROFILE: ci
+          FORGE_SNAPSHOT_CHECK: true
+          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}

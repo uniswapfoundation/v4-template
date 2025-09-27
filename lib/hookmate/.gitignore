@@ -1,0 +1,14 @@
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+node_modules
+
+cache
+out
+
+.env
+.env.*
