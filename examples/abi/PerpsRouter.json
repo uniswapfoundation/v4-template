@@ -1,0 +1,7 @@
+{"abi": [
+  {"type":"function","name":"openPosition","inputs":[{"name":"params","type":"tuple","components":[{"name":"poolKey","type":"bytes32"},{"name":"isLong","type":"bool"},{"name":"marginAmount","type":"uint256"},{"name":"leverage","type":"uint256"},{"name":"slippageBps","type":"uint256"},{"name":"deadline","type":"uint256"}]}],"outputs":[{"name":"tokenId","type":"uint256"}],"stateMutability":"nonpayable"},
+  {"type":"function","name":"closePosition","inputs":[{"name":"params","type":"tuple","components":[{"name":"tokenId","type":"uint256"},{"name":"sizeBps","type":"uint256"},{"name":"slippageBps","type":"uint256"},{"name":"deadline","type":"uint256"}]}],"outputs":[],"stateMutability":"nonpayable"},
+  {"type":"function","name":"getPositionWithPnL","inputs":[{"name":"tokenId","type":"uint256"}],"outputs":[{"name":"position","type":"tuple","components":[{"name":"owner","type":"address"},{"name":"marketId","type":"bytes32"},{"name":"sizeBase","type":"int256"},{"name":"entryPrice","type":"uint256"},{"name":"margin","type":"uint256"}]},{"name":"unrealizedPnL","type":"int256"},{"name":"currentPrice","type":"uint256"},{"name":"liquidationPrice","type":"uint256"}],"stateMutability":"view"},
+  {"type":"function","name":"getUserBalance","inputs":[{"name":"user","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"},
+  {"type":"function","name":"depositMargin","inputs":[{"name":"amount","type":"uint256"}],"outputs":[],"stateMutability":"nonpayable"}
+]}
