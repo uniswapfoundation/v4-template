@@ -257,7 +257,7 @@ export function PositionManagementModal({
                           ease: [0.16, 1, 0.3, 1],
                         },
                       }}
-                      className="rounded-lg border-2 overflow-hidden transition-colors duration-300 bg-muted/30 border-border"
+                      className="rounded-lg overflow-hidden transition-colors duration-300 bg-[oklab(0.2393_0_0_/_0.5)]"
                     >
                       <div className="px-4">
                         <div className="space-y-4">
@@ -427,7 +427,7 @@ export function PositionManagementModal({
                           ease: [0.16, 1, 0.3, 1],
                         },
                       }}
-                      className="rounded-lg border-2 overflow-hidden transition-colors duration-300 bg-muted/30 border-border"
+                      className="rounded-lg overflow-hidden transition-colors duration-300 bg-[oklab(0.2393_0_0_/_0.5)]"
                     >
                       <div className="px-4">
                         <div className="space-y-4">
@@ -451,9 +451,6 @@ export function PositionManagementModal({
                                 placeholder="0.00"
                                 className="text-center font-mono [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                               />
-                              <span className="text-sm text-muted-foreground self-center font-medium">
-                                USDC
-                              </span>
                             </div>
                             <div className="flex gap-2">
                               {[50, 100, 200, 500].map((amount) => (

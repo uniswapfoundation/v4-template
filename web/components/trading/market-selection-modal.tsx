@@ -125,7 +125,7 @@ export default function MarketSelectionDropdown({
                     className="text-xs"
                   >
                     {category}
-                    {category === "Spot" && <span className="ml-1">🔗</span>}
+                    {category === "Spot"}
                   </Button>
                 ))}
               </div>

@@ -316,12 +316,12 @@ export default function Portfolio() {
 
         {/* Position Rows */}
         <div className="max-h-64 overflow-y-auto">
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence>
             {filteredPositions.length === 0 ? (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="flex items-center justify-center py-8 text-muted-foreground"
               >
                 <div className="text-center">
@@ -333,10 +333,9 @@ export default function Portfolio() {
               filteredPositions.map((position, index) => (
                 <motion.div
                   key={position.tokenId}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.05 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   className="hover:bg-muted/30 transition-colors border-b border-border/50 cursor-pointer group"
                   onClick={() => {
                     setSelectedPosition(position);

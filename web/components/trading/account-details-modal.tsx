@@ -344,7 +344,7 @@ export function AccountDetailsModal({
                         : ""
                     }`}
                   >
-                    {marginBalance.totalMarginAccountBalance.toFixed(4)} USDC
+                    {marginBalance.totalMarginAccountBalance.toFixed(2)} USDC
                   </div>
                 </div>
 
@@ -368,7 +368,7 @@ export function AccountDetailsModal({
                           : ""
                       }`}
                     >
-                      {marginBalance.freeMargin.toFixed(4)} USDC
+                      {marginBalance.freeMargin.toFixed(2)} USDC
                     </div>
                   </div>
                   <div className="text-center">
@@ -386,7 +386,7 @@ export function AccountDetailsModal({
                           : ""
                       }`}
                     >
-                      {marginBalance.lockedMargin.toFixed(4)} USDC
+                      {marginBalance.lockedMargin.toFixed(2)} USDC
                     </div>
                   </div>
                 </div>
@@ -556,9 +556,6 @@ export function AccountDetailsModal({
                               <h3 className="font-semibold text-orange-500">
                                 Withdraw Funds
                               </h3>
-                              <p className="text-xs text-muted-foreground">
-                                Requires 1 MetaMask confirmation
-                              </p>
                             </div>
                           </>
                         )}
@@ -612,7 +609,7 @@ export function AccountDetailsModal({
                               className="flex justify-between text-xs text-muted-foreground overflow-hidden"
                             >
                               <span>
-                                Available: {marginBalance.freeMargin.toFixed(4)}{" "}
+                                Available: {marginBalance.freeMargin.toFixed(2)}{" "}
                                 USDC
                               </span>
                               <Button
