@@ -216,9 +216,10 @@ async function main() {
     };
 
     // Prepare swap parameters - for short position, swap in opposite direction
+    const swapAmount = parseUnits('0.001', 18); // Very small swap amount to trigger hook
     const swapParams = {
       zeroForOne: false, // Swap currency1 for currency0 (opposite of long)
-      amountSpecified: BigInt(swapAmount), // Small amount
+      amountSpecified: swapAmount, // Small amount
       sqrtPriceLimitX96: 1461446703485210103287273052203988822378723970341n // Permissive price limit for reverse swap
     };
 
@@ -230,7 +231,7 @@ async function main() {
 
     // Execute swap via PoolSwapTest with hookData
     const txHash = await walletClient.writeContract({
-      address: swapTestAddress as `0x${string}`,
+      address: c.poolSwapTest.address,
       abi: POOL_SWAP_TEST_ABI,
       functionName: 'swap',
       args: [

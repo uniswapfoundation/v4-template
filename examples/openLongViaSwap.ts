@@ -1,10 +1,9 @@
 // Open a long position using Uniswap PoolSwapTest with hookData
 // This approach mimics the test pattern where positions are opened through swaps with hookData
 import 'dotenv/config';
-import { http, createWalletClient, createPublicClient, parseUnits, defineChain, formatUnits, encodeAbiParameters, keccak256, parseAbiParameters } from 'viem';
+import { http, createWalletClient, createPublicClient, parseUnits, defineChain, formatUnits, encodeAbiParameters } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { getContracts, UNICHAIN_SEPOLIA } from './contracts';
-import { calculateUsdcVethPoolId, getPoolInfo } from './poolUtils';
 
 const RPC_URL = process.env.RPC_URL || process.env.UNICHAIN_SEPOLIA_RPC_URL || 'https://sepolia.unichain.org';
 const CHAIN_ID = Number(process.env.CHAIN_ID || UNICHAIN_SEPOLIA);
@@ -62,25 +61,21 @@ async function main() {
   console.log('  Size:', formatUnits(positionSize, 18), 'VETH');
   console.log('  Max Slippage:', Number(maxSlippage) / 100, '%');
 
-  // Calculate pool ID and configuration dynamically
-  const poolId = calculateUsdcVethPoolId(c.mockUSDC.address, c.mockVETH.address, c.perpsHook.address);
-  const poolInfo = getPoolInfo(c.mockUSDC.address, c.mockVETH.address, c.perpsHook.address);
+  // Build pool key for VETH-USDC pair
+  const fee = 3000; // 0.3%
+  const tickSpacing = 60;
+  const hooks = c.perpsHook.address;
   
+  // Order currencies by address (lower address = currency0)
+  const [currency0, currency1] = c.mockUSDC.address.toLowerCase() < c.mockVETH.address.toLowerCase()
+    ? [c.mockUSDC.address, c.mockVETH.address]
+    : [c.mockVETH.address, c.mockUSDC.address];
+
   console.log('💱 Pool Configuration:');
-  console.log('  Currency0 (lower):', poolInfo.poolKey.currency0);
-  console.log('  Currency1 (higher):', poolInfo.poolKey.currency1);
-  console.log('  Fee:', poolInfo.poolKey.fee, 'bps');
-  console.log('  Hook:', poolInfo.poolKey.hooks);
-  console.log('  Base Asset (VETH):', poolInfo.baseAsset);
-  console.log('  Quote Asset (USDC):', poolInfo.quoteAsset);
-  console.log('🆔 Pool ID:', poolId);
-  
-  // Extract values for easier reference
-  const currency0 = poolInfo.poolKey.currency0;
-  const currency1 = poolInfo.poolKey.currency1;
-  const fee = poolInfo.poolKey.fee;
-  const tickSpacing = poolInfo.poolKey.tickSpacing;
-  const hooks = poolInfo.poolKey.hooks;
+  console.log('  Currency0:', currency0);
+  console.log('  Currency1:', currency1);
+  console.log('  Fee:', fee, 'bps');
+  console.log('  Hook:', hooks);
 
   try {
     // Check current USDC balance
@@ -170,27 +165,25 @@ async function main() {
     // Approve tokens for PoolSwapTest
     console.log('🔓 Approving tokens for PoolSwapTest...');
     
-    // Approve both tokens with proper decimals
-    const usdcApproveAmount = parseUnits('1000', 6); // USDC has 6 decimals
-    const vethApproveAmount = parseUnits('1000', 18); // VETH has 18 decimals
+    // Approve both tokens for the swap test contract
+    const amount0ToApprove = parseUnits('1000', currency0 === c.mockUSDC.address ? 6 : 18);
+    const amount1ToApprove = parseUnits('1000', currency1 === c.mockUSDC.address ? 6 : 18);
 
-    // Approve USDC
-    const usdcApproveTx = await walletClient.writeContract({
-      address: c.mockUSDC.address,
+    const token0ApproveTx = await walletClient.writeContract({
+      address: currency0 as `0x${string}`,
+      abi: c.mockUSDC.abi as any, // Use USDC ABI (works for both ERC20 tokens)
+      functionName: 'approve',
+      args: [c.poolSwapTest.address, amount0ToApprove]
+    });
+    await publicClient.waitForTransactionReceipt({ hash: token0ApproveTx });
+
+    const token1ApproveTx = await walletClient.writeContract({
+      address: currency1 as `0x${string}`,
       abi: c.mockUSDC.abi as any,
       functionName: 'approve',
-      args: [c.poolSwapTest.address, usdcApproveAmount]
+      args: [c.poolSwapTest.address, amount1ToApprove]
     });
-    await publicClient.waitForTransactionReceipt({ hash: usdcApproveTx });
-
-    // Approve VETH
-    const vethApproveTx = await walletClient.writeContract({
-      address: c.mockVETH.address,
-      abi: c.mockVETH.abi as any,
-      functionName: 'approve',
-      args: [c.poolSwapTest.address, vethApproveAmount]
-    });
-    await publicClient.waitForTransactionReceipt({ hash: vethApproveTx });
+    await publicClient.waitForTransactionReceipt({ hash: token1ApproveTx });
     console.log('✅ Tokens approved for PoolSwapTest');
 
     // Prepare trade parameters for hookData
