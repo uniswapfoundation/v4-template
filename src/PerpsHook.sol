@@ -49,6 +49,11 @@ contract PerpsHook is BaseHook {
     event FundingIndexUpdated(PoolId indexed poolId, int256 fundingIndex);
     event PositionOpened(PoolId indexed poolId, address indexed trader, uint256 tokenId, int256 size, uint256 margin);
     event PositionClosed(PoolId indexed poolId, address indexed trader, uint256 tokenId, int256 pnl);
+    
+    // Essential debug events
+    event DebugBeforeSwap(PoolId indexed poolId, uint8 operation, uint256 size, uint256 margin);
+    event DebugValidation(PoolId indexed poolId, uint256 markPrice, uint256 notionalSize);
+    event DebugError(string step, string reason);
 
     /*//////////////////////////////////////////////////////////////
                                 STRUCTS
@@ -204,7 +209,7 @@ contract PerpsHook is BaseHook {
         return INITIAL_ETH_PRICE; // $2000 for ETH
     }
 
-    function _beforeSwap(address, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
+    function _beforeSwap(address sender, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
         internal
         override
         returns (bytes4, BeforeSwapDelta, uint24)
@@ -221,6 +226,7 @@ contract PerpsHook is BaseHook {
         
         // Decode trade parameters
         TradeParams memory trade = abi.decode(hookData, (TradeParams));
+        emit DebugBeforeSwap(poolId, trade.operation, trade.size, trade.margin);
         
         // Update funding if enough time has passed
         _updateFundingIfNeeded(poolId);
@@ -245,7 +251,7 @@ contract PerpsHook is BaseHook {
         return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, dynamicFee);
     }
 
-    function _afterSwap(address, PoolKey calldata key, SwapParams calldata params, BalanceDelta, bytes calldata hookData)
+    function _afterSwap(address sender, PoolKey calldata key, SwapParams calldata params, BalanceDelta, bytes calldata hookData)
         internal
         override
         returns (bytes4, int128)
@@ -336,8 +342,8 @@ contract PerpsHook is BaseHook {
         require(additionalBase > 0 && additionalQuote > 0, "Invalid amounts");
         
         // Validate proportional addition to maintain price stability
-        uint256 currentPrice = (market.virtualQuote * 1e18) / market.virtualBase;
-        uint256 addedPrice = (additionalQuote * 1e18) / additionalBase;
+        uint256 currentPrice = (market.virtualQuote * 1e30) / market.virtualBase;
+        uint256 addedPrice = (additionalQuote * 1e30) / additionalBase;
         
         // Allow some price deviation but prevent extreme changes
         uint256 priceDeviation = currentPrice > addedPrice 
@@ -358,35 +364,52 @@ contract PerpsHook is BaseHook {
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _validateTrade(PoolId poolId, TradeParams memory trade, SwapParams calldata params) internal view {
+    function _validateTrade(PoolId poolId, TradeParams memory trade, SwapParams calldata params) internal {
         MarketState storage market = markets[poolId];
         
         // Price band check
         uint256 currentMarkPrice = _getMarkPrice(poolId);
+        
         if (market.spotPriceFeed != address(0)) {
             uint256 spotPrice = _getSpotPrice(market.spotPriceFeed);
             uint256 deviation = currentMarkPrice > spotPrice ? 
                 ((currentMarkPrice - spotPrice) * 10000) / spotPrice :
                 ((spotPrice - currentMarkPrice) * 10000) / spotPrice;
             
-            if (deviation > MAX_DEVIATION_BPS) revert PriceBandExceeded();
+            if (deviation > MAX_DEVIATION_BPS) {
+                emit DebugError("priceBand", "Price deviation too high");
+                revert PriceBandExceeded();
+            }
         }
         
         // Open interest cap check for new positions
         if (trade.operation <= 1) { // Opening positions
             uint256 notionalSize = (trade.size * currentMarkPrice) / 1e18;  // This gives us USDC in 18 decimals
             notionalSize = notionalSize / 1e12;  // Convert to 6 decimals to match USDC
+            
+            emit DebugValidation(poolId, currentMarkPrice, notionalSize);
+            
             if (trade.operation == 0) { // Long
-                if (market.totalLongOI + notionalSize > market.maxOICap) revert OpenInterestCapExceeded();
+                if (market.totalLongOI + notionalSize > market.maxOICap) {
+                    emit DebugError("openInterest", "Long OI cap exceeded");
+                    revert OpenInterestCapExceeded();
+                }
             } else { // Short
-                if (market.totalShortOI + notionalSize > market.maxOICap) revert OpenInterestCapExceeded();
+                if (market.totalShortOI + notionalSize > market.maxOICap) {
+                    emit DebugError("openInterest", "Short OI cap exceeded");
+                    revert OpenInterestCapExceeded();
+                }
             }
         }
         
         // Margin requirement check for position operations
         if (trade.operation <= 1 && trade.margin > 0) {
             uint256 requiredMargin = _calculateRequiredMargin(trade.size, currentMarkPrice);
-            if (trade.margin < requiredMargin) revert InsufficientMargin();
+            
+            if (trade.margin < requiredMargin) {
+                emit DebugError("margin", "Insufficient margin");
+                revert InsufficientMargin();
+            }
         }
     }
 
@@ -599,7 +622,10 @@ contract PerpsHook is BaseHook {
         MarketState storage market = markets[poolId];
         
         // Get vAMM virtual price
-        uint256 vammPrice = (market.virtualQuote * 1e18) / market.virtualBase;
+        // virtualQuote is in 6 decimals (USDC), virtualBase is in 18 decimals (VETH)
+        // Price should be in 18 decimals: (virtualQuote * 1e30) / virtualBase
+        // We multiply by 1e30 = 1e12 (to convert USDC 6->18 decimals) * 1e18 (price precision)
+        uint256 vammPrice = (market.virtualQuote * 1e30) / market.virtualBase;
         
         // Try to get spot price from FundingOracle
         try fundingOracle.getSpotPrice(poolId) returns (uint256 spotPrice) {
@@ -638,7 +664,7 @@ contract PerpsHook is BaseHook {
     /// @return meanPrice Current mean price used for trading
     function getPriceBreakdown(PoolId poolId) external view returns (uint256 vammPrice, uint256 spotPrice, uint256 meanPrice) {
         MarketState storage market = markets[poolId];
-        vammPrice = (market.virtualQuote * 1e18) / market.virtualBase;
+        vammPrice = (market.virtualQuote * 1e30) / market.virtualBase;
         
         try fundingOracle.getSpotPrice(poolId) returns (uint256 oraclePrice) {
             if (oraclePrice > 0) {
