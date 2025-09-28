@@ -225,9 +225,12 @@ async function main() {
       hooks: hooks as `0x${string}`
     };
 
-    // Very small swap amount to trigger the hook with minimal liquidity requirements
-    const swapAmount = parseUnits('0.001', 18); // 0.001 tokens - very minimal
-    const sqrtPriceLimitX96 = "4295128740"; // Proper price limit to avoid out of bounds error
+    // Use the exact same parameters as the working test
+    const swapAmount = parseUnits('0.01', 18); // 0.01 ether - same as test
+    
+    // The pool is at SQRT_PRICE_1_1, so we need a LOWER limit for zeroForOne
+    // Use SQRT_PRICE_1_4 which is much lower than current price
+    const sqrtPriceLimitX96 = "39614081257132168796771975168"; // SQRT_PRICE_1_4 - much lower than current
 
     const swapParams = {
       zeroForOne: true, // Swap token0 for token1
