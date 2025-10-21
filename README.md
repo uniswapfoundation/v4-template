@@ -63,7 +63,8 @@ anvil --fork-url <YOUR_RPC_URL>
 forge script script/00_DeployHook.s.sol \
     --rpc-url http://localhost:8545 \
     --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d \
-    --broadcast
+    --broadcast \
+    --disable-code-size-limit
 ```
 
 ### Using **RPC URLs** (actual transactions):

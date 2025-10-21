@@ -7,6 +7,8 @@ out = "out"
 solc_version = "0.8.30"
 src = "src"
 via_ir = false
+bytecode_hash = "none"
+cbor_metadata = false
 
 [lint]
 exclude_lints = ["screaming-snake-case-immutable", "screaming-snake-case-const"]
