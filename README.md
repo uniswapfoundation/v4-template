@@ -64,6 +64,7 @@ forge script script/00_DeployHook.s.sol \
     --rpc-url http://localhost:8545 \
     --private-key <PRIVATE_KEY> \
     --broadcast
+    --disable-code-size-limit
 ```
 
 ### Using **RPC URLs** (actual transactions):
