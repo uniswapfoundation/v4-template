@@ -62,8 +62,8 @@ anvil --fork-url <YOUR_RPC_URL>
 ```bash
 forge script script/00_DeployHook.s.sol \
     --rpc-url http://localhost:8545 \
-    --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d \
-    --broadcast \
+    --private-key <PRIVATE_KEY> \
+    --broadcast
     --disable-code-size-limit
 ```
 
@@ -125,6 +125,22 @@ Enter keystore password: <YOUR_PASSWORD>
 3. Update the `token0Amount` and `token1Amount` in the `AddLiquidity.s.sol` file to match the amount of tokens you want to provide liquidity with.
 4. Update the `amountIn` and `amountOutMin` in the `Swap.s.sol` file to match the amount of tokens you want to swap.
 
+### Verifying the hook contract
+
+```bash
+forge verify-contract \
+  --rpc-url <URL> \
+  --chain <CHAIN_NAME_OR_ID> \
+  # Generally etherscan
+  --verifier <Verification_Provider> \
+  # Use --etherscan-api-key <ETHERSCAN_API_KEY> if you are using etherscan
+  --verifier-api-key <Verification_Provider_API_KEY> \ 
+  --constructor-args <ABI_ENCODED_ARGS> \
+  --num-of-optimizations <OPTIMIZER_RUNS> \
+  <Contract_Address> \
+  <path/to/Contract.sol:ContractName>
+  --watch
+```
 
 ### Troubleshooting
 
