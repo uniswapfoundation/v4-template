@@ -1,4 +1,5 @@
 [profile.default]
+bytecode_hash = "none"
 evm_version = "cancun"
 ffi = true
 fs_permissions = [{access = "read-write", path = ".forge-snapshots/"}]
@@ -7,8 +8,7 @@ out = "out"
 solc_version = "0.8.30"
 src = "src"
 via_ir = false
-bytecode_hash = "none"
-cbor_metadata = false
 
 [lint]
 exclude_lints = ["screaming-snake-case-immutable", "screaming-snake-case-const"]
+lint_on_build = false

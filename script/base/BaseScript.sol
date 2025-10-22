@@ -13,12 +13,10 @@ import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {IUniswapV4Router04} from "hookmate/interfaces/router/IUniswapV4Router04.sol";
 import {AddressConstants} from "hookmate/constants/AddressConstants.sol";
 
+import {Deployers} from "test/utils/Deployers.sol";
+
 /// @notice Shared configuration between scripts
-contract BaseScript is Script {
-    IPermit2 immutable permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
-    IPoolManager immutable poolManager;
-    IPositionManager immutable positionManager;
-    IUniswapV4Router04 immutable swapRouter;
+contract BaseScript is Script, Deployers {
     address immutable deployerAddress;
 
     /////////////////////////////////////
@@ -33,25 +31,33 @@ contract BaseScript is Script {
     Currency immutable currency1;
 
     constructor() {
-        poolManager = IPoolManager(AddressConstants.getPoolManagerAddress(block.chainid));
-        positionManager = IPositionManager(payable(AddressConstants.getPositionManagerAddress(block.chainid)));
-        swapRouter = IUniswapV4Router04(payable(AddressConstants.getV4SwapRouterAddress(block.chainid)));
+        // Make sure artifacts are available, either deploy or configure.
+        deployArtifacts();
 
         deployerAddress = getDeployer();
 
         (currency0, currency1) = getCurrencies();
 
-        vm.label(address(token0), "Token0");
-        vm.label(address(token1), "Token1");
+        vm.label(address(permit2), "Permit2");
+        vm.label(address(poolManager), "V4PoolManager");
+        vm.label(address(positionManager), "V4PositionManager");
+        vm.label(address(swapRouter), "V4SwapRouter");
 
-        vm.label(address(deployerAddress), "Deployer");
-        vm.label(address(poolManager), "PoolManager");
-        vm.label(address(positionManager), "PositionManager");
-        vm.label(address(swapRouter), "SwapRouter");
+        vm.label(address(token0), "Currency0");
+        vm.label(address(token1), "Currency1");
+
         vm.label(address(hookContract), "HookContract");
     }
 
-    function getCurrencies() public pure returns (Currency, Currency) {
+    function _etch(address target, bytes memory bytecode) internal override {
+        if (block.chainid == 31337) {
+            vm.rpc("anvil_setCode", string.concat('["', vm.toString(target), '",', '"', vm.toString(bytecode), '"]'));
+        } else {
+            revert("Unsupported etch on this network");
+        }
+    }
+
+    function getCurrencies() internal pure returns (Currency, Currency) {
         require(address(token0) != address(token1));
 
         if (token0 < token1) {
@@ -61,11 +67,13 @@ contract BaseScript is Script {
         }
     }
 
-    function getDeployer() public returns (address) {
+    function getDeployer() internal returns (address) {
         address[] memory wallets = vm.getWallets();
 
-        require(wallets.length > 0, "No wallets found");
-
-        return wallets[0];
+        if (wallets.length > 0) {
+            return wallets[0];
+        } else {
+            return msg.sender;
+        }
     }
 }
