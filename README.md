@@ -64,7 +64,6 @@ forge script script/00_DeployHook.s.sol \
     --rpc-url http://localhost:8545 \
     --private-key <PRIVATE_KEY> \
     --broadcast
-    --disable-code-size-limit
 ```
 
 ### Using **RPC URLs** (actual transactions):
@@ -97,7 +96,7 @@ You should see this:
 ```
 
 ::: warning
-Use ```history -c``` to clear your command history.
+Use `history -c` to clear your command history.
 :::
 
 </details>
@@ -134,7 +133,7 @@ forge verify-contract \
   # Generally etherscan
   --verifier <Verification_Provider> \
   # Use --etherscan-api-key <ETHERSCAN_API_KEY> if you are using etherscan
-  --verifier-api-key <Verification_Provider_API_KEY> \ 
+  --verifier-api-key <Verification_Provider_API_KEY> \
   --constructor-args <ABI_ENCODED_ARGS> \
   --num-of-optimizations <OPTIMIZER_RUNS> \
   <Contract_Address> \

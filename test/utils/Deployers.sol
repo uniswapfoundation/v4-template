@@ -69,7 +69,7 @@ abstract contract Deployers {
         permit2 = IPermit2(permit2Address);
     }
 
-    function deployPoolManager() internal {
+    function deployPoolManager() internal virtual {
         if (block.chainid == 31337) {
             poolManager = IPoolManager(V4PoolManagerDeployer.deploy(address(0x4444)));
         } else {
@@ -77,7 +77,7 @@ abstract contract Deployers {
         }
     }
 
-    function deployPositionManager() internal {
+    function deployPositionManager() internal virtual {
         if (block.chainid == 31337) {
             positionManager = IPositionManager(
                 V4PositionManagerDeployer.deploy(
@@ -89,7 +89,7 @@ abstract contract Deployers {
         }
     }
 
-    function deployRouter() internal {
+    function deployRouter() internal virtual {
         if (block.chainid == 31337) {
             swapRouter = IUniswapV4Router04(payable(V4RouterDeployer.deploy(address(poolManager), address(permit2))));
         } else {

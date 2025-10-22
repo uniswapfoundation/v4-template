@@ -57,7 +57,7 @@ contract BaseScript is Script, Deployers {
         }
     }
 
-    function getCurrencies() public pure returns (Currency, Currency) {
+    function getCurrencies() internal pure returns (Currency, Currency) {
         require(address(token0) != address(token1));
 
         if (token0 < token1) {
@@ -67,7 +67,7 @@ contract BaseScript is Script, Deployers {
         }
     }
 
-    function getDeployer() public returns (address) {
+    function getDeployer() internal returns (address) {
         address[] memory wallets = vm.getWallets();
 
         if (wallets.length > 0) {
