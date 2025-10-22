@@ -1,6 +1,5 @@
 [profile.default]
 bytecode_hash = "none"
-cbor_metadata = false
 evm_version = "cancun"
 ffi = true
 fs_permissions = [{access = "read-write", path = ".forge-snapshots/"}]
