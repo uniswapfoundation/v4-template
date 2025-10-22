@@ -15,10 +15,9 @@ import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionMa
 import {Constants} from "@uniswap/v4-core/test/utils/Constants.sol";
 
 import {EasyPosm} from "./EasyPosm.sol";
+import {BaseTest} from "../BaseTest.sol";
 
-import {Deployers} from "../Deployers.sol";
-
-contract EasyPosmTest is Test, Deployers {
+contract EasyPosmTest is Test, BaseTest {
     using EasyPosm for IPositionManager;
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;

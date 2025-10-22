@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import {Test} from "forge-std/Test.sol";
-
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
 
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
@@ -30,7 +28,7 @@ import {V4RouterDeployer} from "hookmate/artifacts/V4Router.sol";
  *
  * This contract can be used for both local testing and fork testing.
  */
-contract Deployers is Test {
+abstract contract Deployers {
     IPermit2 permit2;
     IPoolManager poolManager;
     IPositionManager positionManager;
@@ -47,7 +45,7 @@ contract Deployers is Test {
         permit2.approve(address(token), address(poolManager), type(uint160).max, type(uint48).max);
     }
 
-    function deployCurrencyPair() internal returns (Currency currency0, Currency currency1) {
+    function deployCurrencyPair() internal virtual returns (Currency currency0, Currency currency1) {
         MockERC20 token0 = deployToken();
         MockERC20 token1 = deployToken();
 
@@ -57,9 +55,6 @@ contract Deployers is Test {
 
         currency0 = Currency.wrap(address(token0));
         currency1 = Currency.wrap(address(token1));
-
-        vm.label(address(token0), "Currency0");
-        vm.label(address(token1), "Currency1");
     }
 
     function deployPermit2() internal {
@@ -68,39 +63,30 @@ contract Deployers is Test {
         if (permit2Address.code.length > 0) {
             // Permit2 is already deployed, no need to etch it.
         } else {
-            address tempDeployAddress = address(Permit2Deployer.deploy());
-
-            vm.etch(permit2Address, tempDeployAddress.code);
+            _etch(permit2Address, Permit2Deployer.deploy().code);
         }
 
         permit2 = IPermit2(permit2Address);
-        vm.label(permit2Address, "Permit2");
     }
 
     function deployPoolManager() internal {
         if (block.chainid == 31337) {
-            poolManager = IPoolManager(address(V4PoolManagerDeployer.deploy(address(0x4444))));
+            poolManager = IPoolManager(V4PoolManagerDeployer.deploy(address(0x4444)));
         } else {
             poolManager = IPoolManager(AddressConstants.getPoolManagerAddress(block.chainid));
         }
-
-        vm.label(address(poolManager), "V4PoolManager");
     }
 
     function deployPositionManager() internal {
         if (block.chainid == 31337) {
             positionManager = IPositionManager(
-                address(
-                    V4PositionManagerDeployer.deploy(
-                        address(poolManager), address(permit2), 300_000, address(0), address(0)
-                    )
+                V4PositionManagerDeployer.deploy(
+                    address(poolManager), address(permit2), 300_000, address(0), address(0)
                 )
             );
         } else {
             positionManager = IPositionManager(AddressConstants.getPositionManagerAddress(block.chainid));
         }
-
-        vm.label(address(positionManager), "V4PositionManager");
     }
 
     function deployRouter() internal {
@@ -109,8 +95,10 @@ contract Deployers is Test {
         } else {
             swapRouter = IUniswapV4Router04(payable(AddressConstants.getV4SwapRouterAddress(block.chainid)));
         }
+    }
 
-        vm.label(address(swapRouter), "V4SwapRouter");
+    function _etch(address, bytes memory) internal virtual {
+        revert("Not implemented");
     }
 
     function deployArtifacts() internal {

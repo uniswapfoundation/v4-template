@@ -17,11 +17,11 @@ import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionMa
 import {Constants} from "@uniswap/v4-core/test/utils/Constants.sol";
 
 import {EasyPosm} from "./utils/libraries/EasyPosm.sol";
-import {Deployers} from "./utils/Deployers.sol";
 
 import {Counter} from "../src/Counter.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
 
-contract CounterTest is Test, Deployers {
+contract CounterTest is BaseTest {
     using EasyPosm for IPositionManager;
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -41,7 +41,7 @@ contract CounterTest is Test, Deployers {
 
     function setUp() public {
         // Deploys all required artifacts.
-        deployArtifacts();
+        deployArtifactsAndLabel();
 
         (currency0, currency1) = deployCurrencyPair();
 
