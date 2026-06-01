@@ -27,7 +27,7 @@ jobs:
         with:
           submodules: recursive          # pull in v4-core / forge-std so `forge test` resolves
 
-      - uses: hunterinvariants/hunter-invariants/actions/v4-invariants@v3
+      - uses: hunterinvariants/hunter-invariants/actions/v4-invariants@8a940f57c0d4efda2eb234f097e6ece946715c44  # v3
         with:
           scan: src                       # auto-discover + gate EVERY hook under src/ -- no per-hook config
           # runs: 256                     # optional -- lower (e.g. 50) for faster PRs, raise for nightly
@@ -36,7 +36,7 @@ jobs:
 # ── Prefer to target ONE hook explicitly instead of scanning? Drop `scan:` and use `hook:` (+ `impl:`
 #    if it's an abstract base whose concrete deploy target is a *Mock):
 #
-#      - uses: hunterinvariants/hunter-invariants/actions/v4-invariants@v3
+#      - uses: hunterinvariants/hunter-invariants/actions/v4-invariants@8a940f57c0d4efda2eb234f097e6ece946715c44  # v3
 #        with:
 #          hook: src/MyHook.sol
 #          impl: src/mocks/MyHookMock.sol   # omit if your hook is concrete
