@@ -1,27 +1,42 @@
-# Hunter -- value-conservation invariant gate for the v4 hook in this template.
-# Fuzzes the hook (deployed at a flag-correct address against a real PoolManager)
-# for 7 value-conservation properties (6 universal + a default-on state-integrity check) + an anti-vacuous coverage gate.
-# Posts/updates a results comment on each PR. Blocks the PR if an invariant fails
-# or if the run was too thin to mean anything (INCONCLUSIVE).
+# Drop this into a Uniswap v4 hook repo at `.github/workflows/hunter-invariants.yml` to gate every
+# PR on Hunter's value-conservation invariant suite. It auto-discovers every hook in your repo,
+# generates a harness for each, runs them under Foundry, and FAILS the PR if any invariant breaks OR
+# the run was too thin to be meaningful (vacuous coverage -- e.g. every fuzzed swap reverted).
 #
-# Customizing when you build your own hook:
-#   - Update `hook:` below to the path of your hook .sol file.
-#   - If your hook is an abstract base, also set `impl: src/<YourImpl>.sol`.
-#   - Constructor needs extra args? `ctor-args: 'manager, uint48(10)'` (Solidity expr).
-# Docs: https://github.com/hunterinvariants/hunter-invariants
+# Zero per-hook config: point `scan` at your source dir and Hunter finds the hooks itself. Hooks with
+# bespoke constructor dependencies (an oracle / vault / AVS / liquidation protocol) are auto-stood-up
+# (the dependency is mocked and its returns are fuzzed); a hook whose src needs IR codegen is recompiled
+# with --via-ir automatically. A hook that genuinely needs hand-config is reported NEEDS_CONFIG and
+# skipped (never a fabricated pass), so it can't block your PR.
 name: hunter-invariants
 on:
   pull_request:
+  workflow_dispatch:
+
+# The action posts a sticky results comment on the PR (the green/red "Safety Floor" table).
+# That needs write access to pull requests; contents:read is for the checkout.
 permissions:
   contents: read
   pull-requests: write
+
 jobs:
   invariants:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
-      - uses: hunterinvariants/hunter-invariants/actions/v4-invariants@0b77c7537dd26de5cb2ed548a54f402c48d43d88  # v3
+          submodules: recursive          # pull in v4-core / forge-std so `forge test` resolves
+
+      - uses: hunterinvariants/hunter-invariants/actions/v4-invariants@v3
         with:
-          hook: src/Counter.sol
+          scan: src                       # auto-discover + gate EVERY hook under src/ -- no per-hook config
+          # runs: 256                     # optional -- lower (e.g. 50) for faster PRs, raise for nightly
+          # depth: 500
+
+# ── Prefer to target ONE hook explicitly instead of scanning? Drop `scan:` and use `hook:` (+ `impl:`
+#    if it's an abstract base whose concrete deploy target is a *Mock):
+#
+#      - uses: hunterinvariants/hunter-invariants/actions/v4-invariants@v3
+#        with:
+#          hook: src/MyHook.sol
+#          impl: src/mocks/MyHookMock.sol   # omit if your hook is concrete
