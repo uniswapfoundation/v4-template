@@ -66,7 +66,7 @@ contract CreatePoolAndAddLiquidityScript is BaseScript, LiquidityHelpers {
         bytes[] memory params = new bytes[](2);
 
         // Initialize Pool
-        params[0] = abi.encodeWithSelector(positionManager.initializePool.selector, poolKey, startingPrice, hookData);
+        params[0] = abi.encodeWithSelector(positionManager.initializePool.selector, poolKey, startingPrice);
 
         // Mint Liquidity
         params[1] = abi.encodeWithSelector(
